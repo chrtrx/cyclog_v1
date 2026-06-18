@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="description" content="Cyclog – Verschleiß-Tracker für dein Fahrrad mit Strava-Sync" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+  <title>Cyclog</title>
+  <style>
+    *, *::before, *::after {
+      margin: 0; padding: 0; box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-font-smoothing: antialiased;
+    }
+    :root {
+      --green:#58cc02; --green-d:#46a302; --green-l:#d7ffb8;
+      --blue:#1cb0f6; --blue-d:#1899d6; --blue-l:#ddf4ff;
+      --orange:#ff9600; --orange-d:#e08600; --orange-l:#fff3d9;
+      --red:#ff4b4b; --red-d:#e04040; --red-l:#ffd9d9;
+      --strava:#fc4c02; --strava-d:#d94002; --strava-l:#ffe8de;
+      --bg:#f7f7f7; --white:#ffffff;
+      --t1:#3c3c3c; --t2:#777777; --t3:#afafaf; --border:#e5e5e5;
+      --r-xl:24px; --r-lg:20px; --r-md:16px; --r-sm:12px;
+    }
+    html, body { background: var(--bg); }
+    body {
+      font-family: 'Nunito Sans', -apple-system, sans-serif;
+      color: var(--t1);
+      min-height: 100vh;
+    }
+    #root {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      position: relative;
+    }
+    @media (min-width: 768px) {
+      #root { max-width: 600px; }
+    }
+    button { font-family: inherit; cursor: pointer; }
+    input, textarea { font-family: inherit; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .nunito { font-family: 'Nunito', sans-serif; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+</html>

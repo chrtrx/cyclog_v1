@@ -2,7 +2,9 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/auth'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
+import Bikes from './pages/Bikes'
 import BikeDetail from './pages/BikeDetail'
+import More from './pages/More'
 import Setups from './pages/Setups'
 import BikeFitArchive from './pages/BikeFitArchive'
 import RaceArchive from './pages/RaceArchive'
@@ -43,7 +45,9 @@ function Gate() {
     <>
       <Routes>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/bikes" element={<Bikes />} />
         <Route path="/bike/:bikeId" element={<BikeDetail />} />
+        <Route path="/more" element={<More />} />
         <Route path="/setups" element={<Setups />} />
         <Route path="/fit" element={<BikeFitArchive />} />
         <Route path="/races" element={<RaceArchive />} />

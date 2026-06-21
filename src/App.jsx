@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/auth'
 import Login from './pages/Login'
+import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import Bikes from './pages/Bikes'
 import BikeDetail from './pages/BikeDetail'
@@ -29,8 +30,14 @@ function Loader() {
 }
 
 function Gate() {
-  const { user, loading } = useAuth()
+  const { user, loading, recovery, clearRecovery } = useAuth()
   if (loading) return <Loader />
+
+  // Recovery hat Vorrang: kommt der Nutzer über einen Reset-Link,
+  // zeigt die App das Passwort-vergeben-Fenster – egal ob schon eingeloggt.
+  if (recovery) {
+    return <ResetPassword onDone={clearRecovery} />
+  }
 
   if (!user) {
     return (

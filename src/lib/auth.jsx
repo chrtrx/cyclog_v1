@@ -6,13 +6,16 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [recovery, setRecovery] = useState(false)   // Passwort-Reset im Gange?
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
       setLoading(false)
     })
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, sess) => {
+      // Wenn der Nutzer über einen Reset-Link kommt, sendet Supabase dieses Event.
+      if (event === 'PASSWORD_RECOVERY') setRecovery(true)
       setSession(sess)
     })
     return () => sub.subscription.unsubscribe()
@@ -22,15 +25,13 @@ export function AuthProvider({ children }) {
     session,
     user: session?.user ?? null,
     loading,
-    // Registrieren mit E-Mail + Passwort
-    signUp: (email, password) =>
-      supabase.auth.signUp({ email, password }),
-    // Anmelden mit E-Mail + Passwort
-    signIn: (email, password) =>
-      supabase.auth.signInWithPassword({ email, password }),
-    // Passwort vergessen → Reset-Mail
-    resetPassword: (email) =>
-      supabase.auth.resetPasswordForEmail(email),
+    recovery,
+    clearRecovery: () => setRecovery(false),
+    signUp: (email, password) => supabase.auth.signUp({ email, password }),
+    signIn: (email, password) => supabase.auth.signInWithPassword({ email, password }),
+    resetPassword: (email) => supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,   // zurück zur App (Recovery wird erkannt)
+    }),
     signOut: () => supabase.auth.signOut(),
   }
 

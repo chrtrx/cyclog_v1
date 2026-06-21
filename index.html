@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#ffffff" />
+  <meta name="theme-color" content="#070d1a" />
   <meta name="description" content="Cyclog – Verschleiß-Tracker für dein Fahrrad mit Strava-Sync" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@600;700;800;900&display=swap" rel="stylesheet" />
   <title>Cyclog</title>
   <style>
     *, *::before, *::after {
@@ -15,20 +15,36 @@
       -webkit-font-smoothing: antialiased;
     }
     :root {
-      --green:#58cc02; --green-d:#46a302; --green-l:#d7ffb8;
-      --blue:#1cb0f6; --blue-d:#1899d6; --blue-l:#ddf4ff;
-      --orange:#ff9600; --orange-d:#e08600; --orange-l:#fff3d9;
-      --red:#ff4b4b; --red-d:#e04040; --red-l:#ffd9d9;
-      --strava:#fc4c02; --strava-d:#d94002; --strava-l:#ffe8de;
-      --bg:#f7f7f7; --white:#ffffff;
-      --t1:#3c3c3c; --t2:#777777; --t3:#afafaf; --border:#e5e5e5;
-      --r-xl:24px; --r-lg:20px; --r-md:16px; --r-sm:12px;
+      /* ── NEUE Datenblatt-Palette (dunkelblau) ── */
+      --bg0:#070d1a; --bg2:#0a1426; --panel:#0c1730; --panel2:#0e1b38;
+      --line:#1c2c4d; --line2:#16243f;
+      --acc:#2f7bff; --acc-d:#1f5fd0; --acc-soft:#3a6fc4;
+      --ink1:#eef3fb; --ink2:#8fa3c8; --ink3:#54678c;
+      --ok:#34c79a; --warn:#e0a84d; --crit:#e0566e;
+      --mono:'JetBrains Mono', ui-monospace, monospace;
+      --sans:'Inter', -apple-system, sans-serif;
+
+      /* ── BRÜCKE: alte Variablennamen → neue Werte ──
+         damit noch nicht umgebaute Seiten weiter funktionieren */
+      --green:#34c79a; --green-d:#2aa382; --green-l:rgba(52,199,154,.12);
+      --blue:#2f7bff; --blue-d:#1f5fd0; --blue-l:rgba(47,123,255,.12);
+      --orange:#e0a84d; --orange-d:#c08f3a; --orange-l:rgba(224,168,77,.12);
+      --red:#e0566e; --red-d:#c4495e; --red-l:rgba(224,86,110,.12);
+      --strava:#fc4c02; --strava-d:#d94002; --strava-l:rgba(252,76,2,.12);
+      --bg:#070d1a; --white:#0c1730;
+      --t1:#eef3fb; --t2:#8fa3c8; --t3:#54678c; --border:#1c2c4d;
+      --r-xl:6px; --r-lg:6px; --r-md:4px; --r-sm:4px;
     }
-    html, body { background: var(--bg); }
+    html, body { background: var(--bg0); }
     body {
-      font-family: 'Nunito Sans', -apple-system, sans-serif;
-      color: var(--t1);
+      font-family: var(--sans);
+      color: var(--ink1);
       min-height: 100vh;
+      background:
+        radial-gradient(120% 90% at 85% -10%, rgba(47,123,255,.16), transparent 55%),
+        radial-gradient(110% 80% at 5% 8%, rgba(34,211,238,.10), transparent 50%),
+        linear-gradient(180deg, #0c1730, #070d1a);
+      background-attachment: fixed;
     }
     #root {
       max-width: 480px;
@@ -36,14 +52,15 @@
       min-height: 100vh;
       position: relative;
     }
-    @media (min-width: 768px) {
-      #root { max-width: 600px; }
+    @media (min-width: 834px) {
+      #root { max-width: 720px; }
     }
     button { font-family: inherit; cursor: pointer; }
     input, textarea { font-family: inherit; }
     ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-    .nunito { font-family: 'Nunito', sans-serif; }
+    ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 0; }
+    .nunito { font-family: var(--sans); }
+    .mono { font-family: var(--mono); }
   </style>
 </head>
 <body>

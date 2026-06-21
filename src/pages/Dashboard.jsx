@@ -80,14 +80,16 @@ export default function Dashboard() {
     <div className="dash">
       <header className="hdr">
         <div className="logo">
-          <div className="logo-icon">🚴</div>
-          <span className="logo-text">Cyclog</span>
+          <div className="logo-icon">
+            <svg viewBox="0 0 100 100"><defs><linearGradient id="dgg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#22d3ee"/><stop offset="1" stopColor="#1466d6"/></linearGradient></defs><rect width="100" height="100" rx="14" fill="#0d2240"/><path d="M70 28 A29 29 0 1 0 70 72" fill="none" stroke="url(#dgg)" strokeWidth="11" strokeLinecap="round"/><g stroke="#22d3ee" strokeWidth="2.4" opacity="0.5"><line x1="50" y1="50" x2="50" y2="28"/><line x1="50" y1="50" x2="69" y2="39"/><line x1="50" y1="50" x2="69" y2="61"/><line x1="50" y1="50" x2="50" y2="72"/><line x1="50" y1="50" x2="31" y2="61"/><line x1="50" y1="50" x2="31" y2="39"/></g><circle cx="50" cy="50" r="5" fill="#22d3ee"/><circle cx="70" cy="28" r="5.5" fill="#22d3ee"/></svg>
+          </div>
+          <span className="logo-text">CYCLOG</span>
         </div>
         <div className="hdr-right">
           {profile?.streak > 0 && <div className="streak">🔥 {profile.streak}</div>}
           <button className="strava-btn" onClick={stravaStatus ? handleSync : () => nav('/connect-strava')} disabled={syncing}>
             <span className={`sdot ${syncing ? 'spin' : ''}`} />
-            {syncing ? 'Sync…' : stravaStatus ? 'Strava' : 'Verbinden'}
+            {syncing ? 'Sync…' : stravaStatus ? 'Sync' : 'Verbinden'}
           </button>
         </div>
       </header>
@@ -296,50 +298,52 @@ function EditTrackerSheet({ tracker, bikeKm, onSave, onDelete, onClose }) {
 // ─── STYLES ────────────────────────────────────────────────
 function DashStyles() {
   return <style>{`
-    .loading { display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:14px;font-family:'Nunito',sans-serif;font-weight:800;color:var(--t2); }
-    .spinner { width:40px;height:40px;border:4px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite; }
+    .loading { display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:14px;font-family:var(--mono);font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink2); }
+    .spinner { width:38px;height:38px;border:3px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
-    .dash { min-height:100vh;padding-bottom:80px; }
-    .hdr { background:var(--white);border-bottom:2px solid var(--border);padding:max(env(safe-area-inset-top),14px) 18px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50; }
-    .logo { display:flex;align-items:center;gap:8px; }
-    .logo-icon { width:36px;height:36px;background:var(--green);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 0 var(--green-d); }
-    .logo-text { font-family:'Nunito',sans-serif;font-size:22px;font-weight:900;color:var(--green);letter-spacing:-.5px; }
-    .hdr-right { display:flex;align-items:center;gap:10px; }
-    .streak { font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;color:var(--orange); }
-    .strava-btn { display:flex;align-items:center;gap:6px;background:var(--strava-l);border:2px solid #ffcbb8;border-radius:50px;padding:7px 14px;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;color:var(--strava);box-shadow:0 2px 0 #ffcbb8; }
-    .sdot { width:8px;height:8px;border-radius:50%;background:var(--strava); }
+    .dash { min-height:100vh;padding-bottom:90px; }
+    .hdr { background:var(--bg2);border-bottom:1px solid var(--line);padding:max(env(safe-area-inset-top),14px) 16px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50; }
+    .logo { display:flex;align-items:center;gap:10px; }
+    .logo-icon { width:36px;height:36px;overflow:hidden;box-shadow:0 4px 12px rgba(34,211,238,.3); }
+    .logo-icon svg { width:100%;height:100%;display:block; }
+    .logo-text { font-family:var(--sans);font-size:20px;font-weight:900;color:var(--ink1);letter-spacing:4px; }
+    .hdr-right { display:flex;align-items:center;gap:12px; }
+    .streak { font-family:var(--mono);font-weight:700;font-size:14px;color:var(--warn); }
+    .strava-btn { display:flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid #5a3320;padding:8px 14px;font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#ff8a5c; }
+    .sdot { width:6px;height:6px;background:var(--strava); }
     .sdot.spin { animation:pulse 1s infinite; }
     @keyframes pulse { 50% { opacity:.3; } }
     .main { padding:16px 15px 0; }
     .status-banner { display:flex;gap:8px;margin-bottom:14px; }
-    .sb-item { flex:1;border-radius:14px;padding:12px;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;display:flex;align-items:center;gap:6px;justify-content:center; }
-    .sb-item.crit { background:var(--red-l);color:var(--red-d); }
-    .sb-item.warn { background:var(--orange-l);color:var(--orange-d); }
-    .sb-num { font-size:20px;font-weight:900; }
-    .bike-chips { display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px; }
-    .bchip { flex-shrink:0;padding:8px 16px;background:var(--white);border:2px solid var(--border);border-radius:50px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;color:var(--t2);box-shadow:0 3px 0 var(--border);white-space:nowrap; }
-    .bchip.on { background:var(--green);border-color:var(--green-d);color:white;box-shadow:0 3px 0 var(--green-d); }
-    .bchip.add { font-size:18px;padding:8px 16px;color:var(--t3); }
-    .bike-hero { background:var(--white);border-radius:var(--r-xl);border:2px solid var(--border);box-shadow:0 4px 0 var(--border);padding:20px;margin-bottom:16px;cursor:pointer;transition:transform .12s; }
-    .bike-hero:active { transform:scale(.98) translateY(2px);box-shadow:0 2px 0 var(--border); }
-    .bh-top { display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px; }
-    .bh-type { background:var(--green-l);color:var(--green-d);font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;letter-spacing:.5px;text-transform:uppercase;padding:4px 10px;border-radius:50px; }
-    .bh-detail { font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;color:var(--blue); }
-    .bh-name { font-family:'Nunito',sans-serif;font-size:22px;font-weight:900;letter-spacing:-.5px;margin-bottom:10px;color:var(--t1); }
-    .bh-km-row { display:flex;align-items:flex-end;gap:6px; }
-    .bh-km { font-family:'Nunito',sans-serif;font-size:46px;font-weight:900;letter-spacing:-2px;line-height:1;color:var(--t1); }
-    .bh-km-u { font-size:15px;font-weight:700;color:var(--t2);padding-bottom:5px; }
-    .bh-strava { font-size:12px;color:var(--strava);font-weight:800;margin-top:8px; }
+    .sb-item { flex:1;padding:12px;font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;gap:7px;justify-content:center;border:1px solid; }
+    .sb-item.crit { background:rgba(224,86,110,.08);color:var(--crit);border-color:rgba(224,86,110,.35); }
+    .sb-item.warn { background:rgba(224,168,77,.08);color:var(--warn);border-color:rgba(224,168,77,.35); }
+    .sb-num { font-family:var(--sans);font-size:18px;font-weight:900; }
+    .bike-chips { display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px; }
+    .bchip { flex-shrink:0;padding:9px 15px;background:var(--panel);border:1px solid var(--line);font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.5px;color:var(--ink2);white-space:nowrap; }
+    .bchip.on { background:var(--acc);border-color:var(--acc);color:#fff; }
+    .bchip.add { font-size:16px;padding:9px 16px;color:var(--ink3); }
+    .bike-hero { position:relative;background:linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.02));border:1px solid var(--line);padding:20px;margin-bottom:16px;cursor:pointer;overflow:hidden;clip-path:polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%); }
+    .bike-hero::before { content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:22px 22px; }
+    .bike-hero:active { background:rgba(255,255,255,.02); }
+    .bh-top { display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;position:relative; }
+    .bh-type { background:rgba(47,123,255,.10);color:var(--acc);font-family:var(--mono);font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;padding:3px 10px;border:1px solid rgba(47,123,255,.35); }
+    .bh-detail { font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--acc-soft); }
+    .bh-name { font-family:var(--sans);font-size:24px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;color:var(--ink1);position:relative; }
+    .bh-km-row { display:flex;align-items:flex-end;gap:7px;position:relative; }
+    .bh-km { font-family:var(--sans);font-size:50px;font-weight:900;letter-spacing:-1px;line-height:.9;color:var(--ink1); }
+    .bh-km-u { font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink2);padding-bottom:7px; }
+    .bh-strava { font-family:var(--mono);font-size:11px;color:var(--strava);font-weight:700;letter-spacing:.5px;margin-top:10px;position:relative; }
     .sec-hdr { display:flex;align-items:center;gap:10px;margin-bottom:12px; }
-    .sec-icon { width:30px;height:30px;border-radius:var(--r-sm);background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:16px; }
-    .sec-title { font-family:'Nunito',sans-serif;font-size:16px;font-weight:900;color:var(--t1); }
+    .sec-icon { width:28px;height:28px;background:rgba(52,199,154,.10);border:1px solid rgba(52,199,154,.3);display:flex;align-items:center;justify-content:center;font-size:14px; }
+    .sec-title { font-family:var(--sans);font-size:15px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--ink1); }
     .empty-actions { display:flex;flex-direction:column;gap:8px;margin-top:16px; }
-    .ea-green { background:var(--green);color:white;border:none;border-radius:14px;padding:14px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:900;box-shadow:0 4px 0 var(--green-d); }
-    .ea-strava { background:var(--strava);color:white;border:none;border-radius:14px;padding:14px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:900;box-shadow:0 4px 0 var(--strava-d); }
-    .fab-wrap { position:fixed;bottom:76px;left:50%;transform:translateX(-50%);z-index:160; }
-    .fab { background:var(--green);border:none;border-radius:50px;padding:14px 24px;display:flex;align-items:center;gap:8px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:900;color:white;box-shadow:0 5px 0 var(--green-d); }
-    .fab svg { width:20px;height:20px;stroke:white;stroke-width:2.5; }
-    .fab:active { transform:translateY(3px);box-shadow:0 2px 0 var(--green-d); }
-    .toast { position:fixed;bottom:140px;left:50%;transform:translateX(-50%);background:var(--t1);color:white;padding:10px 22px;border-radius:50px;font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;z-index:1000;box-shadow:0 4px 0 rgba(0,0,0,.3); }
+    .ea-green { background:var(--acc);color:white;border:none;padding:14px;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase; }
+    .ea-strava { background:var(--strava);color:white;border:none;padding:14px;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase; }
+    .fab-wrap { position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:160; }
+    .fab { background:var(--acc);border:none;padding:14px 26px;display:flex;align-items:center;gap:8px;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:white; }
+    .fab svg { width:18px;height:18px;stroke:white;stroke-width:2.5; }
+    .fab:active { background:var(--acc-d); }
+    .toast { position:fixed;bottom:140px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--acc);color:var(--ink1);padding:11px 22px;font-family:var(--mono);font-weight:500;font-size:13px;letter-spacing:.5px;z-index:1000; }
   `}</style>
 }

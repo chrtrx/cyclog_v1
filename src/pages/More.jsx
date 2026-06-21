@@ -35,14 +35,14 @@ export default function More() {
       </button>
 
       <style>{`
-        .more-row { display:flex; align-items:center; gap:14px; width:100%; background:var(--white); border:2px solid var(--border); box-shadow:0 4px 0 var(--border); border-radius:var(--r-lg); padding:16px; margin-bottom:10px; cursor:pointer; transition:transform .1s; }
-        .more-row:active { transform:scale(.98) translateY(2px); box-shadow:0 2px 0 var(--border); }
-        .mr-icon { width:44px; height:44px; border-radius:var(--r-md); background:var(--bg); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+        .more-row { display:flex; align-items:center; gap:14px; width:100%; background:linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.015)); border:1px solid var(--line); padding:15px; margin-bottom:10px; cursor:pointer; transition:background .12s; }
+        .more-row:active { background:rgba(255,255,255,.02); }
+        .mr-icon { width:44px; height:44px; background:var(--panel2); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:21px; flex-shrink:0; }
         .mr-body { flex:1; min-width:0; text-align:left; }
-        .mr-label { font-family:'Nunito',sans-serif; font-size:16px; font-weight:900; color:var(--t1); }
-        .mr-sub { font-size:12px; color:var(--t3); font-weight:600; margin-top:2px; }
+        .mr-label { font-family:var(--sans); font-size:15px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--ink1); }
+        .mr-sub { font-family:var(--mono); font-size:10.5px; color:var(--ink3); letter-spacing:.5px; margin-top:3px; }
         .more-row.logout { margin-top:20px; }
-        .more-row.logout .mr-label { color:var(--red-d); }
+        .more-row.logout .mr-label { color:var(--crit); }
       `}</style>
     </Page>
   )

@@ -62,18 +62,18 @@ export default function Bikes() {
       )}
 
       <style>{`
-        .bike-row { display:flex; align-items:center; gap:14px; width:100%; background:var(--white); border:2px solid var(--border); box-shadow:0 4px 0 var(--border); border-radius:var(--r-lg); padding:16px; margin-bottom:10px; cursor:pointer; transition:transform .1s; }
-        .bike-row:active { transform:scale(.98) translateY(2px); box-shadow:0 2px 0 var(--border); }
-        .br-icon { width:48px; height:48px; border-radius:var(--r-md); background:var(--bg); display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0; }
+        .bike-row { display:flex; align-items:center; gap:14px; width:100%; background:linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.015)); border:1px solid var(--line); padding:15px; margin-bottom:10px; cursor:pointer; transition:background .12s; }
+        .bike-row:active { background:rgba(255,255,255,.02); }
+        .br-icon { width:46px; height:46px; background:var(--panel2); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
         .br-body { flex:1; min-width:0; text-align:left; }
-        .br-name { font-family:'Nunito',sans-serif; font-size:17px; font-weight:900; color:var(--t1); }
-        .br-meta { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--t2); font-weight:700; margin-top:2px; }
-        .br-dot { color:var(--t3); }
+        .br-name { font-family:var(--sans); font-size:16px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--ink1); }
+        .br-meta { display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; color:var(--ink3); letter-spacing:.5px; text-transform:uppercase; margin-top:3px; }
+        .br-dot { color:var(--line); }
         .br-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
-        .br-badge { min-width:24px; height:24px; padding:0 7px; border-radius:50px; display:flex; align-items:center; justify-content:center; font-family:'Nunito',sans-serif; font-weight:900; font-size:13px; }
-        .br-badge.crit { background:var(--red-l); color:var(--red-d); }
-        .br-badge.warn { background:var(--orange-l); color:var(--orange-d); }
-        .br-badge.ok { background:var(--green-l); color:var(--green-d); }
+        .br-badge { min-width:24px; height:24px; padding:0 7px; display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-weight:700; font-size:12px; border:1px solid transparent; }
+        .br-badge.crit { background:rgba(224,86,110,.10); color:var(--crit); border-color:rgba(224,86,110,.35); }
+        .br-badge.warn { background:rgba(224,168,77,.10); color:var(--warn); border-color:rgba(224,168,77,.35); }
+        .br-badge.ok { background:rgba(52,199,154,.10); color:var(--ok); border-color:rgba(52,199,154,.35); }
       `}</style>
     </Page>
   )

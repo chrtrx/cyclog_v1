@@ -22,8 +22,15 @@ export function AuthProvider({ children }) {
     session,
     user: session?.user ?? null,
     loading,
-    signInWithEmail: (email) =>
-      supabase.auth.signInWithOtp({ email }),         // Magic-Link Login
+    // Registrieren mit E-Mail + Passwort
+    signUp: (email, password) =>
+      supabase.auth.signUp({ email, password }),
+    // Anmelden mit E-Mail + Passwort
+    signIn: (email, password) =>
+      supabase.auth.signInWithPassword({ email, password }),
+    // Passwort vergessen → Reset-Mail
+    resetPassword: (email) =>
+      supabase.auth.resetPasswordForEmail(email),
     signOut: () => supabase.auth.signOut(),
   }
 

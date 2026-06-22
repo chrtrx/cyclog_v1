@@ -22,6 +22,7 @@ export default function Dashboard() {
   const [syncing, setSyncing] = useState(false)
   const [sheet, setSheet] = useState(null) // 'log' | 'addBike' | null
   const [editTracker, setEditTracker] = useState(null)
+  const [dueTracker, setDueTracker] = useState(null)  // Fällig-Dialog
   const [toast, setToast] = useState('')
   const [lastDeleted, setLastDeleted] = useState(null)  // für Rückgängig
 
@@ -105,6 +106,23 @@ export default function Dashboard() {
     showToast('✓ Wiederhergestellt')
   }
 
+  // Fällig-Dialog: "Gewechselt" → Zähler startet neu beim aktuellen km-Stand
+  async function handleServiceDone(t) {
+    await updateTracker(t.id, {
+      km_at_start: activeBike.km,
+      start_date: new Date().toISOString(),
+    })
+    setDueTracker(null); await load()
+    showToast(`✓ ${t.title}: Zähler neu gestartet`)
+  }
+
+  // Fällig-Dialog: "Hält noch" → Intervall um 1.000 km erhöhen
+  async function handleExtend(t) {
+    await updateTracker(t.id, { interval_km: t.interval_km + 1000 })
+    setDueTracker(null); await load()
+    showToast(`↗ Intervall auf ${fmtKm(t.interval_km + 1000)} km erhöht`)
+  }
+
   if (loading) return <div className="loading"><div className="spinner" />Lade…</div>
 
   return (
@@ -140,7 +158,10 @@ export default function Dashboard() {
             {/* Dashboard-Status */}
             {(dueCount > 0 || soonCount > 0) && (
               <div className="status-banner">
-                {dueCount > 0 && <div className="sb-item crit"><span className="sb-num">{dueCount}</span> überfällig</div>}
+                {dueCount > 0 && <button className="sb-item crit" onClick={() => {
+                  const first = allStatuses.find(s => s.status === 'crit')
+                  if (first) { setActiveBikeId(first.bike.id); setDueTracker(first.tracker) }
+                }}><span className="sb-num">{dueCount}</span> überfällig</button>}
                 {soonCount > 0 && <div className="sb-item warn"><span className="sb-num">{soonCount}</span> bald fällig</div>}
               </div>
             )}
@@ -181,7 +202,11 @@ export default function Dashboard() {
                 sub='Tippe auf "Service starten" und der Balken zählt automatisch mit.' />
             ) : (
               bikeTrackers.map(t => (
-                <TrackerCard key={t.id} tracker={t} bikeKm={activeBike.km} onClick={() => setEditTracker(t)} />
+                <TrackerCard key={t.id} tracker={t} bikeKm={activeBike.km} onClick={() => {
+                  // Voller Tracker (>=100%) öffnet den Fällig-Dialog, sonst Bearbeiten
+                  if (pct(t, activeBike.km) >= 1) setDueTracker(t)
+                  else setEditTracker(t)
+                }} />
               ))
             )}
           </>
@@ -199,6 +224,38 @@ export default function Dashboard() {
 
       {sheet === 'log' && <LogSheet bike={activeBike} onAdd={handleAddTracker} onClose={() => setSheet(null)} />}
       {sheet === 'addBike' && <AddBikeSheet user={user} onClose={() => setSheet(null)} onSaved={(id) => { setSheet(null); setActiveBikeId(id); load() }} />}
+      {dueTracker && (
+        <Sheet title={dueTracker.title} sub="Wartung fällig" onClose={() => setDueTracker(null)}>
+          <div className="due-msg">
+            Dieser Tracker hat sein Intervall erreicht ({fmtKm(dueTracker.interval_km)} km).
+            Was möchtest du tun?
+          </div>
+          <button className="due-opt due-done" onClick={() => handleServiceDone(dueTracker)}>
+            <span className="due-ico">✓</span>
+            <span className="due-txt"><b>Gewechselt / erledigt</b><small>Zähler startet neu bei {fmtKm(activeBike.km)} km</small></span>
+          </button>
+          <button className="due-opt due-extend" onClick={() => handleExtend(dueTracker)}>
+            <span className="due-ico">↗</span>
+            <span className="due-txt"><b>Hält noch (+1.000 km)</b><small>Intervall auf {fmtKm(dueTracker.interval_km + 1000)} km erhöhen</small></span>
+          </button>
+          <button className="due-opt due-later" onClick={() => setDueTracker(null)}>
+            <span className="due-ico">⏱</span>
+            <span className="due-txt"><b>Später</b><small>Nichts ändern</small></span>
+          </button>
+          <style>{`
+            .due-msg { font-family:var(--mono); font-size:13px; color:var(--ink2); line-height:1.6; margin-bottom:16px; padding:0 2px; }
+            .due-opt { display:flex; align-items:center; gap:13px; width:100%; background:var(--panel2); border:1px solid var(--line); padding:14px; margin-bottom:8px; text-align:left; transition:border-color .12s; }
+            .due-opt:active { border-color:var(--acc); }
+            .due-ico { width:34px; height:34px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:16px; border:1px solid var(--line); }
+            .due-done .due-ico { color:var(--ok); border-color:rgba(52,199,154,.4); }
+            .due-extend .due-ico { color:var(--acc); border-color:rgba(47,123,255,.4); }
+            .due-later .due-ico { color:var(--ink3); }
+            .due-txt { display:flex; flex-direction:column; gap:2px; }
+            .due-txt b { font-family:var(--sans); font-size:14px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--ink1); }
+            .due-txt small { font-family:var(--mono); font-size:11px; color:var(--ink3); letter-spacing:.3px; }
+          `}</style>
+        </Sheet>
+      )}
       {editTracker && (
         <EditTrackerSheet tracker={editTracker} bikeKm={activeBike.km}
           onSave={async (u) => { await updateTracker(editTracker.id, u); setEditTracker(null); await load() }}
@@ -311,10 +368,14 @@ function EditTrackerSheet({ tracker, bikeKm, onSave, onDelete, onClose }) {
     <Sheet title={tracker.title} onClose={onClose}>
       <div className="ib">
         <div className="ib-lbl">Intervall</div>
-        <div className="ib-val">{interval.toLocaleString('de')} <small>km</small></div>
-        <input type="range" min="100" max="10000" step="100" value={interval} onChange={(e) => setInterval(Number(e.target.value))} />
+        <div className="ib-edit">
+          <input className="ib-num" type="number" inputMode="numeric" min="50" max="50000" step="50"
+            value={interval} onChange={(e) => setInterval(Number(e.target.value) || 0)} />
+          <span className="ib-unit">km</span>
+        </div>
+        <input type="range" min="100" max="20000" step="100" value={Math.min(interval, 20000)} onChange={(e) => setInterval(Number(e.target.value))} />
         <div className="presets">
-          {[500, 1000, 2000, 3000, 5000].map(v => (
+          {[1000, 2000, 4000, 6000, 12000].map(v => (
             <button key={v} className="preset" onClick={() => setInterval(v)}>{v.toLocaleString('de')}</button>
           ))}
         </div>
@@ -328,8 +389,10 @@ function EditTrackerSheet({ tracker, bikeKm, onSave, onDelete, onClose }) {
       <style>{`
         .ib { margin-bottom: 11px; background: var(--panel2); border: 1px solid var(--line); padding: 15px; }
         .ib-lbl { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 9px; }
-        .ib-val { font-family: var(--sans); font-size: 34px; font-weight: 900; letter-spacing: -1px; margin-bottom: 12px; color: var(--ink1); }
-        .ib-val small { font-family: var(--mono); font-size: 13px; color: var(--ink2); font-weight: 700; text-transform: uppercase; }
+        .ib-edit { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+        .ib-num { background: none; border: none; outline: none; font-family: var(--sans); font-size: 34px; font-weight: 900; letter-spacing: -1px; color: var(--ink1); width: 100%; padding: 0; }
+        .ib-num::-webkit-outer-spin-button, .ib-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .ib-unit { font-family: var(--mono); font-size: 13px; color: var(--ink2); font-weight: 700; text-transform: uppercase; flex-shrink: 0; }
         input[type=range] { -webkit-appearance: none; width: 100%; height: 6px; background: var(--line); outline: none; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 0; background: var(--acc); border: 2px solid var(--ink1); }
         .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 11px; }
@@ -362,7 +425,8 @@ function DashStyles() {
     @keyframes pulse { 50% { opacity:.3; } }
     .main { padding:16px 15px 0; }
     .status-banner { display:flex;gap:8px;margin-bottom:14px; }
-    .sb-item { flex:1;padding:12px;font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;gap:7px;justify-content:center;border:1px solid; }
+    .sb-item { flex:1;padding:12px;font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;gap:7px;justify-content:center;border:1px solid;cursor:pointer; }
+    button.sb-item { font-family:var(--mono); }
     .sb-item.crit { background:rgba(224,86,110,.08);color:var(--crit);border-color:rgba(224,86,110,.35); }
     .sb-item.warn { background:rgba(224,168,77,.08);color:var(--warn);border-color:rgba(224,168,77,.35); }
     .sb-num { font-family:var(--sans);font-size:18px;font-weight:900; }

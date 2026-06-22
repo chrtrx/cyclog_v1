@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [sheet, setSheet] = useState(null) // 'log' | 'addBike' | null
   const [editTracker, setEditTracker] = useState(null)
   const [toast, setToast] = useState('')
+  const [lastDeleted, setLastDeleted] = useState(null)  // für Rückgängig
 
   useEffect(() => { load() }, [])
   async function load() {
@@ -32,7 +33,15 @@ export default function Dashboard() {
         getBikes(user.id), getTrackers(user.id), getStravaStatus(user.id), getProfile(user.id),
       ])
       setBikes(b); setTrackers(t); setStravaStatus(s); setProfile(p)
-      if (b.length && !activeBikeId) setActiveBikeId(b[0].id)
+      if (b.length && !activeBikeId) {
+        // aktivstes Rad zuerst auswählen (zuletzt aktualisierter Tracker)
+        const la = (bikeId) => {
+          const ts = t.filter(x => x.bike_id === bikeId)
+          return ts.length ? Math.max(...ts.map(x => new Date(x.start_date || 0).getTime())) : 0
+        }
+        const best = [...b].sort((x, y) => la(y.id) - la(x.id))[0]
+        setActiveBikeId(best.id)
+      }
     } catch (e) { showToast('Fehler beim Laden') }
     setLoading(false)
   }
@@ -41,6 +50,15 @@ export default function Dashboard() {
 
   const activeBike = bikes.find(b => b.id === activeBikeId)
   const bikeTrackers = trackers.filter(t => t.bike_id === activeBikeId)
+
+  // Räder nach Aktivität sortieren: das Rad mit dem zuletzt gestarteten/
+  // aktualisierten Tracker zuerst. Räder ganz ohne Tracker hinten.
+  function lastActivity(bikeId) {
+    const ts = trackers.filter(t => t.bike_id === bikeId)
+    if (!ts.length) return 0
+    return Math.max(...ts.map(t => new Date(t.start_date || 0).getTime()))
+  }
+  const sortedBikes = [...bikes].sort((a, b) => lastActivity(b.id) - lastActivity(a.id))
 
   // Dashboard-Übersicht: alle fälligen/bald fälligen über alle Bikes
   const allStatuses = trackers.map(t => {
@@ -72,6 +90,19 @@ export default function Dashboard() {
     })
     setSheet(null); await load()
     showToast(`🎉 Tracker gestartet bei ${fmtKm(activeBike.km)} km!`)
+  }
+
+  // Gelöschten Tracker wiederherstellen
+  async function handleUndo() {
+    if (!lastDeleted) return
+    const r = lastDeleted
+    await addTracker(user.id, {
+      bike_id: r.bike_id, type_id: r.type_id, title: r.title, icon: r.icon,
+      interval_type: r.interval_type || 'km', interval_km: r.interval_km,
+      km_at_start: r.km_at_start, note: r.note || '', start_date: r.start_date,
+    })
+    setLastDeleted(null); setToast(''); await load()
+    showToast('✓ Wiederhergestellt')
   }
 
   if (loading) return <div className="loading"><div className="spinner" />Lade…</div>
@@ -116,7 +147,7 @@ export default function Dashboard() {
 
             {/* Bike Selector */}
             <div className="bike-chips">
-              {bikes.map(b => (
+              {sortedBikes.map(b => (
                 <button key={b.id} className={`bchip ${b.id === activeBikeId ? 'on' : ''}`} onClick={() => setActiveBikeId(b.id)}>
                   {BIKE_ICONS[b.type] || '🚴'} {b.name}
                 </button>
@@ -171,10 +202,24 @@ export default function Dashboard() {
       {editTracker && (
         <EditTrackerSheet tracker={editTracker} bikeKm={activeBike.km}
           onSave={async (u) => { await updateTracker(editTracker.id, u); setEditTracker(null); await load() }}
-          onDelete={async () => { await deleteTracker(editTracker.id); setEditTracker(null); await load(); showToast('Gelöscht') }}
+          onDelete={async () => {
+            const removed = editTracker
+            await deleteTracker(removed.id)
+            setEditTracker(null)
+            await load()
+            // Tracker für Rückgängig merken (6 Sekunden)
+            setLastDeleted(removed)
+            setToast('__undo__')
+            setTimeout(() => { setLastDeleted(null); setToast(t => t === '__undo__' ? '' : t) }, 6000)
+          }}
           onClose={() => setEditTracker(null)} />
       )}
-      {toast && <div className="toast">{toast}</div>}
+      {toast === '__undo__' ? (
+        <div className="toast toast-undo">
+          <span>Tracker gelöscht</span>
+          <button className="undo-btn" onClick={handleUndo}>↺ Rückgängig</button>
+        </div>
+      ) : toast && <div className="toast">{toast}</div>}
 
       <DashStyles />
     </div>
@@ -202,13 +247,13 @@ function LogSheet({ bike, onAdd, onClose }) {
         </div>
       ))}
       <style>{`
-        .svc-sec { margin-bottom: 10px; }
-        .svc-sec-lbl { font-family: 'Nunito', sans-serif; font-size: 11px; font-weight: 800; color: var(--t3); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 7px; padding: 0 2px; }
-        .svc-row { display: flex; align-items: center; gap: 11px; padding: 12px 13px; background: var(--white); border-radius: var(--r-md); border: 2px solid var(--border); margin-bottom: 6px; box-shadow: 0 3px 0 var(--border); width: 100%; cursor: pointer; }
-        .svc-row:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--border); }
-        .svc-ico { width: 36px; height: 36px; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; font-size: 19px; background: var(--bg); flex-shrink: 0; }
-        .svc-nm { font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; color: var(--t1); }
-        .svc-int { font-size: 12px; color: var(--t3); font-weight: 600; margin-top: 1px; }
+        .svc-sec { margin-bottom: 12px; }
+        .svc-sec-lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; padding: 0 2px; }
+        .svc-row { display: flex; align-items: center; gap: 11px; padding: 12px 13px; background: var(--panel2); border: 1px solid var(--line); margin-bottom: 6px; width: 100%; cursor: pointer; transition: border-color .12s; }
+        .svc-row:active { border-color: var(--acc); }
+        .svc-ico { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; background: var(--panel); border: 1px solid var(--line); flex-shrink: 0; }
+        .svc-nm { font-family: var(--sans); font-size: 14px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--ink1); }
+        .svc-int { font-family: var(--mono); font-size: 11px; color: var(--ink3); letter-spacing: .5px; text-transform: uppercase; margin-top: 2px; }
       `}</style>
     </Sheet>
   )
@@ -247,10 +292,10 @@ function AddBikeSheet({ user, onClose, onSaved }) {
       <Field label="Aktueller km-Stand" type="number" value={f.km} onChange={set('km')} placeholder="0" />
       <BtnGreen onClick={save}>Fahrrad anlegen</BtnGreen>
       <style>{`
-        .lblx { display:block;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;color:var(--t2);margin-bottom:5px; }
+        .lblx { display:block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px; }
         .type-grid { display:flex;gap:6px;flex-wrap:wrap; }
-        .type-opt { padding:8px 14px;border-radius:50px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;background:var(--bg);border:2px solid var(--border);color:var(--t2);box-shadow:0 2px 0 var(--border); }
-        .type-opt.on { background:var(--green);border-color:var(--green-d);color:white;box-shadow:0 2px 0 var(--green-d); }
+        .type-opt { padding:9px 14px;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.5px;background:var(--panel2);border:1px solid var(--line);color:var(--ink2); }
+        .type-opt.on { background:var(--acc);border-color:var(--acc);color:white; }
         .g2 { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
       `}</style>
     </Sheet>
@@ -281,15 +326,17 @@ function EditTrackerSheet({ tracker, bikeKm, onSave, onDelete, onClose }) {
       <BtnGreen onClick={() => onSave({ interval_km: interval, note })}>Speichern</BtnGreen>
       <BtnDelete armed={armed} onClick={() => armed ? onDelete() : (setArmed(true), setTimeout(() => setArmed(false), 3000))} />
       <style>{`
-        .ib { margin-bottom: 11px; background: var(--bg); border-radius: var(--r-lg); border: 2px solid var(--border); padding: 15px; }
-        .ib-lbl { font-family: 'Nunito', sans-serif; font-size: 11px; font-weight: 800; color: var(--t3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 9px; }
-        .ib-val { font-family: 'Nunito', sans-serif; font-size: 34px; font-weight: 900; letter-spacing: -1.5px; margin-bottom: 12px; color: var(--t1); }
-        .ib-val small { font-size: 15px; color: var(--t2); font-weight: 700; }
-        input[type=range] { -webkit-appearance: none; width: 100%; height: 8px; border-radius: 50px; background: var(--border); outline: none; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%; background: white; border: 3px solid var(--green); box-shadow: 0 3px 0 var(--green-d); }
+        .ib { margin-bottom: 11px; background: var(--panel2); border: 1px solid var(--line); padding: 15px; }
+        .ib-lbl { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 9px; }
+        .ib-val { font-family: var(--sans); font-size: 34px; font-weight: 900; letter-spacing: -1px; margin-bottom: 12px; color: var(--ink1); }
+        .ib-val small { font-family: var(--mono); font-size: 13px; color: var(--ink2); font-weight: 700; text-transform: uppercase; }
+        input[type=range] { -webkit-appearance: none; width: 100%; height: 6px; background: var(--line); outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 0; background: var(--acc); border: 2px solid var(--ink1); }
         .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 11px; }
-        .preset { padding: 6px 12px; border-radius: 50px; font-size: 12px; font-weight: 800; font-family: 'Nunito', sans-serif; background: white; border: 2px solid var(--border); color: var(--t2); box-shadow: 0 2px 0 var(--border); }
-        .ib-note { width: 100%; background: none; border: none; outline: none; font-size: 14px; font-family: 'Nunito Sans', sans-serif; font-weight: 600; resize: none; line-height: 1.6; min-height: 56px; }
+        .preset { padding: 7px 12px; font-family: var(--mono); font-size: 12px; font-weight: 700; background: var(--panel); border: 1px solid var(--line); color: var(--ink2); }
+        .preset:active { border-color: var(--acc); color: var(--acc); }
+        .ib-note { width: 100%; background: none; border: none; outline: none; font-size: 14px; font-family: var(--mono); color: var(--ink1); resize: none; line-height: 1.6; min-height: 56px; }
+        .ib-note::placeholder { color: var(--ink3); }
       `}</style>
     </Sheet>
   )
@@ -345,5 +392,8 @@ function DashStyles() {
     .fab svg { width:18px;height:18px;stroke:white;stroke-width:2.5; }
     .fab:active { background:var(--acc-d); }
     .toast { position:fixed;bottom:140px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--acc);color:var(--ink1);padding:11px 22px;font-family:var(--mono);font-weight:500;font-size:13px;letter-spacing:.5px;z-index:1000; }
+    .toast-undo { display:flex;align-items:center;gap:16px;padding:11px 14px 11px 18px; }
+    .undo-btn { background:var(--acc);border:none;color:#fff;font-family:var(--sans);font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:7px 12px;cursor:pointer; }
+    .undo-btn:active { background:var(--acc-d); }
   `}</style>
 }

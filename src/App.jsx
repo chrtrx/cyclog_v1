@@ -11,7 +11,6 @@ import BikeFitArchive from './pages/BikeFitArchive'
 import RaceArchive from './pages/RaceArchive'
 import TyrePressureDB from './pages/TyrePressureDB'
 import ConnectStrava from './pages/ConnectStrava'
-import PreRide from './pages/PreRide'
 import NavBar from './components/NavBar'
 
 function Loader() {
@@ -61,7 +60,6 @@ function Gate() {
         <Route path="/races" element={<RaceArchive />} />
         <Route path="/pressure" element={<TyrePressureDB />} />
         <Route path="/connect-strava" element={<ConnectStrava />} />
-        <Route path="/pre-ride" element={<PreRide />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <NavBar />

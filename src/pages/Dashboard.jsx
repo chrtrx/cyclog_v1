@@ -194,14 +194,8 @@ export default function Dashboard() {
 
             {/* Pre-Ride Einstieg */}
             <button className="preride-card" onClick={() => nav('/pre-ride')}>
-              <div className="prc-left">
-                <div className="prc-dot" />
-                <div>
-                  <div className="prc-title">Vor der Fahrt</div>
-                  <div className="prc-sub">Terrain-Faktor · Reifendruck · Checkliste</div>
-                </div>
-              </div>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
+              <span className="prc-title">Vor der Fahrt</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
             </button>
 
             {/* Tracker */}
@@ -463,12 +457,9 @@ function DashStyles() {
     .empty-actions { display:flex;flex-direction:column;gap:8px;margin-top:16px; }
     .ea-green { background:var(--acc);color:white;border:none;padding:14px;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase; }
     .ea-strava { background:var(--strava);color:white;border:none;padding:14px;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase; }
-    .preride-card { display:flex;align-items:center;justify-content:space-between;width:100%;background:rgba(47,123,255,.06);border:1px solid rgba(47,123,255,.25);padding:13px 15px;margin-bottom:16px;text-align:left;transition:border-color .12s; }
+    .preride-card { display:flex;align-items:center;justify-content:space-between;width:100%;background:var(--panel2);border:1px solid var(--line);padding:12px 15px;margin-bottom:16px;text-align:left;transition:border-color .12s; }
     .preride-card:active { border-color:var(--acc); }
-    .prc-left { display:flex;align-items:center;gap:11px; }
-    .prc-dot { width:8px;height:8px;background:var(--acc);flex-shrink:0; }
-    .prc-title { font-family:var(--sans);font-size:14px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--acc); }
-    .prc-sub { font-family:var(--mono);font-size:10.5px;color:var(--ink3);letter-spacing:.5px;margin-top:2px; }
+    .prc-title { font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink2); }
     .fab-wrap { position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:160; }
     .fab { background:var(--acc);border:none;padding:14px 26px;display:flex;align-items:center;gap:8px;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:white; }
     .fab svg { width:18px;height:18px;stroke:white;stroke-width:2.5; }

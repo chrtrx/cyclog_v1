@@ -313,17 +313,6 @@ export async function deleteTyrePressure(id) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// AKTIVITÄTEN (Strava-Import)
-// ═══════════════════════════════════════════════════════════
-export async function getActivities(bikeId, limit = 20) {
-  const { data, error } = await supabase
-    .from('activities').select('*').eq('bike_id', bikeId)
-    .order('created_at', { ascending: false }).limit(limit)
-  if (error) throw error
-  return data || []
-}
-
-// ═══════════════════════════════════════════════════════════
 // STRAVA
 // ═══════════════════════════════════════════════════════════
 export async function syncStrava(userId) {

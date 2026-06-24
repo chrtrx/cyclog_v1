@@ -51,6 +51,10 @@ export default function Dashboard() {
 
   const activeBike = bikes.find(b => b.id === activeBikeId)
   const bikeTrackers = trackers.filter(t => t.bike_id === activeBikeId)
+  const sortedBikeTrackers = [...bikeTrackers].sort((a, b) => {
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
+    return pct(b, activeBike?.km) - pct(a, activeBike?.km)
+  })
 
   // Räder nach Aktivität sortieren: das Rad mit dem zuletzt gestarteten/
   // aktualisierten Tracker zuerst. Räder ganz ohne Tracker hinten.
@@ -114,6 +118,11 @@ export default function Dashboard() {
     })
     setDueTracker(null); await load()
     showToast(`✓ ${t.title}: Zähler neu gestartet`)
+  }
+
+  async function togglePin(t) {
+    await updateTracker(t.id, { pinned: !t.pinned })
+    await load()
   }
 
   // Fällig-Dialog: "Hält noch" → Intervall um 1.000 km erhöhen
@@ -197,16 +206,15 @@ export default function Dashboard() {
               <div className="sec-icon">🛠️</div>
               <div className="sec-title">Verschleiß-Tracker</div>
             </div>
-            {bikeTrackers.length === 0 ? (
+            {sortedBikeTrackers.length === 0 ? (
               <Empty emoji="🔧" title="Noch kein Tracker"
                 sub='Tippe auf "Service starten" und der Balken zählt automatisch mit.' />
             ) : (
-              bikeTrackers.map(t => (
-                <TrackerCard key={t.id} tracker={t} bikeKm={activeBike.km} onClick={() => {
-                  // Voller Tracker (>=100%) öffnet den Fällig-Dialog, sonst Bearbeiten
-                  if (pct(t, activeBike.km) >= 1) setDueTracker(t)
-                  else setEditTracker(t)
-                }} />
+              sortedBikeTrackers.map(t => (
+                <TrackerCard key={t.id} tracker={t} bikeKm={activeBike.km}
+                  onClick={() => pct(t, activeBike.km) >= 1 ? setDueTracker(t) : setEditTracker(t)}
+                  onPin={() => togglePin(t)}
+                />
               ))
             )}
           </>

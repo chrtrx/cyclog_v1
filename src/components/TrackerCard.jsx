@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { kmSince, pct, statusOf, fmtKm, fmtDate } from '../lib/helpers'
 
-export default function TrackerCard({ tracker, bikeKm, onClick }) {
+export default function TrackerCard({ tracker, bikeKm, onClick, onPin }) {
   const p    = pct(tracker, bikeKm)
   const st   = statusOf(p)
   const w    = Math.round(p * 100)
@@ -22,6 +22,11 @@ export default function TrackerCard({ tracker, bikeKm, onClick }) {
           <div className={`tc-bar-fill tc-fill-${st}`} style={{ transform: `scaleX(${w / 100})` }} />
         </div>
         <span className={`tc-pct tc-pct-${st}`}>{w}%</span>
+        {onPin && (
+          <button className={`tc-pin ${tracker.pinned ? 'on' : ''}`} onClick={e => { e.stopPropagation(); onPin() }}>
+            {tracker.pinned ? '★' : '☆'}
+          </button>
+        )}
       </div>
 
       {/* Ausgeklappt: Details + Aktion */}
@@ -54,6 +59,8 @@ export default function TrackerCard({ tracker, bikeKm, onClick }) {
         .tc-fill-ok{background:var(--ok)}.tc-fill-warn{background:var(--warn)}.tc-fill-crit{background:var(--crit)}
         .tc-pct { font-family:var(--sans);font-size:14px;font-weight:900;letter-spacing:-.5px;flex-shrink:0;width:36px;text-align:right; }
         .tc-pct-ok{color:var(--ink3)}.tc-pct-warn{color:var(--warn)}.tc-pct-crit{color:var(--crit)}
+        .tc-pin { background:none;border:none;padding:0 2px 0 6px;font-size:14px;color:var(--ink3);flex-shrink:0;line-height:1; }
+        .tc-pin.on { color:var(--warn); }
         .tc-detail { padding:0 13px 12px;border-top:1px solid var(--line); }
         .tc-stats { display:flex;align-items:center;gap:8px;padding-top:11px;margin-bottom:3px;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--ink1); }
         .tc-dot { color:var(--ink3); }

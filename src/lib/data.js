@@ -23,111 +23,16 @@ export const SERVICE_TYPES = [
 ]
 
 // ═══════════════════════════════════════════════════════════
-// KOMPONENTEN-KATEGORIEN (für Bike-Konfiguration)
-// Jede Kategorie definiert ihre spezifischen Felder
+// TEIL-KATEGORIEN (7 universelle Kategorien)
 // ═══════════════════════════════════════════════════════════
-export const COMPONENT_CATEGORIES = [
-  {
-    id:'cockpit_bar', label:'Lenker', icon:'↔️', group:'Cockpit',
-    fields:[
-      {k:'width_top',l:'Breite oben (mm)'},
-      {k:'width_bottom',l:'Breite unten (mm)'},
-      {k:'reach',l:'Reach (mm)'},
-      {k:'drop',l:'Drop (mm)'},
-      {k:'flare',l:'Flare (°)'},
-    ]
-  },
-  {
-    id:'cockpit_stem', label:'Vorbau', icon:'🔧', group:'Cockpit',
-    fields:[
-      {k:'length',l:'Länge (mm)'},
-      {k:'angle',l:'Winkel (°)'},
-      {k:'spacer_height',l:'Spacer-Höhe (mm)'},
-      {k:'measured_bar_height',l:'Lenkerhöhe gemessen (mm)'},
-    ]
-  },
-  {
-    id:'saddle', label:'Sattel', icon:'🪑', group:'Sattel & Position',
-    fields:[
-      {k:'width',l:'Breite (mm)'},
-      {k:'height',l:'Sattelhöhe (mm)'},
-      {k:'setback',l:'Setback (mm)'},
-      {k:'tilt',l:'Neigung (°)'},
-      {k:'position',l:'Position (mm)'},
-    ]
-  },
-  {
-    id:'crank', label:'Kurbel', icon:'⚙️', group:'Schaltung',
-    fields:[
-      {k:'length',l:'Kurbellänge (mm)'},
-      {k:'chainring_inner',l:'Innenblatt (Z)'},
-      {k:'chainring_outer',l:'Außenblatt (Z)'},
-    ]
-  },
-  {
-    id:'cassette', label:'Kassette', icon:'🔩', group:'Schaltung',
-    fields:[{k:'range',l:'Abstufung (z.B. 10-52T)'}]
-  },
-  {
-    id:'derailleur_rear', label:'Schaltwerk', icon:'🔄', group:'Schaltung',
-    fields:[{k:'series',l:'Serie/Modell'}]
-  },
-  {
-    id:'derailleur_front', label:'Umwerfer', icon:'🔃', group:'Schaltung',
-    fields:[{k:'series',l:'Serie/Modell'}]
-  },
-  {
-    id:'powermeter', label:'Powermeter', icon:'⚡', group:'Schaltung',
-    fields:[{k:'type',l:'Typ (Pedale/Kurbel)'}]
-  },
-  {
-    id:'wheelset', label:'Laufradsatz', icon:'🛞', group:'Laufräder',
-    fields:[
-      {k:'rim_depth',l:'Felgenhöhe (mm)'},
-      {k:'inner_width',l:'Innenmaulweite (mm)'},
-      {k:'outer_width',l:'Außenbreite (mm)'},
-      {k:'spokes_front',l:'Speichen vorne'},
-      {k:'spokes_rear',l:'Speichen hinten'},
-    ]
-  },
-  {
-    id:'tyre', label:'Reifen', icon:'🔵', group:'Reifen',
-    fields:[
-      {k:'width',l:'Breite (mm)'},
-      {k:'tubeless',l:'Tubeless (ja/nein)'},
-      {k:'pressure_front',l:'Druck vorne (bar)'},
-      {k:'pressure_rear',l:'Druck hinten (bar)'},
-    ]
-  },
-  {
-    id:'brake', label:'Bremsen', icon:'🛑', group:'Bremsen',
-    fields:[
-      {k:'rotor_front',l:'Scheibe vorne (mm)'},
-      {k:'rotor_rear',l:'Scheibe hinten (mm)'},
-      {k:'pad_model',l:'Belag-Modell'},
-    ]
-  },
-  {
-    id:'fork', label:'Federgabel', icon:'🔱', group:'Fahrwerk',
-    fields:[
-      {k:'travel',l:'Federweg (mm)'},
-      {k:'pressure',l:'Luftdruck (psi)'},
-      {k:'tokens',l:'Tokens'},
-      {k:'rebound',l:'Rebound (Klicks)'},
-      {k:'compression',l:'Compression (Klicks)'},
-      {k:'sag',l:'Sag (%)'},
-    ]
-  },
-  {
-    id:'shock', label:'Dämpfer', icon:'🏗️', group:'Fahrwerk',
-    fields:[
-      {k:'pressure',l:'Luftdruck (psi)'},
-      {k:'tokens',l:'Tokens'},
-      {k:'rebound',l:'Rebound (Klicks)'},
-      {k:'compression',l:'Compression (Klicks)'},
-      {k:'sag',l:'Sag (%)'},
-    ]
-  },
+export const PART_CATEGORIES = [
+  { id: 'frame',      label: 'Rahmen & Gabel', icon: '🚲' },
+  { id: 'cockpit',    label: 'Cockpit',         icon: '🎮' },
+  { id: 'drivetrain', label: 'Antrieb',         icon: '⚙️' },
+  { id: 'wheels',     label: 'Laufräder',       icon: '🛞' },
+  { id: 'brakes',     label: 'Bremsen',         icon: '🛑' },
+  { id: 'saddle',     label: 'Sattel & Stütze', icon: '🪑' },
+  { id: 'extras',     label: 'Anbauteile',      icon: '🔩' },
 ]
 
 export const BIKE_TYPES = ['Rennrad','Gravel','MTB','Zeitfahrrad','Bikepacking','Indoor','E-Bike']
@@ -309,6 +214,30 @@ export async function addTyrePressure(userId, entry) {
 }
 export async function deleteTyrePressure(id) {
   const { error } = await supabase.from('tyre_pressures').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ═══════════════════════════════════════════════════════════
+// UPGRADES (Wunschliste)
+// ═══════════════════════════════════════════════════════════
+export async function getUpgrades(bikeId) {
+  const { data, error } = await supabase
+    .from('upgrades').select('*').eq('bike_id', bikeId).order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+export async function addUpgrade(userId, upgrade) {
+  const { data, error } = await supabase
+    .from('upgrades').insert({ ...upgrade, user_id: userId }).select().single()
+  if (error) throw error
+  return data
+}
+export async function updateUpgrade(id, updates) {
+  const { error } = await supabase.from('upgrades').update(updates).eq('id', id)
+  if (error) throw error
+}
+export async function deleteUpgrade(id) {
+  const { error } = await supabase.from('upgrades').delete().eq('id', id)
   if (error) throw error
 }
 

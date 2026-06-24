@@ -27,12 +27,9 @@ export const SERVICE_TYPES = [
 // ═══════════════════════════════════════════════════════════
 export const PART_CATEGORIES = [
   { id: 'frame',      label: 'Rahmen & Gabel', icon: '🚲' },
-  { id: 'cockpit',    label: 'Cockpit',         icon: '🎮' },
-  { id: 'drivetrain', label: 'Antrieb',         icon: '⚙️' },
-  { id: 'wheels',     label: 'Laufräder',       icon: '🛞' },
-  { id: 'brakes',     label: 'Bremsen',         icon: '🛑' },
-  { id: 'saddle',     label: 'Sattel & Stütze', icon: '🪑' },
-  { id: 'extras',     label: 'Anbauteile',      icon: '🔩' },
+  { id: 'drivetrain', label: 'Schaltgruppe',   icon: '⚙️' },
+  { id: 'wheels',     label: 'Laufräder',      icon: '🛞' },
+  { id: 'extras',     label: 'Anbauteile',     icon: '🔩' },
 ]
 
 export const BIKE_TYPES = ['Rennrad','Gravel','MTB','Zeitfahrrad','Bikepacking','Indoor','E-Bike']

@@ -197,6 +197,24 @@ export default function Dashboard() {
                   <div className="bh-km">{(activeBike.km || 0).toLocaleString('de')}</div>
                   <div className="bh-km-u">km</div>
                 </div>
+                {bikeTrackers.length > 0 && (() => {
+                  const okN   = bikeTrackers.filter(t => statusOf(pct(t, activeBike.km)) === 'ok').length
+                  const critN = bikeTrackers.filter(t => statusOf(pct(t, activeBike.km)) === 'crit').length
+                  const valCls = critN > 0 ? 'crit' : okN < bikeTrackers.length ? 'warn' : 'ok'
+                  return (
+                    <div className="bh-health">
+                      <div className="bh-health-meta">
+                        <span className="bh-health-lbl">Zustand</span>
+                        <span className={`bh-health-val bh-hv-${valCls}`}>{okN}/{bikeTrackers.length} OK</span>
+                      </div>
+                      <div className="bh-segs">
+                        {sortedBikeTrackers.map(t => (
+                          <div key={t.id} className={`bh-seg bh-seg-${statusOf(pct(t, activeBike.km))}`} />
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })()}
                 {stravaStatus && <div className="bh-strava">🟠 {stravaStatus.athlete_name}</div>}
               </div>
             )}
@@ -204,7 +222,10 @@ export default function Dashboard() {
             {/* Tracker */}
             <div className="sec-hdr">
               <div className="sec-icon">🛠️</div>
-              <div className="sec-title">Verschleiß-Tracker</div>
+              <div className="sec-title">Tracker</div>
+              {bikeTrackers.length > 0 && (
+                <div className="sec-count">{bikeTrackers.length} {bikeTrackers.length === 1 ? 'Teil' : 'Teile'}</div>
+              )}
             </div>
             {sortedBikeTrackers.length === 0 ? (
               <Empty emoji="🔧" title="Noch kein Tracker"
@@ -453,9 +474,22 @@ function DashStyles() {
     .bh-km { font-family:var(--sans);font-size:50px;font-weight:900;letter-spacing:-1px;line-height:.9;color:var(--ink1); }
     .bh-km-u { font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink2);padding-bottom:7px; }
     .bh-strava { font-family:var(--mono);font-size:11px;color:var(--strava);font-weight:700;letter-spacing:.5px;margin-top:10px;position:relative; }
+    .bh-health { margin-top:16px;position:relative; }
+    .bh-health-meta { display:flex;justify-content:space-between;align-items:center;margin-bottom:5px; }
+    .bh-health-lbl { font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3); }
+    .bh-health-val { font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase; }
+    .bh-hv-ok { color:var(--ok); }
+    .bh-hv-warn { color:var(--warn); }
+    .bh-hv-crit { color:var(--crit); }
+    .bh-segs { display:flex;gap:3px; }
+    .bh-seg { flex:1;height:3px; }
+    .bh-seg-ok { background:var(--ok); }
+    .bh-seg-warn { background:var(--warn); }
+    .bh-seg-crit { background:var(--crit); }
     .sec-hdr { display:flex;align-items:center;gap:10px;margin-bottom:12px; }
     .sec-icon { width:28px;height:28px;background:rgba(52,199,154,.10);border:1px solid rgba(52,199,154,.3);display:flex;align-items:center;justify-content:center;font-size:14px; }
     .sec-title { font-family:var(--sans);font-size:15px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--ink1); }
+    .sec-count { margin-left:auto;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3); }
     .empty-actions { display:flex;flex-direction:column;gap:8px;margin-top:16px; }
     .ea-green { background:var(--acc);color:white;border:none;padding:14px;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase; }
     .ea-strava { background:var(--strava);color:white;border:none;padding:14px;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase; }

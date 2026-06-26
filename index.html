@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@600;700;800;900&display=swap" rel="stylesheet" />
   <title>Cyclog</title>
+  <script>document.documentElement.dataset.theme = localStorage.getItem('theme') || 'dark';</script>
   <style>
     *, *::before, *::after {
       margin: 0; padding: 0; box-sizing: border-box;
@@ -34,6 +35,24 @@
       --bg:#070d1a; --white:#0c1730;
       --t1:#eef3fb; --t2:#8fa3c8; --t3:#54678c; --border:#1c2c4d;
       --r-xl:6px; --r-lg:6px; --r-md:4px; --r-sm:4px;
+    }
+    [data-theme="light"] {
+      --bg0:#f0f5ff; --bg2:#ffffff; --panel:#ffffff; --panel2:#f0f4fc;
+      --line:#ccd5ec; --line2:#d8dfef;
+      --acc:#2f7bff; --acc-d:#1f5fd0; --acc-soft:#5590f5;
+      --ink1:#0a1628; --ink2:#3a5080; --ink3:#8098c4;
+      --ok:#1aab7f; --warn:#b8720e; --crit:#c4364f;
+      --mono:'JetBrains Mono',ui-monospace,monospace;
+      --sans:'Inter',-apple-system,sans-serif;
+      --bg:#f0f5ff; --white:#ffffff;
+      --t1:#0a1628; --t2:#3a5080; --t3:#8098c4; --border:#ccd5ec;
+    }
+    [data-theme="light"] body {
+      background:
+        radial-gradient(120% 90% at 85% -10%, rgba(47,123,255,.07), transparent 55%),
+        radial-gradient(110% 80% at 5% 8%, rgba(34,211,238,.04), transparent 50%),
+        linear-gradient(180deg, #f8fbff, #edf2fc);
+      background-attachment: fixed;
     }
     html, body { background: var(--bg0); }
     body {

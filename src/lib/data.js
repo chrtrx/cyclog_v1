@@ -253,6 +253,43 @@ export async function getBikeHours(bikeId) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// ARCHIVIERUNG
+// ═══════════════════════════════════════════════════════════
+export async function archiveBike(bikeId, archived) {
+  const { error } = await supabase.from('bikes').update({ archived }).eq('id', bikeId)
+  if (error) throw error
+}
+
+// ═══════════════════════════════════════════════════════════
+// PACKLISTE
+// ═══════════════════════════════════════════════════════════
+export async function getPackItems(userId) {
+  const { data, error } = await supabase
+    .from('pack_items').select('*').eq('user_id', userId)
+    .order('sort_order').order('created_at')
+  if (error) throw error
+  return data
+}
+export async function addPackItem(userId, item) {
+  const { data, error } = await supabase
+    .from('pack_items').insert({ ...item, user_id: userId }).select().single()
+  if (error) throw error
+  return data
+}
+export async function updatePackItem(id, updates) {
+  const { error } = await supabase.from('pack_items').update(updates).eq('id', id)
+  if (error) throw error
+}
+export async function deletePackItem(id) {
+  const { error } = await supabase.from('pack_items').delete().eq('id', id)
+  if (error) throw error
+}
+export async function resetPackList(userId) {
+  const { error } = await supabase.from('pack_items').update({ checked: false }).eq('user_id', userId)
+  if (error) throw error
+}
+
+// ═══════════════════════════════════════════════════════════
 // STRAVA
 // ═══════════════════════════════════════════════════════════
 export async function syncStrava(userId) {

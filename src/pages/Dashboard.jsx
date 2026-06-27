@@ -38,14 +38,15 @@ export default function Dashboard() {
       const [b, t, s, p] = await Promise.all([
         getBikes(user.id), getTrackers(user.id), getStravaStatus(user.id), getProfile(user.id),
       ])
-      setBikes(b); setTrackers(t); setStravaStatus(s); setProfile(p)
-      if (b.length && !activeBikeId) {
+      const activeB = b.filter(x => !x.archived)
+      setBikes(activeB); setTrackers(t); setStravaStatus(s); setProfile(p)
+      if (activeB.length && !activeBikeId) {
         // aktivstes Rad zuerst auswählen (zuletzt aktualisierter Tracker)
         const la = (bikeId) => {
           const ts = t.filter(x => x.bike_id === bikeId)
           return ts.length ? Math.max(...ts.map(x => new Date(x.start_date || 0).getTime())) : 0
         }
-        const best = [...b].sort((x, y) => la(y.id) - la(x.id))[0]
+        const best = [...activeB].sort((x, y) => la(y.id) - la(x.id))[0]
         setActiveBikeId(best.id)
       }
     } catch (e) { showToast('Fehler beim Laden') }

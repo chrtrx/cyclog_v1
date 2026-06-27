@@ -10,6 +10,7 @@ export default function Bikes() {
   const nav = useNavigate()
   const [bikes, setBikes] = useState([])
   const [trackers, setTrackers] = useState([])
+  const [showArchived, setShowArchived] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => { load() }, [])
@@ -19,7 +20,6 @@ export default function Bikes() {
     setBikes(b); setTrackers(t); setLoading(false)
   }
 
-  // Pro Rad: wie viele Tracker sind fällig / bald fällig?
   function statusFor(bikeId, bikeKm) {
     const ts = trackers.filter(t => t.bike_id === bikeId)
     let crit = 0, warn = 0
@@ -31,49 +31,76 @@ export default function Bikes() {
     return { count: ts.length, crit, warn }
   }
 
+  const activeB = bikes.filter(b => !b.archived)
+  const archivedB = bikes.filter(b => b.archived)
+
+  function BikeRow({ b }) {
+    const st = statusFor(b.id, b.km)
+    return (
+      <button className={`bike-row ${b.archived ? 'archived' : ''}`} onClick={() => nav(`/bike/${b.id}`)}>
+        <div className="br-icon">{BIKE_ICONS[b.type] || b.icon || '🚴'}</div>
+        <div className="br-body">
+          <div className="br-name">{b.name}</div>
+          <div className="br-meta">
+            <span>{b.type}</span>
+            <span className="br-dot">·</span>
+            <span>{(b.km || 0).toLocaleString('de')} km</span>
+            {b.archived && <span className="br-arc">Archiviert</span>}
+          </div>
+        </div>
+        <div className="br-right">
+          {!b.archived && st.crit > 0 && <span className="br-badge crit">{st.crit}</span>}
+          {!b.archived && st.warn > 0 && <span className="br-badge warn">{st.warn}</span>}
+          {!b.archived && st.count > 0 && st.crit === 0 && st.warn === 0 && <span className="br-badge ok">✓</span>}
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+      </button>
+    )
+  }
+
   return (
-    <Page title="Meine Räder" subtitle={bikes.length ? `${bikes.length} Räder` : null}>
-      {loading ? null : bikes.length === 0 ? (
+    <Page title="Meine Räder" subtitle={activeB.length ? `${activeB.length} aktiv${archivedB.length ? ` · ${archivedB.length} archiviert` : ''}` : null}>
+      {loading ? null : activeB.length === 0 && archivedB.length === 0 ? (
         <Empty emoji="🚲" title="Noch keine Räder"
           sub="Verbinde Strava auf der Start-Seite, um deine Räder zu importieren." />
       ) : (
-        bikes.map(b => {
-          const st = statusFor(b.id, b.km)
-          return (
-            <button key={b.id} className="bike-row" onClick={() => nav(`/bike/${b.id}`)}>
-              <div className="br-icon">{BIKE_ICONS[b.type] || b.icon || '🚴'}</div>
-              <div className="br-body">
-                <div className="br-name">{b.name}</div>
-                <div className="br-meta">
-                  <span>{b.type}</span>
-                  <span className="br-dot">·</span>
-                  <span>{(b.km || 0).toLocaleString('de')} km</span>
-                </div>
-              </div>
-              <div className="br-right">
-                {st.crit > 0 && <span className="br-badge crit">{st.crit}</span>}
-                {st.warn > 0 && <span className="br-badge warn">{st.warn}</span>}
-                {st.count > 0 && st.crit === 0 && st.warn === 0 && <span className="br-badge ok">✓</span>}
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
-              </div>
-            </button>
-          )
-        })
+        <>
+          {activeB.map(b => <BikeRow key={b.id} b={b} />)}
+
+          {archivedB.length > 0 && (
+            <div className="arc-section">
+              <button className="arc-toggle" onClick={() => setShowArchived(o => !o)}>
+                <span className="arc-toggle-lbl">📦 Archiv ({archivedB.length})</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" strokeWidth="2.5"
+                  style={{ transform: showArchived ? 'rotate(90deg)' : 'none', transition: 'transform .2s' }}>
+                  <path d="M9 18l6-6-6-6"/>
+                </svg>
+              </button>
+              {showArchived && archivedB.map(b => <BikeRow key={b.id} b={b} />)}
+            </div>
+          )}
+        </>
       )}
 
       <style>{`
         .bike-row { display:flex; align-items:center; gap:14px; width:100%; background:linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.015)); border:1px solid var(--line); padding:15px; margin-bottom:10px; cursor:pointer; transition:background .12s; }
         .bike-row:active { background:rgba(255,255,255,.02); }
+        .bike-row.archived { opacity:.55; }
         .br-icon { width:46px; height:46px; background:var(--panel2); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
         .br-body { flex:1; min-width:0; text-align:left; }
         .br-name { font-family:var(--sans); font-size:16px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--ink1); }
-        .br-meta { display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; color:var(--ink3); letter-spacing:.5px; text-transform:uppercase; margin-top:3px; }
+        .br-meta { display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; color:var(--ink3); letter-spacing:.5px; text-transform:uppercase; margin-top:3px; flex-wrap:wrap; }
         .br-dot { color:var(--line); }
+        .br-arc { background:rgba(255,255,255,.06); border:1px solid var(--line); padding:1px 6px; font-size:9px; letter-spacing:1px; }
         .br-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
         .br-badge { min-width:24px; height:24px; padding:0 7px; display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-weight:700; font-size:12px; border:1px solid transparent; }
         .br-badge.crit { background:rgba(224,86,110,.10); color:var(--crit); border-color:rgba(224,86,110,.35); }
         .br-badge.warn { background:rgba(224,168,77,.10); color:var(--warn); border-color:rgba(224,168,77,.35); }
         .br-badge.ok { background:rgba(52,199,154,.10); color:var(--ok); border-color:rgba(52,199,154,.35); }
+        .arc-section { margin-top:8px; }
+        .arc-toggle { display:flex; align-items:center; justify-content:space-between; width:100%; padding:12px 14px; background:var(--panel2); border:1px solid var(--line); margin-bottom:8px; }
+        .arc-toggle-lbl { font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--ink3); }
+        .arc-toggle:active { background:var(--panel); }
       `}</style>
     </Page>
   )

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import {
-  getBike, updateBike,
+  getBike, updateBike, archiveBike,
   getComponents, upsertComponent, deleteComponent,
   getUpgrades, addUpgrade, updateUpgrade, deleteUpgrade,
   PART_CATEGORIES, BIKE_TYPES,
@@ -72,6 +72,12 @@ export default function BikeDetail() {
     await load()
   }
 
+  async function handleArchive() {
+    await archiveBike(bike.id, !bike.archived)
+    await load()
+    showToast(bike.archived ? '✓ Rad reaktiviert' : '📦 Rad archiviert')
+  }
+
   if (loading || !bike) return <Page title="Lädt…" back="/"><div /></Page>
 
   const TABS = [
@@ -100,6 +106,9 @@ export default function BikeDetail() {
           {bike.manufacturer && <span>{bike.manufacturer}</span>}
           {bike.model && <span>{bike.model}</span>}
           {bike.frame_size && <span>Gr. {bike.frame_size}</span>}
+          <button className={`id-archive-btn ${bike.archived ? 'on' : ''}`} onClick={e => { e.stopPropagation(); handleArchive() }}>
+            {bike.archived ? '↩ Reaktivieren' : '📦 Archivieren'}
+          </button>
         </div>
       </div>
 
@@ -261,6 +270,9 @@ export default function BikeDetail() {
         .id-right span { font-family:var(--mono); font-size:11px; color:var(--ink3); }
         .id-type-btn { display:flex; align-items:center; gap:5px; background:rgba(47,123,255,.08); border:1px solid rgba(47,123,255,.3); padding:5px 9px; font-family:var(--mono); font-size:11px; font-weight:700; color:var(--acc); letter-spacing:.5px; }
         .id-type-btn:active { background:rgba(47,123,255,.18); }
+        .id-archive-btn { display:flex; align-items:center; gap:4px; background:rgba(255,255,255,.04); border:1px solid var(--line); padding:4px 8px; font-family:var(--mono); font-size:10px; font-weight:700; color:var(--ink3); letter-spacing:.5px; text-transform:uppercase; margin-top:2px; }
+        .id-archive-btn:active { background:rgba(255,255,255,.08); }
+        .id-archive-btn.on { background:rgba(52,199,154,.08); border-color:rgba(52,199,154,.35); color:var(--ok); }
 
         .bd-tabs { display:flex; border-bottom:1px solid var(--line); margin-bottom:16px; }
         .bd-tab { flex:1; padding:11px 6px; font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--ink3); background:none; border:none; border-bottom:2px solid transparent; transition:color .15s,border-color .15s; }

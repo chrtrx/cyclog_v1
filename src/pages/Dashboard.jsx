@@ -256,13 +256,18 @@ export default function Dashboard() {
             <div className="sec-hdr">
               <div className="sec-icon">🛠️</div>
               <div className="sec-title">Tracker</div>
+              <div className="sec-spacer" />
               {bikeTrackers.length > 0 && (
                 <div className="sec-count">{bikeTrackers.length} {bikeTrackers.length === 1 ? 'Teil' : 'Teile'}</div>
               )}
+              <button className="sec-action" onClick={() => setSheet('log')}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Service
+              </button>
             </div>
             {sortedBikeTrackers.length === 0 ? (
               <Empty emoji="🔧" title="Noch kein Tracker"
-                sub='Tippe auf "Service starten" und der Balken zählt automatisch mit.' />
+                sub='Tippe oben auf "+ Service" und der Balken zählt automatisch mit.' />
             ) : (
               sortedBikeTrackers.map(t => (
                 <TrackerCard key={t.id} tracker={t} bikeKm={activeBike.km} bikeHours={activeBikeHours}
@@ -274,15 +279,6 @@ export default function Dashboard() {
           </>
         )}
       </main>
-
-      {activeBike && (
-        <div className="fab-wrap">
-          <button className="fab" onClick={() => setSheet('log')}>
-            <svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-            Service starten
-          </button>
-        </div>
-      )}
 
       {sheet === 'log' && <LogSheet bike={activeBike} onAdd={handleAddTracker} onClose={() => setSheet(null)} />}
       {sheet === 'addBike' && <AddBikeSheet user={user} onClose={() => setSheet(null)} onSaved={(id) => { setSheet(null); setActiveBikeId(id); load() }} />}
@@ -541,7 +537,7 @@ function DashStyles() {
     .loading { display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:14px;font-family:var(--mono);font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink2); }
     .spinner { width:38px;height:38px;border:3px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
-    .dash { min-height:100vh;padding-bottom:90px; }
+    .dash { min-height:100vh;padding-bottom:84px; }
     .hdr { background:var(--bg2);border-bottom:1px solid var(--line);padding:max(env(safe-area-inset-top),14px) 16px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50; }
     .logo { display:flex;align-items:center;gap:10px; }
     .logo-icon { width:36px;height:36px;overflow:hidden;box-shadow:0 4px 12px rgba(34,211,238,.3); }
@@ -590,14 +586,14 @@ function DashStyles() {
     .sec-hdr { display:flex;align-items:center;gap:10px;margin-bottom:12px; }
     .sec-icon { width:28px;height:28px;background:rgba(52,199,154,.10);border:1px solid rgba(52,199,154,.3);display:flex;align-items:center;justify-content:center;font-size:14px; }
     .sec-title { font-family:var(--sans);font-size:15px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--ink1); }
-    .sec-count { margin-left:auto;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3); }
+    .sec-spacer { flex:1; }
+    .sec-count { font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3); }
+    .sec-action { display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--acc);background:rgba(47,123,255,.1);border:1px solid rgba(47,123,255,.35);padding:7px 12px;cursor:pointer; }
+    .sec-action svg { width:14px;height:14px; }
+    .sec-action:active { background:rgba(47,123,255,.2); }
     .empty-actions { display:flex;flex-direction:column;gap:8px;margin-top:16px; }
     .ea-green { background:var(--acc);color:white;border:none;padding:14px;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase; }
     .ea-strava { background:var(--strava);color:white;border:none;padding:14px;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase; }
-    .fab-wrap { position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:160; }
-    .fab { background:var(--acc);border:none;padding:14px 26px;display:flex;align-items:center;gap:8px;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:white; }
-    .fab svg { width:18px;height:18px;stroke:white;stroke-width:2.5; }
-    .fab:active { background:var(--acc-d); }
     .toast { position:fixed;bottom:140px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--acc);color:var(--ink1);padding:11px 22px;font-family:var(--mono);font-weight:500;font-size:13px;letter-spacing:.5px;z-index:1000; }
     .toast-undo { display:flex;align-items:center;gap:16px;padding:11px 14px 11px 18px; }
     .undo-btn { background:var(--acc);border:none;color:#fff;font-family:var(--sans);font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:7px 12px;cursor:pointer; }

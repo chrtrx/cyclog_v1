@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { kmSince, pct, statusOf, fmtKm, fmtDate, predictDue } from '../lib/helpers'
+import { kmSince, hoursSince, pct, statusOf, fmtKm, fmtH, fmtDate, predictDue } from '../lib/helpers'
 
-export default function TrackerCard({ tracker, bikeKm, onClick, onPin }) {
-  const p    = pct(tracker, bikeKm)
+export default function TrackerCard({ tracker, bikeKm, bikeHours = 0, onClick, onPin }) {
+  const isH  = tracker.interval_type === 'h'
+  const p    = pct(tracker, bikeKm, bikeHours)
   const st   = statusOf(p)
   const w    = Math.round(p * 100)
-  const done = kmSince(tracker, bikeKm)
-  const rem  = Math.max(0, tracker.interval_km - done)
+  const done = isH ? hoursSince(tracker, bikeHours) : kmSince(tracker, bikeKm)
+  const interval = isH ? (tracker.interval_hours || 0) : (tracker.interval_km || 0)
+  const rem  = Math.max(0, interval - done)
 
   // Kritische Tracker standardmäßig ausgeklappt
   const [open, setOpen] = useState(st === 'crit')
@@ -31,13 +33,15 @@ export default function TrackerCard({ tracker, bikeKm, onClick, onPin }) {
 
       {/* Ausgeklappt: Details + Vorhersage + Aktion */}
       {open && (() => {
-        const pred = predictDue(tracker, bikeKm)
+        const pred = predictDue(tracker, bikeKm, bikeHours)
+        const fmt = isH ? fmtH : fmtKm
+        const unit = isH ? 'h' : 'km'
         return (
           <div className="tc-detail" onClick={e => e.stopPropagation()}>
             <div className="tc-stats">
-              <span>{fmtKm(done)} km gefahren</span>
+              <span>{fmt(done)} {unit} gefahren</span>
               <span className="tc-dot">·</span>
-              <span>{fmtKm(rem)} km übrig</span>
+              <span>{fmt(rem)} {unit} übrig</span>
             </div>
             <div className="tc-meta">
               seit {fmtDate(tracker.start_date)} · Start {fmtKm(tracker.km_at_start)} km

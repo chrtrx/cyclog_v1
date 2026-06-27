@@ -4,9 +4,9 @@ import { useAuth } from '../lib/auth'
 import {
   getBikes, addBike, getTrackers, addTracker, updateTracker, deleteTracker,
   getServiceLogs, addServiceLog, syncStrava, getStravaStatus, getProfile,
-  SERVICE_TYPES, BIKE_TYPES,
+  getBikeHours, SERVICE_TYPES, BIKE_TYPES,
 } from '../lib/data'
-import { BIKE_ICONS, fmtKm, kmSince, pct, statusOf } from '../lib/helpers'
+import { BIKE_ICONS, fmtKm, fmtH, kmSince, hoursSince, pct, statusOf } from '../lib/helpers'
 import { Sheet, Field, BtnGreen, BtnDelete, Empty } from '../components/ui'
 import TrackerCard from '../components/TrackerCard'
 
@@ -18,6 +18,7 @@ export default function Dashboard() {
   const [activeBikeId, setActiveBikeId] = useState(null)
   const [stravaStatus, setStravaStatus] = useState(null)
   const [profile, setProfile] = useState(null)
+  const [activeBikeHours, setActiveBikeHours] = useState(0)
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [sheet, setSheet] = useState(null) // 'log' | 'addBike' | null
@@ -27,20 +28,25 @@ export default function Dashboard() {
   const [lastDeleted, setLastDeleted] = useState(null)  // für Rückgängig
 
   useEffect(() => { load() }, [])
+  useEffect(() => {
+    if (!activeBikeId) return
+    getBikeHours(activeBikeId).then(setActiveBikeHours).catch(() => setActiveBikeHours(0))
+  }, [activeBikeId])
   async function load() {
     setLoading(true)
     try {
       const [b, t, s, p] = await Promise.all([
         getBikes(user.id), getTrackers(user.id), getStravaStatus(user.id), getProfile(user.id),
       ])
-      setBikes(b); setTrackers(t); setStravaStatus(s); setProfile(p)
-      if (b.length && !activeBikeId) {
+      const activeB = b.filter(x => !x.archived)
+      setBikes(activeB); setTrackers(t); setStravaStatus(s); setProfile(p)
+      if (activeB.length && !activeBikeId) {
         // aktivstes Rad zuerst auswählen (zuletzt aktualisierter Tracker)
         const la = (bikeId) => {
           const ts = t.filter(x => x.bike_id === bikeId)
           return ts.length ? Math.max(...ts.map(x => new Date(x.start_date || 0).getTime())) : 0
         }
-        const best = [...b].sort((x, y) => la(y.id) - la(x.id))[0]
+        const best = [...activeB].sort((x, y) => la(y.id) - la(x.id))[0]
         setActiveBikeId(best.id)
       }
     } catch (e) { showToast('Fehler beim Laden') }
@@ -53,7 +59,7 @@ export default function Dashboard() {
   const bikeTrackers = trackers.filter(t => t.bike_id === activeBikeId)
   const sortedBikeTrackers = [...bikeTrackers].sort((a, b) => {
     if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
-    return pct(b, activeBike?.km) - pct(a, activeBike?.km)
+    return pct(b, activeBike?.km, activeBikeHours) - pct(a, activeBike?.km, activeBikeHours)
   })
 
   // Räder nach Aktivität sortieren: das Rad mit dem zuletzt gestarteten/
@@ -83,18 +89,27 @@ export default function Dashboard() {
 
   async function handleAddTracker(svc) {
     if (!activeBike) return
+    const isH = svc.intervalType === 'h'
+    let hoursNow = activeBikeHours
+    if (isH && !hoursNow) {
+      try { hoursNow = await getBikeHours(activeBike.id) } catch {}
+    }
     await addTracker(user.id, {
       bike_id: activeBike.id, type_id: svc.typeId, title: svc.title, icon: svc.icon,
-      interval_type: 'km', interval_km: svc.interval, km_at_start: activeBike.km,
+      interval_type: isH ? 'h' : 'km',
+      interval_km: isH ? null : svc.interval,
+      interval_hours: isH ? svc.interval : null,
+      km_at_start: activeBike.km,
+      hours_at_start: isH ? hoursNow : 0,
       note: '', start_date: new Date().toISOString(),
     })
-    // Auch als Service-Log speichern
     await addServiceLog(user.id, {
       bike_id: activeBike.id, service_type: svc.typeId, title: svc.title,
       icon: svc.icon, km_at_service: activeBike.km, service_date: new Date().toISOString(),
     })
     setSheet(null); await load()
-    showToast(`🎉 Tracker gestartet bei ${fmtKm(activeBike.km)} km!`)
+    const label = isH ? `${svc.interval}h Intervall` : `${fmtKm(activeBike.km)} km`
+    showToast(`🎉 Tracker gestartet — ${label}`)
   }
 
   // Gelöschten Tracker wiederherstellen
@@ -112,10 +127,11 @@ export default function Dashboard() {
 
   // Fällig-Dialog: "Gewechselt" → Zähler startet neu beim aktuellen km-Stand
   async function handleServiceDone(t) {
-    await updateTracker(t.id, {
-      km_at_start: activeBike.km,
-      start_date: new Date().toISOString(),
-    })
+    const updates = { km_at_start: activeBike.km, start_date: new Date().toISOString() }
+    if (t.interval_type === 'h') {
+      try { updates.hours_at_start = await getBikeHours(activeBike.id) } catch {}
+    }
+    await updateTracker(t.id, updates)
     setDueTracker(null); await load()
     showToast(`✓ ${t.title}: Zähler neu gestartet`)
   }
@@ -198,8 +214,8 @@ export default function Dashboard() {
                   <div className="bh-km-u">km</div>
                 </div>
                 {bikeTrackers.length > 0 && (() => {
-                  const okN   = bikeTrackers.filter(t => statusOf(pct(t, activeBike.km)) === 'ok').length
-                  const critN = bikeTrackers.filter(t => statusOf(pct(t, activeBike.km)) === 'crit').length
+                  const okN   = bikeTrackers.filter(t => statusOf(pct(t, activeBike.km, activeBikeHours)) === 'ok').length
+                  const critN = bikeTrackers.filter(t => statusOf(pct(t, activeBike.km, activeBikeHours)) === 'crit').length
                   const valCls = critN > 0 ? 'crit' : okN < bikeTrackers.length ? 'warn' : 'ok'
                   return (
                     <div className="bh-health">
@@ -209,7 +225,7 @@ export default function Dashboard() {
                       </div>
                       <div className="bh-segs">
                         {sortedBikeTrackers.map(t => (
-                          <div key={t.id} className={`bh-seg bh-seg-${statusOf(pct(t, activeBike.km))}`} />
+                          <div key={t.id} className={`bh-seg bh-seg-${statusOf(pct(t, activeBike.km, activeBikeHours))}`} />
                         ))}
                       </div>
                     </div>
@@ -232,8 +248,8 @@ export default function Dashboard() {
                 sub='Tippe auf "Service starten" und der Balken zählt automatisch mit.' />
             ) : (
               sortedBikeTrackers.map(t => (
-                <TrackerCard key={t.id} tracker={t} bikeKm={activeBike.km}
-                  onClick={() => pct(t, activeBike.km) >= 1 ? setDueTracker(t) : setEditTracker(t)}
+                <TrackerCard key={t.id} tracker={t} bikeKm={activeBike.km} bikeHours={activeBikeHours}
+                  onClick={() => pct(t, activeBike.km, activeBikeHours) >= 1 ? setDueTracker(t) : setEditTracker(t)}
                   onPin={() => togglePin(t)}
                 />
               ))
@@ -286,7 +302,7 @@ export default function Dashboard() {
         </Sheet>
       )}
       {editTracker && (
-        <EditTrackerSheet tracker={editTracker} bikeKm={activeBike.km}
+        <EditTrackerSheet tracker={editTracker} bikeKm={activeBike.km} bikeHours={activeBikeHours}
           onSave={async (u) => { await updateTracker(editTracker.id, u); setEditTracker(null); await load() }}
           onDelete={async () => {
             const removed = editTracker
@@ -325,7 +341,7 @@ function LogSheet({ bike, onAdd, onClose }) {
               <div className="svc-ico">{s.icon}</div>
               <div style={{ flex: 1, textAlign: 'left' }}>
                 <div className="svc-nm">{s.title}</div>
-                <div className="svc-int">Standard: {s.interval.toLocaleString('de')} km</div>
+                <div className="svc-int">Standard: {s.interval.toLocaleString('de')} {s.intervalType === 'h' ? 'h' : 'km'}</div>
               </div>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2.5"><path d="M9 18l6-6-6-6" /></svg>
             </button>
@@ -389,36 +405,71 @@ function AddBikeSheet({ user, onClose, onSaved }) {
 }
 
 // ─── EDIT TRACKER SHEET ────────────────────────────────────
-function EditTrackerSheet({ tracker, bikeKm, onSave, onDelete, onClose }) {
-  const [interval, setInterval] = useState(tracker.interval_km)
-  const [note, setNote] = useState(tracker.note || '')
-  const [armed, setArmed] = useState(false)
+function EditTrackerSheet({ tracker, bikeKm, bikeHours, onSave, onDelete, onClose }) {
+  const [mode, setMode]         = useState(tracker.interval_type === 'h' ? 'h' : 'km')
+  const [intervalKm, setIKm]    = useState(tracker.interval_km || 2000)
+  const [intervalH, setIH]      = useState(tracker.interval_hours || 100)
+  const [note, setNote]         = useState(tracker.note || '')
+  const [armed, setArmed]       = useState(false)
+
+  function save() {
+    if (mode === 'h') {
+      onSave({ interval_type: 'h', interval_hours: intervalH, interval_km: null, hours_at_start: bikeHours, note })
+    } else {
+      onSave({ interval_type: 'km', interval_km: intervalKm, interval_hours: null, note })
+    }
+  }
+
   return (
     <Sheet title={tracker.title} onClose={onClose}>
       <div className="ib">
-        <div className="ib-lbl">Intervall</div>
-        <div className="ib-edit">
-          <input className="ib-num" type="number" inputMode="numeric" min="50" max="50000" step="50"
-            value={interval} onChange={(e) => setInterval(Number(e.target.value) || 0)} />
-          <span className="ib-unit">km</span>
-        </div>
-        <input type="range" min="100" max="20000" step="100" value={Math.min(interval, 20000)} onChange={(e) => setInterval(Number(e.target.value))} />
-        <div className="presets">
-          {[1000, 2000, 4000, 6000, 12000].map(v => (
-            <button key={v} className="preset" onClick={() => setInterval(v)}>{v.toLocaleString('de')}</button>
-          ))}
+        <div className="ib-lbl">Intervall-Typ</div>
+        <div className="mode-row">
+          <button className={`mode-btn ${mode === 'km' ? 'on' : ''}`} onClick={() => setMode('km')}>KM</button>
+          <button className={`mode-btn ${mode === 'h' ? 'on' : ''}`} onClick={() => setMode('h')}>STUNDEN</button>
         </div>
       </div>
       <div className="ib">
-        <div className="ib-lbl">Notiz</div>
-        <textarea className="ib-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Produkt, Beobachtungen…" />
+        <div className="ib-lbl">Intervall</div>
+        <div className="ib-edit">
+          <input className="ib-num" type="number" inputMode="numeric"
+            value={mode === 'km' ? intervalKm : intervalH}
+            onChange={e => mode === 'km' ? setIKm(Number(e.target.value) || 0) : setIH(Number(e.target.value) || 0)} />
+          <span className="ib-unit">{mode === 'km' ? 'km' : 'h'}</span>
+        </div>
+        {mode === 'km' ? (
+          <>
+            <input type="range" min="100" max="20000" step="100" value={Math.min(intervalKm, 20000)} onChange={e => setIKm(Number(e.target.value))} />
+            <div className="presets">
+              {[1000, 2000, 4000, 6000, 12000].map(v => (
+                <button key={v} className="preset" onClick={() => setIKm(v)}>{v.toLocaleString('de')}</button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <input type="range" min="10" max="500" step="5" value={Math.min(intervalH, 500)} onChange={e => setIH(Number(e.target.value))} />
+            <div className="presets">
+              {[25, 50, 100, 200, 300].map(v => (
+                <button key={v} className="preset" onClick={() => setIH(v)}>{v}h</button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
-      <BtnGreen onClick={() => onSave({ interval_km: interval, note })}>Speichern</BtnGreen>
+      <div className="ib">
+        <div className="ib-lbl">Notiz</div>
+        <textarea className="ib-note" value={note} onChange={e => setNote(e.target.value)} placeholder="Produkt, Beobachtungen…" />
+      </div>
+      <BtnGreen onClick={save}>Speichern</BtnGreen>
       <BtnDelete armed={armed} onClick={() => armed ? onDelete() : (setArmed(true), setTimeout(() => setArmed(false), 3000))} />
       <style>{`
         .ib { margin-bottom: 11px; background: var(--panel2); border: 1px solid var(--line); padding: 15px; }
         .ib-lbl { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 9px; }
-        .ib-edit { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+        .mode-row { display: flex; gap: 6px; }
+        .mode-btn { flex: 1; padding: 9px; font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: var(--panel); border: 1px solid var(--line); color: var(--ink2); }
+        .mode-btn.on { background: var(--acc); border-color: var(--acc); color: white; }
+        .ib-edit { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-top: 10px; }
         .ib-num { background: none; border: none; outline: none; font-family: var(--sans); font-size: 34px; font-weight: 900; letter-spacing: -1px; color: var(--ink1); width: 100%; padding: 0; }
         .ib-num::-webkit-outer-spin-button, .ib-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .ib-unit { font-family: var(--mono); font-size: 13px; color: var(--ink2); font-weight: 700; text-transform: uppercase; flex-shrink: 0; }

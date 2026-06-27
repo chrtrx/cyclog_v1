@@ -73,9 +73,13 @@ export default function BikeDetail() {
   }
 
   async function handleArchive() {
-    await archiveBike(bike.id, !bike.archived)
-    await load()
-    showToast(bike.archived ? '✓ Rad reaktiviert' : '📦 Rad archiviert')
+    try {
+      await archiveBike(bike.id, !bike.archived)
+      await load()
+      showToast(bike.archived ? '✓ Rad reaktiviert' : '📦 Rad archiviert')
+    } catch (e) {
+      showToast('⚠ Fehler: ' + (e?.message || 'Archivieren fehlgeschlagen'))
+    }
   }
 
   if (loading || !bike) return <Page title="Lädt…" back="/"><div /></Page>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { kmSince, pct, statusOf, fmtKm, fmtDate } from '../lib/helpers'
+import { kmSince, pct, statusOf, fmtKm, fmtDate, predictDue } from '../lib/helpers'
 
 export default function TrackerCard({ tracker, bikeKm, onClick, onPin }) {
   const p    = pct(tracker, bikeKm)
@@ -29,23 +29,37 @@ export default function TrackerCard({ tracker, bikeKm, onClick, onPin }) {
         )}
       </div>
 
-      {/* Ausgeklappt: Details + Aktion */}
-      {open && (
-        <div className="tc-detail" onClick={e => e.stopPropagation()}>
-          <div className="tc-stats">
-            <span>{fmtKm(done)} km gefahren</span>
-            <span className="tc-dot">·</span>
-            <span>{fmtKm(rem)} km übrig</span>
+      {/* Ausgeklappt: Details + Vorhersage + Aktion */}
+      {open && (() => {
+        const pred = predictDue(tracker, bikeKm)
+        return (
+          <div className="tc-detail" onClick={e => e.stopPropagation()}>
+            <div className="tc-stats">
+              <span>{fmtKm(done)} km gefahren</span>
+              <span className="tc-dot">·</span>
+              <span>{fmtKm(rem)} km übrig</span>
+            </div>
+            <div className="tc-meta">
+              seit {fmtDate(tracker.start_date)} · Start {fmtKm(tracker.km_at_start)} km
+            </div>
+            {pred && (
+              <div className="tc-pred">
+                <div className="tc-pred-hdr">
+                  <span className="tc-pred-lbl">⏱ Prognose</span>
+                  <span className="tc-pred-val">~{pred.weeks} Wo. · ca. {pred.dueDateStr}</span>
+                </div>
+                <div className="tc-pred-track">
+                  <div className="tc-pred-fill" style={{ transform: `scaleX(${pred.timePct})` }} />
+                </div>
+              </div>
+            )}
+            {tracker.note && <div className="tc-note">📝 {tracker.note}</div>}
+            <button className="tc-action" onClick={onClick}>
+              {st === 'crit' ? 'Wartung eintragen' : 'Bearbeiten'}
+            </button>
           </div>
-          <div className="tc-meta">
-            seit {fmtDate(tracker.start_date)} · Start {fmtKm(tracker.km_at_start)} km
-          </div>
-          {tracker.note && <div className="tc-note">📝 {tracker.note}</div>}
-          <button className="tc-action" onClick={onClick}>
-            {st === 'crit' ? 'Wartung eintragen' : 'Bearbeiten'}
-          </button>
-        </div>
-      )}
+        )
+      })()}
 
       <style>{`
         .tc { border:1px solid var(--line);margin-bottom:6px;cursor:pointer;overflow:hidden; }
@@ -66,6 +80,12 @@ export default function TrackerCard({ tracker, bikeKm, onClick, onPin }) {
         .tc-dot { color:var(--ink3); }
         .tc-meta { font-family:var(--mono);font-size:10.5px;color:var(--ink3);margin-bottom:10px; }
         .tc-note { font-family:var(--mono);font-size:11px;color:var(--ink2);margin-bottom:10px; }
+        .tc-pred { margin-bottom:10px; }
+        .tc-pred-hdr { display:flex;justify-content:space-between;align-items:center;margin-bottom:5px; }
+        .tc-pred-lbl { font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3); }
+        .tc-pred-val { font-family:var(--mono);font-size:11px;font-weight:700;color:var(--acc); }
+        .tc-pred-track { height:4px;background:var(--panel2);border:1px solid var(--line);overflow:hidden; }
+        .tc-pred-fill { height:100%;width:100%;background:var(--acc);opacity:.5;transform-origin:left center;transition:transform .4s ease-out; }
         .tc-action { font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--acc);background:none;border:1px solid rgba(47,123,255,.3);padding:8px 13px;cursor:pointer; }
         .tc-action:active { background:rgba(47,123,255,.08); }
       `}</style>

@@ -1,10 +1,19 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { Page } from '../components/ui'
+import { getTheme, setTheme } from '../lib/theme'
 
 export default function More() {
   const nav = useNavigate()
   const { signOut } = useAuth()
+  const [theme, setThemeState] = useState(getTheme)
+
+  function toggleTheme() {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    setTheme(next)
+    setThemeState(next)
+  }
 
   const items = [
     { path:'/setups',   icon:'🔧', label:'Setups',        sub:'Konfigurationen speichern & vergleichen' },
@@ -26,6 +35,15 @@ export default function More() {
         </button>
       ))}
 
+      <button className="more-row" onClick={toggleTheme}>
+        <div className="mr-icon">{theme === 'dark' ? '☀️' : '🌙'}</div>
+        <div className="mr-body">
+          <div className="mr-label">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</div>
+          <div className="mr-sub">Design wechseln</div>
+        </div>
+        <div className={`theme-pill ${theme}`}>{theme === 'dark' ? 'DUNKEL' : 'HELL'}</div>
+      </button>
+
       <button className="more-row logout" onClick={() => { if (confirm('Wirklich abmelden?')) signOut() }}>
         <div className="mr-icon">🚪</div>
         <div className="mr-body">
@@ -43,6 +61,9 @@ export default function More() {
         .mr-sub { font-family:var(--mono); font-size:10.5px; color:var(--ink3); letter-spacing:.5px; margin-top:3px; }
         .more-row.logout { margin-top:20px; }
         .more-row.logout .mr-label { color:var(--crit); }
+        .theme-pill { font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;padding:4px 9px;border:1px solid var(--line);color:var(--ink3); }
+        .theme-pill.dark { border-color:rgba(47,123,255,.3);color:var(--acc); }
+        .theme-pill.light { border-color:rgba(180,140,0,.3);color:var(--warn); }
       `}</style>
     </Page>
   )

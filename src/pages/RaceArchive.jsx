@@ -68,40 +68,65 @@ export default function RaceArchive() {
   const [bikes, setBikes] = useState([])
   const [packItems, setPackItems] = useState([])
   const [loading, setLoading] = useState(true)
+  const [packLoading, setPackLoading] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [addItemSheet, setAddItemSheet] = useState(false)
   const [editItem, setEditItem] = useState(null)
   const [resetting, setResetting] = useState(false)
   const [templateSheet, setTemplateSheet] = useState(false)
+  const [tplLoading, setTplLoading] = useState(false)
 
   useEffect(() => { load() }, [])
+
   async function load() {
     setLoading(true)
-    const [r, b, p] = await Promise.all([
-      getRaces(user.id), getBikes(user.id), getPackItems(user.id),
-    ])
-    setRaces(r); setBikes(b); setPackItems(p)
+    try {
+      const [r, b] = await Promise.all([getRaces(user.id), getBikes(user.id)])
+      setRaces(r); setBikes(b)
+    } catch {}
     setLoading(false)
+    // pack_items loaded separately — table may not exist yet
+    loadPack()
   }
 
+  async function loadPack() {
+    setPackLoading(true)
+    try {
+      const p = await getPackItems(user.id)
+      setPackItems(p)
+    } catch {
+      setPackItems([])
+    }
+    setPackLoading(false)
+  }
+
+  // Optimistisch: UI sofort flippen, DB im Hintergrund
   async function handleCheck(item) {
-    await updatePackItem(item.id, { checked: !item.checked })
-    setPackItems(ps => ps.map(p => p.id === item.id ? { ...p, checked: !p.checked } : p))
+    const next = !item.checked
+    setPackItems(ps => ps.map(p => p.id === item.id ? { ...p, checked: next } : p))
+    try { await updatePackItem(item.id, { checked: next }) }
+    catch { setPackItems(ps => ps.map(p => p.id === item.id ? { ...p, checked: !next } : p)) }
   }
 
   async function handleReset() {
     setResetting(true)
-    await resetPackList(user.id)
+    const prev = packItems
     setPackItems(ps => ps.map(p => ({ ...p, checked: false })))
+    try { await resetPackList(user.id) }
+    catch { setPackItems(prev) }
     setResetting(false)
   }
 
   async function loadTemplate(type) {
-    const items = PACK_TEMPLATES[type] || []
-    for (let i = 0; i < items.length; i++) {
-      await addPackItem(user.id, { ...items[i], checked: false, sort_order: i })
-    }
-    await load()
+    setTplLoading(true)
+    try {
+      const items = PACK_TEMPLATES[type] || []
+      await Promise.all(
+        items.map((item, i) => addPackItem(user.id, { ...item, checked: false, sort_order: i }))
+      )
+      await loadPack()
+    } catch {}
+    setTplLoading(false)
     setTemplateSheet(false)
   }
 
@@ -132,7 +157,7 @@ export default function RaceArchive() {
         </button>
         <button className={`rtab ${tab === 'pack' ? 'on' : ''}`} onClick={() => setTab('pack')}>
           🎒 Packliste
-          {tab === 'pack' && total > 0 && critUnchecked > 0 && (
+          {total > 0 && critUnchecked > 0 && (
             <span className="rtab-badge">{critUnchecked}</span>
           )}
         </button>
@@ -177,75 +202,74 @@ export default function RaceArchive() {
       )}
 
       {/* ── PACKLISTE ── */}
-      {tab === 'pack' && !loading && (
-        <>
-          {total === 0 ? (
-            <div className="pack-empty-state">
-              <div className="pack-empty-ico">🎒</div>
-              <div className="pack-empty-title">Noch keine Einträge</div>
-              <div className="pack-empty-sub">Lade eine Vorlage oder füge Punkte manuell hinzu.</div>
-              <button className="pack-tpl-btn" onClick={() => setTemplateSheet(true)}>
-                Vorlage laden
+      {tab === 'pack' && (
+        packLoading ? null : total === 0 ? (
+          <div className="pack-empty-state">
+            <div className="pack-empty-ico">🎒</div>
+            <div className="pack-empty-title">Noch keine Einträge</div>
+            <div className="pack-empty-sub">Lade eine Vorlage oder füge Punkte manuell hinzu.</div>
+            <button className="pack-tpl-btn" onClick={() => setTemplateSheet(true)}>
+              Vorlage laden
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Progress */}
+            <div className="pack-progress">
+              <div className="pp-meta">
+                <span className="pp-lbl">Fortschritt</span>
+                <span className={`pp-val ${checked === total ? 'done' : critUnchecked > 0 ? 'crit' : ''}`}>
+                  {checked}/{total}
+                </span>
+              </div>
+              <div className="pp-track">
+                <div className={`pp-fill ${checked === total ? 'done' : ''}`}
+                  style={{ transform: `scaleX(${total > 0 ? checked / total : 0})` }} />
+              </div>
+              {critUnchecked > 0 && (
+                <div className="pp-crit">{critUnchecked} kritische {critUnchecked === 1 ? 'Position' : 'Positionen'} offen</div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="pack-actions">
+              <button className="pa-btn" onClick={() => setTemplateSheet(true)}>+ Vorlage</button>
+              <button className="pa-btn reset" onClick={handleReset}
+                disabled={resetting || checked === 0}>
+                {resetting ? '…' : '↺ Reset'}
               </button>
             </div>
-          ) : (
-            <>
-              {/* Progress */}
-              <div className="pack-progress">
-                <div className="pp-meta">
-                  <span className="pp-lbl">Fortschritt</span>
-                  <span className={`pp-val ${checked === total ? 'done' : critUnchecked > 0 ? 'crit' : ''}`}>
-                    {checked}/{total}
-                  </span>
-                </div>
-                <div className="pp-track">
-                  <div className={`pp-fill ${checked === total ? 'done' : ''}`}
-                    style={{ transform: `scaleX(${total > 0 ? checked / total : 0})` }} />
-                </div>
-                {critUnchecked > 0 && (
-                  <div className="pp-crit">{critUnchecked} kritische {critUnchecked === 1 ? 'Position' : 'Positionen'} offen</div>
-                )}
-              </div>
 
-              {/* Actions */}
-              <div className="pack-actions">
-                <button className="pa-btn" onClick={() => setTemplateSheet(true)}>+ Vorlage</button>
-                <button className="pa-btn reset" onClick={handleReset} disabled={resetting || checked === 0}>
-                  {resetting ? '…' : '↺ Reset'}
-                </button>
-              </div>
-
-              {/* Items by category */}
-              {PACK_CATS.map(cat => {
-                const its = itemsByCat[cat]
-                if (!its) return null
-                const catChecked = its.filter(i => i.checked).length
-                return (
-                  <div key={cat} className="pack-cat">
-                    <div className="pc-hdr">
-                      <span className="pc-ico">{CAT_ICONS[cat]}</span>
-                      <span className="pc-lbl">{cat}</span>
-                      <span className="pc-count">{catChecked}/{its.length}</span>
-                    </div>
-                    {its.map(item => (
-                      <div key={item.id} className={`pack-item ${item.checked ? 'checked' : ''}`}>
-                        <button className={`pi-cb ${item.checked ? 'on' : ''}`} onClick={() => handleCheck(item)}>
-                          {item.checked && (
-                            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5"><path d="M5 13l4 4L19 7"/></svg>
-                          )}
-                        </button>
-                        <button className="pi-body" onClick={() => setEditItem(item)}>
-                          <span className="pi-name">{item.name}</span>
-                          {item.critical && !item.checked && <span className="pi-crit">!</span>}
-                        </button>
-                      </div>
-                    ))}
+            {/* Items per Kategorie */}
+            {PACK_CATS.map(cat => {
+              const its = itemsByCat[cat]
+              if (!its) return null
+              const catChecked = its.filter(i => i.checked).length
+              return (
+                <div key={cat} className="pack-cat">
+                  <div className="pc-hdr">
+                    <span className="pc-ico">{CAT_ICONS[cat]}</span>
+                    <span className="pc-lbl">{cat}</span>
+                    <span className="pc-count">{catChecked}/{its.length}</span>
                   </div>
-                )
-              })}
-            </>
-          )}
-        </>
+                  {its.map(item => (
+                    <div key={item.id} className={`pack-item ${item.checked ? 'checked' : ''}`}>
+                      <button className={`pi-cb ${item.checked ? 'on' : ''}`} onClick={() => handleCheck(item)}>
+                        {item.checked && (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5"><path d="M5 13l4 4L19 7"/></svg>
+                        )}
+                      </button>
+                      <button className="pi-body" onClick={() => setEditItem(item)}>
+                        <span className="pi-name">{item.name}</span>
+                        {item.critical && !item.checked && <span className="pi-crit-tag">!</span>}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )
+            })}
+          </>
+        )
       )}
 
       {/* Sheets */}
@@ -254,14 +278,14 @@ export default function RaceArchive() {
           onClose={() => setShowAdd(false)}
           onSaved={() => { setShowAdd(false); load() }} />
       )}
-      {(addItemSheet || editItem) && (
+      {(addItemSheet || editItem !== null) && (
         <PackItemSheet
           user={user} item={editItem}
           onClose={() => { setAddItemSheet(false); setEditItem(null) }}
-          onSaved={() => { setAddItemSheet(false); setEditItem(null); load() }} />
+          onSaved={() => { setAddItemSheet(false); setEditItem(null); loadPack() }} />
       )}
       {templateSheet && (
-        <TemplateSheet onClose={() => setTemplateSheet(false)} onSelect={loadTemplate} />
+        <TemplateSheet loading={tplLoading} onClose={() => setTemplateSheet(false)} onSelect={loadTemplate} />
       )}
 
       <style>{`
@@ -270,7 +294,7 @@ export default function RaceArchive() {
         .rtab:last-child { border-right:none; }
         .rtab.on { background:rgba(47,123,255,.1); color:var(--acc); }
         .rtab:active { background:var(--panel2); }
-        .rtab-badge { background:var(--crit); color:white; border-radius:50%; width:16px; height:16px; font-size:9px; display:flex; align-items:center; justify-content:center; font-weight:900; }
+        .rtab-badge { background:var(--crit); color:white; border-radius:50%; width:16px; height:16px; font-size:9px; display:flex; align-items:center; justify-content:center; font-weight:900; flex-shrink:0; }
 
         .race-card { border:1px solid var(--line); padding:14px; margin-bottom:10px; }
         .race-top { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
@@ -296,7 +320,7 @@ export default function RaceArchive() {
         .pp-val.done { color:var(--ok); }
         .pp-val.crit { color:var(--crit); }
         .pp-track { height:6px; background:var(--panel2); border:1px solid var(--line); overflow:hidden; }
-        .pp-fill { height:100%; width:100%; background:var(--acc); transform-origin:left center; transition:transform .4s ease-out; }
+        .pp-fill { height:100%; width:100%; background:var(--acc); transform-origin:left center; transition:transform .3s ease-out; }
         .pp-fill.done { background:var(--ok); }
         .pp-crit { font-family:var(--mono); font-size:10.5px; color:var(--crit); font-weight:700; margin-top:7px; }
 
@@ -307,39 +331,44 @@ export default function RaceArchive() {
         .pa-btn:disabled { opacity:.4; }
 
         .pack-cat { margin-bottom:14px; }
-        .pc-hdr { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+        .pc-hdr { display:flex; align-items:center; gap:8px; margin-bottom:6px; padding-bottom:5px; border-bottom:1px solid var(--line); }
         .pc-ico { font-size:13px; width:18px; text-align:center; }
         .pc-lbl { flex:1; font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink2); }
         .pc-count { font-family:var(--mono); font-size:10px; font-weight:700; color:var(--ink3); }
 
-        .pack-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); transition:opacity .15s; }
+        .pack-item { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,.04); transition:opacity .15s; }
         .pack-item:last-child { border-bottom:none; }
-        .pack-item.checked { opacity:.45; }
-        .pi-cb { width:22px; height:22px; border:1.5px solid var(--line); flex-shrink:0; display:flex; align-items:center; justify-content:center; background:none; transition:background .12s,border-color .12s; }
+        .pack-item.checked { opacity:.4; }
+        .pi-cb { width:22px; height:22px; border:1.5px solid var(--line); flex-shrink:0; display:flex; align-items:center; justify-content:center; background:none; transition:background .1s,border-color .1s; }
         .pi-cb.on { background:var(--ok); border-color:var(--ok); }
         .pi-cb svg { width:12px; height:12px; }
-        .pi-body { flex:1; display:flex; align-items:center; gap:8px; text-align:left; background:none; border:none; padding:0; cursor:pointer; }
+        .pi-body { flex:1; display:flex; align-items:center; gap:8px; text-align:left; background:none; border:none; padding:0; cursor:pointer; min-width:0; }
         .pi-name { font-family:var(--sans); font-size:14px; font-weight:700; color:var(--ink1); }
-        .pi-crit { font-family:var(--mono); font-size:9px; font-weight:900; background:rgba(224,86,110,.15); color:var(--crit); border:1px solid rgba(224,86,110,.35); padding:1px 5px; letter-spacing:.5px; }
+        .pi-crit-tag { font-family:var(--mono); font-size:9px; font-weight:900; background:rgba(224,86,110,.15); color:var(--crit); border:1px solid rgba(224,86,110,.35); padding:1px 5px; letter-spacing:.5px; flex-shrink:0; }
       `}</style>
     </Page>
   )
 }
 
 // ─── Vorlage auswählen ────────────────────────────────────
-function TemplateSheet({ onClose, onSelect }) {
+function TemplateSheet({ loading, onClose, onSelect }) {
   return (
     <Sheet title="Vorlage laden" sub="Packliste aus Vorlage befüllen" onClose={onClose}>
-      <div className="tpl-warn">Vorhandene Einträge bleiben erhalten. Es werden nur neue Punkte hinzugefügt.</div>
-      {Object.keys(PACK_TEMPLATES).map(type => (
-        <button key={type} className="tpl-opt" onClick={() => onSelect(type)}>
-          <span className="tpl-name">{type}</span>
-          <span className="tpl-count">{PACK_TEMPLATES[type].length} Punkte</span>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
-        </button>
-      ))}
+      <div className="tpl-warn">Vorhandene Einträge bleiben erhalten. Neue Punkte werden hinzugefügt.</div>
+      {loading ? (
+        <div className="tpl-loading">Lädt…</div>
+      ) : (
+        Object.keys(PACK_TEMPLATES).map(type => (
+          <button key={type} className="tpl-opt" onClick={() => onSelect(type)}>
+            <span className="tpl-name">{type}</span>
+            <span className="tpl-count">{PACK_TEMPLATES[type].length} Punkte</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        ))
+      )}
       <style>{`
         .tpl-warn { font-family:var(--mono); font-size:11px; color:var(--ink3); background:var(--panel2); border:1px solid var(--line); padding:10px 12px; margin-bottom:14px; line-height:1.5; }
+        .tpl-loading { text-align:center; font-family:var(--mono); font-size:13px; color:var(--ink3); padding:20px; }
         .tpl-opt { display:flex; align-items:center; gap:10px; width:100%; padding:14px; border:1px solid var(--line); margin-bottom:8px; background:var(--panel2); }
         .tpl-opt:active { background:var(--panel); }
         .tpl-name { flex:1; font-family:var(--sans); font-size:15px; font-weight:800; color:var(--ink1); letter-spacing:.5px; text-align:left; }
@@ -351,24 +380,27 @@ function TemplateSheet({ onClose, onSelect }) {
 
 // ─── Packpunkt hinzufügen / bearbeiten ───────────────────
 function PackItemSheet({ user, item, onClose, onSaved }) {
-  const [name, setName] = useState(item?.name || '')
+  const [name, setName]       = useState(item?.name || '')
   const [category, setCategory] = useState(item?.category || 'Sonstiges')
   const [critical, setCritical] = useState(item?.critical || false)
-  const [armed, setArmed] = useState(false)
+  const [saving, setSaving]   = useState(false)
+  const [armed, setArmed]     = useState(false)
 
   async function save() {
     if (!name.trim()) return
-    if (item?.id) {
-      await updatePackItem(item.id, { name: name.trim(), category, critical })
-    } else {
-      await addPackItem(user.id, { name: name.trim(), category, critical, checked: false, sort_order: 0 })
-    }
-    onSaved()
+    setSaving(true)
+    try {
+      if (item?.id) {
+        await updatePackItem(item.id, { name: name.trim(), category, critical })
+      } else {
+        await addPackItem(user.id, { name: name.trim(), category, critical, checked: false, sort_order: 0 })
+      }
+      onSaved()
+    } catch { setSaving(false) }
   }
 
   async function remove() {
-    if (item?.id) await deletePackItem(item.id)
-    onSaved()
+    if (item?.id) { await deletePackItem(item.id); onSaved() }
   }
 
   return (
@@ -380,14 +412,13 @@ function PackItemSheet({ user, item, onClose, onSaved }) {
           {PACK_CATS.map(c => <option key={c} value={c}>{CAT_ICONS[c]} {c}</option>)}
         </select>
       </div>
-      <button className={`pi-crit-toggle ${critical ? 'on' : ''}`} onClick={() => setCritical(c => !c)}>
+      <button className={`pi-crit-row ${critical ? 'on' : ''}`} onClick={() => setCritical(c => !c)}>
         <span className={`pi-crit-cb ${critical ? 'on' : ''}`}>
           {critical && <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5"><path d="M5 13l4 4L19 7"/></svg>}
         </span>
-        Als kritisch markieren
-        <span className="pi-crit-hint">Kritische Punkte werden hervorgehoben</span>
+        <span className="pi-crit-label">Als kritisch markieren</span>
       </button>
-      <BtnGreen onClick={save}>Speichern</BtnGreen>
+      <BtnGreen onClick={save}>{saving ? 'Speichert…' : 'Speichern'}</BtnGreen>
       {item?.id && (
         <BtnDelete armed={armed} onClick={() => armed ? remove() : (setArmed(true), setTimeout(() => setArmed(false), 3000))} />
       )}
@@ -395,14 +426,13 @@ function PackItemSheet({ user, item, onClose, onSaved }) {
         .pi-field { margin-bottom:14px; }
         .pi-lbl { display:block; font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--ink3); margin-bottom:6px; }
         .pi-sel { width:100%; background:var(--panel2); border:1px solid var(--line); padding:12px 14px; font-family:var(--mono); font-size:13px; font-weight:700; color:var(--ink1); outline:none; }
-        .pi-crit-toggle { display:flex; align-items:center; gap:10px; width:100%; padding:13px 14px; background:var(--panel2); border:1px solid var(--line); margin-bottom:14px; text-align:left; }
-        .pi-crit-toggle.on { background:rgba(224,86,110,.06); border-color:rgba(224,86,110,.3); }
-        .pi-crit-toggle:active { background:var(--panel); }
+        .pi-crit-row { display:flex; align-items:center; gap:10px; width:100%; padding:13px 14px; background:var(--panel2); border:1px solid var(--line); margin-bottom:14px; }
+        .pi-crit-row.on { background:rgba(224,86,110,.06); border-color:rgba(224,86,110,.3); }
+        .pi-crit-row:active { background:var(--panel); }
         .pi-crit-cb { width:22px; height:22px; border:1.5px solid var(--line); flex-shrink:0; display:flex; align-items:center; justify-content:center; background:none; }
         .pi-crit-cb.on { background:var(--crit); border-color:var(--crit); }
         .pi-crit-cb svg { width:12px; height:12px; }
-        .pi-crit-toggle span:not(.pi-crit-cb) { font-family:var(--mono); font-size:13px; font-weight:700; color:var(--ink1); flex:1; }
-        .pi-crit-hint { font-size:10px; color:var(--ink3); font-weight:400; display:block; margin-top:1px; }
+        .pi-crit-label { font-family:var(--mono); font-size:13px; font-weight:700; color:var(--ink1); }
       `}</style>
     </Sheet>
   )
@@ -445,7 +475,7 @@ function AddRaceSheet({ user, bikes, onClose, onSaved }) {
         <label className="ar-lbl">Fahrrad</label>
         <select className="ar-sel" value={f.bike_id} onChange={e => set('bike_id')(e.target.value)}>
           <option value="">— kein —</option>
-          {bikes.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          {bikes.filter(b => !b.archived).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
       </div>
       <Field label="Platzierung" value={f.placement} onChange={set('placement')} placeholder="z.B. P5" />

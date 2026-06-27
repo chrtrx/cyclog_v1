@@ -17,8 +17,41 @@ export function hoursSince(tracker, bikeHours) {
   return Math.max(0, h - start)
 }
 
-// Fortschritt 0..1. Unterstützt km- und Stunden-Intervalle.
+// Tage seit Service-Start (für datums-basierte Tracker).
+export function daysSince(tracker) {
+  const start = new Date(tracker?.start_date)
+  if (isNaN(start.getTime())) return 0
+  return Math.max(0, (Date.now() - start.getTime()) / 86400000)
+}
+
+// Fälligkeitsdatum für datums-basierte Tracker (interval_km = Monate).
+export function dueDateOf(tracker) {
+  if (tracker?.interval_type !== 'date') return null
+  const months = Number(tracker?.interval_km) || 0
+  const start = new Date(tracker?.start_date)
+  if (isNaN(start.getTime())) return null
+  const due = new Date(start)
+  due.setMonth(due.getMonth() + months)
+  return due
+}
+
+// Verbleibende Tage (negativ = überfällig).
+export function daysUntilDue(tracker) {
+  const due = dueDateOf(tracker)
+  if (!due) return null
+  return Math.ceil((due.getTime() - Date.now()) / 86400000)
+}
+
+// Fortschritt 0..1. Unterstützt km-, Stunden- und Datums-Intervalle.
 export function pct(tracker, bikeKm, bikeHours = 0) {
+  if (tracker?.interval_type === 'date') {
+    const months = Number(tracker?.interval_km)
+    if (!months || months <= 0) return 0
+    const totalDays = months * 30.44
+    const p = daysSince(tracker) / totalDays
+    if (!isFinite(p) || p < 0) return 0
+    return Math.min(p, 1)
+  }
   if (tracker?.interval_type === 'h') {
     const interval = Number(tracker?.interval_hours)
     if (!interval || interval <= 0) return 0

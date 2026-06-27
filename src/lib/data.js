@@ -24,6 +24,12 @@ export const SERVICE_TYPES = [
   { typeId:'shock-h',      title:'Dämpfer-Service (Std)', icon:'🏗️', interval:100,   cat:'Fahrwerk',  intervalType:'h'  },
   { typeId:'dropper-h',    title:'Dropper-Service (Std)', icon:'📉', interval:200,   cat:'Fahrwerk',  intervalType:'h'  },
   { typeId:'torque',       title:'Schrauben nachziehen',  icon:'🔩', interval:500,   cat:'Sonstiges', intervalType:'km' },
+  // Datums-basierte Tracker (interval = Monate)
+  { typeId:'tubeless-m',  title:'Tubeless-Milch (Monate)', icon:'🥛', interval:3,  cat:'Reifen',    intervalType:'date' },
+  { typeId:'fork-oil-m',  title:'Gabelöl wechseln',      icon:'🔱', interval:12,  cat:'Fahrwerk',  intervalType:'date' },
+  { typeId:'cable-m',     title:'Züge & Hüllen',          icon:'🪄', interval:12,  cat:'Sonstiges', intervalType:'date' },
+  { typeId:'fullcheck-m', title:'Generalcheck (Werkstatt)',icon:'🔍', interval:12,  cat:'Sonstiges', intervalType:'date' },
+  { typeId:'battery-m',   title:'Di2-Akku laden',         icon:'🔋', interval:1,   cat:'Elektronik',intervalType:'date' },
 ]
 
 // ═══════════════════════════════════════════════════════════

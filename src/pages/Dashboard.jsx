@@ -89,15 +89,16 @@ export default function Dashboard() {
 
   async function handleAddTracker(svc) {
     if (!activeBike) return
-    const isH = svc.intervalType === 'h'
+    const isH    = svc.intervalType === 'h'
+    const isDate = svc.intervalType === 'date'
     let hoursNow = activeBikeHours
     if (isH && !hoursNow) {
       try { hoursNow = await getBikeHours(activeBike.id) } catch {}
     }
     await addTracker(user.id, {
       bike_id: activeBike.id, type_id: svc.typeId, title: svc.title, icon: svc.icon,
-      interval_type: isH ? 'h' : 'km',
-      interval_km: isH ? null : svc.interval,
+      interval_type: isDate ? 'date' : isH ? 'h' : 'km',
+      interval_km: isDate ? svc.interval : (isH ? null : svc.interval),
       interval_hours: isH ? svc.interval : null,
       km_at_start: activeBike.km,
       hours_at_start: isH ? hoursNow : 0,
@@ -108,7 +109,7 @@ export default function Dashboard() {
       icon: svc.icon, km_at_service: activeBike.km, service_date: new Date().toISOString(),
     })
     setSheet(null); await load()
-    const label = isH ? `${svc.interval}h Intervall` : `${fmtKm(activeBike.km)} km`
+    const label = isDate ? `alle ${svc.interval} Monate` : isH ? `${svc.interval}h Intervall` : `${fmtKm(activeBike.km)} km`
     showToast(`🎉 Tracker gestartet — ${label}`)
   }
 
@@ -141,11 +142,23 @@ export default function Dashboard() {
     await load()
   }
 
-  // Fällig-Dialog: "Hält noch" → Intervall um 1.000 km erhöhen
+  // Fällig-Dialog: "Hält noch" → Intervall verlängern
   async function handleExtend(t) {
-    await updateTracker(t.id, { interval_km: t.interval_km + 1000 })
-    setDueTracker(null); await load()
-    showToast(`↗ Intervall auf ${fmtKm(t.interval_km + 1000)} km erhöht`)
+    if (t.interval_type === 'date') {
+      const newMonths = (t.interval_km || 3) + 1
+      await updateTracker(t.id, { interval_km: newMonths })
+      setDueTracker(null); await load()
+      showToast(`↗ Intervall auf ${newMonths} Monate erhöht`)
+    } else if (t.interval_type === 'h') {
+      const newH = (t.interval_hours || 0) + 25
+      await updateTracker(t.id, { interval_hours: newH })
+      setDueTracker(null); await load()
+      showToast(`↗ Intervall auf ${newH} h erhöht`)
+    } else {
+      await updateTracker(t.id, { interval_km: t.interval_km + 1000 })
+      setDueTracker(null); await load()
+      showToast(`↗ Intervall auf ${fmtKm(t.interval_km + 1000)} km erhöht`)
+    }
   }
 
   if (loading) return <div className="loading"><div className="spinner" />Lade…</div>
@@ -272,16 +285,28 @@ export default function Dashboard() {
       {dueTracker && (
         <Sheet title={dueTracker.title} sub="Wartung fällig" onClose={() => setDueTracker(null)}>
           <div className="due-msg">
-            Dieser Tracker hat sein Intervall erreicht ({fmtKm(dueTracker.interval_km)} km).
-            Was möchtest du tun?
+            {dueTracker.interval_type === 'date'
+              ? `Dieser Tracker ist nach ${dueTracker.interval_km} ${dueTracker.interval_km === 1 ? 'Monat' : 'Monaten'} fällig. Was möchtest du tun?`
+              : dueTracker.interval_type === 'h'
+                ? `Dieser Tracker hat sein Intervall erreicht (${dueTracker.interval_hours} h). Was möchtest du tun?`
+                : `Dieser Tracker hat sein Intervall erreicht (${fmtKm(dueTracker.interval_km)} km). Was möchtest du tun?`}
           </div>
           <button className="due-opt due-done" onClick={() => handleServiceDone(dueTracker)}>
             <span className="due-ico">✓</span>
-            <span className="due-txt"><b>Gewechselt / erledigt</b><small>Zähler startet neu bei {fmtKm(activeBike.km)} km</small></span>
+            <span className="due-txt">
+              <b>Gewechselt / erledigt</b>
+              <small>{dueTracker.interval_type === 'date' ? 'Zähler startet heute neu' : `Zähler startet neu bei ${fmtKm(activeBike.km)} km`}</small>
+            </span>
           </button>
           <button className="due-opt due-extend" onClick={() => handleExtend(dueTracker)}>
             <span className="due-ico">↗</span>
-            <span className="due-txt"><b>Hält noch (+1.000 km)</b><small>Intervall auf {fmtKm(dueTracker.interval_km + 1000)} km erhöhen</small></span>
+            <span className="due-txt">
+              {dueTracker.interval_type === 'date'
+                ? <><b>Hält noch (+1 Monat)</b><small>Intervall auf {(dueTracker.interval_km || 3) + 1} Monate erhöhen</small></>
+                : dueTracker.interval_type === 'h'
+                  ? <><b>Hält noch (+25 h)</b><small>Intervall auf {(dueTracker.interval_hours || 0) + 25} h erhöhen</small></>
+                  : <><b>Hält noch (+1.000 km)</b><small>Intervall auf {fmtKm(dueTracker.interval_km + 1000)} km erhöhen</small></>}
+            </span>
           </button>
           <button className="due-opt due-later" onClick={() => setDueTracker(null)}>
             <span className="due-ico">⏱</span>
@@ -341,7 +366,7 @@ function LogSheet({ bike, onAdd, onClose }) {
               <div className="svc-ico">{s.icon}</div>
               <div style={{ flex: 1, textAlign: 'left' }}>
                 <div className="svc-nm">{s.title}</div>
-                <div className="svc-int">Standard: {s.interval.toLocaleString('de')} {s.intervalType === 'h' ? 'h' : 'km'}</div>
+                <div className="svc-int">Standard: {s.interval.toLocaleString('de')} {s.intervalType === 'h' ? 'h' : s.intervalType === 'date' ? (s.interval === 1 ? 'Monat' : 'Monate') : 'km'}</div>
               </div>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2.5"><path d="M9 18l6-6-6-6" /></svg>
             </button>
@@ -406,15 +431,19 @@ function AddBikeSheet({ user, onClose, onSaved }) {
 
 // ─── EDIT TRACKER SHEET ────────────────────────────────────
 function EditTrackerSheet({ tracker, bikeKm, bikeHours, onSave, onDelete, onClose }) {
-  const [mode, setMode]         = useState(tracker.interval_type === 'h' ? 'h' : 'km')
-  const [intervalKm, setIKm]    = useState(tracker.interval_km || 2000)
+  const initMode = tracker.interval_type === 'h' ? 'h' : tracker.interval_type === 'date' ? 'date' : 'km'
+  const [mode, setMode]         = useState(initMode)
+  const [intervalKm, setIKm]    = useState(tracker.interval_type === 'date' ? (tracker.interval_km || 3) : (tracker.interval_km || 2000))
   const [intervalH, setIH]      = useState(tracker.interval_hours || 100)
+  const [intervalM, setIM]      = useState(tracker.interval_type === 'date' ? (tracker.interval_km || 3) : 3)
   const [note, setNote]         = useState(tracker.note || '')
   const [armed, setArmed]       = useState(false)
 
   function save() {
     if (mode === 'h') {
       onSave({ interval_type: 'h', interval_hours: intervalH, interval_km: null, hours_at_start: bikeHours, note })
+    } else if (mode === 'date') {
+      onSave({ interval_type: 'date', interval_km: intervalM, interval_hours: null, note })
     } else {
       onSave({ interval_type: 'km', interval_km: intervalKm, interval_hours: null, note })
     }
@@ -427,17 +456,23 @@ function EditTrackerSheet({ tracker, bikeKm, bikeHours, onSave, onDelete, onClos
         <div className="mode-row">
           <button className={`mode-btn ${mode === 'km' ? 'on' : ''}`} onClick={() => setMode('km')}>KM</button>
           <button className={`mode-btn ${mode === 'h' ? 'on' : ''}`} onClick={() => setMode('h')}>STUNDEN</button>
+          <button className={`mode-btn ${mode === 'date' ? 'on' : ''}`} onClick={() => setMode('date')}>MONATE</button>
         </div>
       </div>
       <div className="ib">
         <div className="ib-lbl">Intervall</div>
         <div className="ib-edit">
           <input className="ib-num" type="number" inputMode="numeric"
-            value={mode === 'km' ? intervalKm : intervalH}
-            onChange={e => mode === 'km' ? setIKm(Number(e.target.value) || 0) : setIH(Number(e.target.value) || 0)} />
-          <span className="ib-unit">{mode === 'km' ? 'km' : 'h'}</span>
+            value={mode === 'km' ? intervalKm : mode === 'h' ? intervalH : intervalM}
+            onChange={e => {
+              const v = Number(e.target.value) || 0
+              if (mode === 'km') setIKm(v)
+              else if (mode === 'h') setIH(v)
+              else setIM(v)
+            }} />
+          <span className="ib-unit">{mode === 'km' ? 'km' : mode === 'h' ? 'h' : intervalM === 1 ? 'Monat' : 'Monate'}</span>
         </div>
-        {mode === 'km' ? (
+        {mode === 'km' && (
           <>
             <input type="range" min="100" max="20000" step="100" value={Math.min(intervalKm, 20000)} onChange={e => setIKm(Number(e.target.value))} />
             <div className="presets">
@@ -446,12 +481,23 @@ function EditTrackerSheet({ tracker, bikeKm, bikeHours, onSave, onDelete, onClos
               ))}
             </div>
           </>
-        ) : (
+        )}
+        {mode === 'h' && (
           <>
             <input type="range" min="10" max="500" step="5" value={Math.min(intervalH, 500)} onChange={e => setIH(Number(e.target.value))} />
             <div className="presets">
               {[25, 50, 100, 200, 300].map(v => (
                 <button key={v} className="preset" onClick={() => setIH(v)}>{v}h</button>
+              ))}
+            </div>
+          </>
+        )}
+        {mode === 'date' && (
+          <>
+            <input type="range" min="1" max="24" step="1" value={Math.min(intervalM, 24)} onChange={e => setIM(Number(e.target.value))} />
+            <div className="presets">
+              {[1, 3, 6, 12, 24].map(v => (
+                <button key={v} className="preset" onClick={() => setIM(v)}>{v === 1 ? '1 Mo.' : `${v} Mo.`}</button>
               ))}
             </div>
           </>

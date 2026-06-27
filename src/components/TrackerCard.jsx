@@ -1,22 +1,19 @@
 import { useState } from 'react'
-import { kmSince, hoursSince, pct, statusOf, fmtKm, fmtH, fmtDate, predictDue } from '../lib/helpers'
+import { kmSince, hoursSince, daysSince, dueDateOf, daysUntilDue, pct, statusOf, fmtKm, fmtH, fmtDate, predictDue } from '../lib/helpers'
 
 export default function TrackerCard({ tracker, bikeKm, bikeHours = 0, onClick, onPin }) {
-  const isH  = tracker.interval_type === 'h'
-  const p    = pct(tracker, bikeKm, bikeHours)
-  const st   = statusOf(p)
-  const w    = Math.round(p * 100)
-  const done = isH ? hoursSince(tracker, bikeHours) : kmSince(tracker, bikeKm)
-  const interval = isH ? (tracker.interval_hours || 0) : (tracker.interval_km || 0)
-  const rem  = Math.max(0, interval - done)
+  const isH    = tracker.interval_type === 'h'
+  const isDate = tracker.interval_type === 'date'
+  const p      = pct(tracker, bikeKm, bikeHours)
+  const st     = statusOf(p)
+  const w      = Math.round(p * 100)
 
-  // Kritische Tracker standardmäßig ausgeklappt
   const [open, setOpen] = useState(st === 'crit')
 
   return (
     <div className={`tc tc-${st}`} onClick={() => setOpen(o => !o)}>
 
-      {/* Immer sichtbar: kompakte Zeile */}
+      {/* Kompakte Zeile */}
       <div className="tc-row">
         <span className="tc-ico">{tracker.icon}</span>
         <span className="tc-name">{tracker.title}</span>
@@ -31,11 +28,39 @@ export default function TrackerCard({ tracker, bikeKm, bikeHours = 0, onClick, o
         )}
       </div>
 
-      {/* Ausgeklappt: Details + Vorhersage + Aktion */}
+      {/* Ausgeklappt: Details */}
       {open && (() => {
+        if (isDate) {
+          const due = dueDateOf(tracker)
+          const remDays = daysUntilDue(tracker)
+          const dueFmt = due
+            ? due.toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })
+            : '—'
+          const remLabel = remDays == null ? '' : remDays > 0
+            ? `noch ${remDays} Tage`
+            : remDays === 0 ? 'heute fällig'
+            : `${Math.abs(remDays)} Tage überfällig`
+          return (
+            <div className="tc-detail" onClick={e => e.stopPropagation()}>
+              <div className="tc-stats">
+                <span>📅 Fällig: {dueFmt}</span>
+              </div>
+              <div className="tc-meta">{remLabel} · seit {fmtDate(tracker.start_date)}</div>
+              {tracker.note && <div className="tc-note">📝 {tracker.note}</div>}
+              <button className="tc-action" onClick={onClick}>
+                {st === 'crit' ? 'Als erledigt markieren' : 'Bearbeiten'}
+              </button>
+            </div>
+          )
+        }
+
         const pred = predictDue(tracker, bikeKm, bikeHours)
-        const fmt = isH ? fmtH : fmtKm
+        const fmt  = isH ? fmtH : fmtKm
         const unit = isH ? 'h' : 'km'
+        const done = isH ? hoursSince(tracker, bikeHours) : kmSince(tracker, bikeKm)
+        const interval = isH ? (tracker.interval_hours || 0) : (tracker.interval_km || 0)
+        const rem  = Math.max(0, interval - done)
+
         return (
           <div className="tc-detail" onClick={e => e.stopPropagation()}>
             <div className="tc-stats">

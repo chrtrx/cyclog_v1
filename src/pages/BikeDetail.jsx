@@ -5,9 +5,10 @@ import {
   getBike, updateBike,
   getComponents, upsertComponent, deleteComponent,
   getUpgrades, addUpgrade, updateUpgrade, deleteUpgrade,
-  PART_CATEGORIES,
+  PART_CATEGORIES, BIKE_TYPES,
 } from '../lib/data'
 import { Page, Sheet, Field, BtnGreen, BtnDelete } from '../components/ui'
+import { BIKE_ICONS } from '../lib/helpers'
 
 const GEO_FIELDS = [
   { k: 'geo_stack',       l: 'Stack' },
@@ -34,6 +35,7 @@ export default function BikeDetail() {
   const [partSheet, setPartSheet] = useState(null)     // null | { cat, part }
   const [upgradeSheet, setUpgradeSheet] = useState(undefined) // undefined=closed, null=new, obj=edit
   const [editGeo, setEditGeo] = useState(false)
+  const [typeSheet, setTypeSheet] = useState(false)
   const [notes, setNotes] = useState('')
   const [notesDirty, setNotesDirty] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -91,6 +93,10 @@ export default function BikeDetail() {
           )}
         </div>
         <div className="id-right">
+          <button className="id-type-btn" onClick={() => setTypeSheet(true)}>
+            {BIKE_ICONS[bike.type] || '🚴'} {bike.type}
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
           {bike.manufacturer && <span>{bike.manufacturer}</span>}
           {bike.model && <span>{bike.model}</span>}
           {bike.frame_size && <span>Gr. {bike.frame_size}</span>}
@@ -239,6 +245,9 @@ export default function BikeDetail() {
       {editGeo && (
         <GeoSheet bike={bike} onClose={() => setEditGeo(false)} onSaved={() => { setEditGeo(false); load() }} />
       )}
+      {typeSheet && (
+        <BikeTypeSheet bike={bike} onClose={() => setTypeSheet(false)} onSaved={() => { setTypeSheet(false); load(); showToast('✓ Typ geändert') }} />
+      )}
 
       {toast && <div className="bd-toast">{toast}</div>}
 
@@ -248,8 +257,10 @@ export default function BikeDetail() {
         .id-km { font-family:var(--sans); font-size:38px; font-weight:900; color:var(--ink1); letter-spacing:-1px; line-height:1; }
         .id-km-u { font-family:var(--mono); font-size:13px; color:var(--ink3); font-weight:700; }
         .id-weight { font-family:var(--mono); font-size:12px; color:var(--ink2); font-weight:700; margin-top:6px; }
-        .id-right { display:flex; flex-direction:column; align-items:flex-end; gap:3px; }
+        .id-right { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
         .id-right span { font-family:var(--mono); font-size:11px; color:var(--ink3); }
+        .id-type-btn { display:flex; align-items:center; gap:5px; background:rgba(47,123,255,.08); border:1px solid rgba(47,123,255,.3); padding:5px 9px; font-family:var(--mono); font-size:11px; font-weight:700; color:var(--acc); letter-spacing:.5px; }
+        .id-type-btn:active { background:rgba(47,123,255,.18); }
 
         .bd-tabs { display:flex; border-bottom:1px solid var(--line); margin-bottom:16px; }
         .bd-tab { flex:1; padding:11px 6px; font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--ink3); background:none; border:none; border-bottom:2px solid transparent; transition:color .15s,border-color .15s; }
@@ -434,6 +445,37 @@ function UpgradeSheet({ user, bikeId, upgrade, onClose, onSaved }) {
         .udt-cb{width:22px;height:22px;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
         .udt-cb.on{background:var(--ok);border-color:var(--ok);}
         .udt-cb svg{width:13px;height:13px;}
+      `}</style>
+    </Sheet>
+  )
+}
+
+// ─── Fahrradtyp ändern ───────────────────────────────────
+function BikeTypeSheet({ bike, onClose, onSaved }) {
+  const [type, setType] = useState(bike.type)
+
+  async function save() {
+    await updateBike(bike.id, { type })
+    onSaved()
+  }
+
+  return (
+    <Sheet title="Fahrradtyp" sub="Typ auswählen" onClose={onClose}>
+      <div className="type-grid">
+        {BIKE_TYPES.map(t => (
+          <button key={t} className={`type-opt ${type === t ? 'on' : ''}`} onClick={() => setType(t)}>
+            <span className="type-ico">{BIKE_ICONS[t] || '🚴'}</span>
+            {t}
+          </button>
+        ))}
+      </div>
+      <BtnGreen onClick={save}>Speichern</BtnGreen>
+      <style>{`
+        .type-grid { display:flex; flex-direction:column; gap:7px; margin-bottom:14px; }
+        .type-opt { display:flex; align-items:center; gap:11px; padding:13px 14px; font-family:var(--mono); font-size:13px; font-weight:700; letter-spacing:.5px; background:var(--panel2); border:1px solid var(--line); color:var(--ink2); text-align:left; }
+        .type-opt.on { background:rgba(47,123,255,.1); border-color:rgba(47,123,255,.5); color:var(--acc); }
+        .type-opt:active { border-color:var(--acc); }
+        .type-ico { font-size:18px; width:24px; text-align:center; flex-shrink:0; }
       `}</style>
     </Sheet>
   )

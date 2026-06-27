@@ -95,22 +95,26 @@ export default function Dashboard() {
     if (isH && !hoursNow) {
       try { hoursNow = await getBikeHours(activeBike.id) } catch {}
     }
-    await addTracker(user.id, {
-      bike_id: activeBike.id, type_id: svc.typeId, title: svc.title, icon: svc.icon,
-      interval_type: isDate ? 'date' : isH ? 'h' : 'km',
-      interval_km: isDate ? svc.interval : (isH ? null : svc.interval),
-      interval_hours: isH ? svc.interval : null,
-      km_at_start: activeBike.km,
-      hours_at_start: isH ? hoursNow : 0,
-      note: '', start_date: new Date().toISOString(),
-    })
-    await addServiceLog(user.id, {
-      bike_id: activeBike.id, service_type: svc.typeId, title: svc.title,
-      icon: svc.icon, km_at_service: activeBike.km, service_date: new Date().toISOString(),
-    })
-    setSheet(null); await load()
-    const label = isDate ? `alle ${svc.interval} Monate` : isH ? `${svc.interval}h Intervall` : `${fmtKm(activeBike.km)} km`
-    showToast(`🎉 Tracker gestartet — ${label}`)
+    try {
+      await addTracker(user.id, {
+        bike_id: activeBike.id, type_id: svc.typeId, title: svc.title, icon: svc.icon,
+        interval_type: isDate ? 'date' : isH ? 'h' : 'km',
+        interval_km: isDate ? svc.interval : (isH ? null : svc.interval),
+        interval_hours: isH ? svc.interval : null,
+        km_at_start: activeBike.km,
+        hours_at_start: isH ? hoursNow : 0,
+        note: '', start_date: new Date().toISOString(),
+      })
+      await addServiceLog(user.id, {
+        bike_id: activeBike.id, service_type: svc.typeId, title: svc.title,
+        icon: svc.icon, km_at_service: activeBike.km, service_date: new Date().toISOString(),
+      })
+      setSheet(null); await load()
+      const label = isDate ? `alle ${svc.interval} Monate` : isH ? `${svc.interval}h Intervall` : `${fmtKm(activeBike.km)} km`
+      showToast(`🎉 Tracker gestartet — ${label}`)
+    } catch (e) {
+      showToast('⚠ Fehler: ' + (e?.message || 'Tracker konnte nicht erstellt werden'))
+    }
   }
 
   // Gelöschten Tracker wiederherstellen
@@ -368,7 +372,7 @@ function LogSheet({ bike, onAdd, onClose }) {
                 <div className="svc-nm">{s.title}</div>
                 <div className="svc-int">Standard: {s.interval.toLocaleString('de')} {s.intervalType === 'h' ? 'h' : s.intervalType === 'date' ? (s.interval === 1 ? 'Monat' : 'Monate') : 'km'}</div>
               </div>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2.5"><path d="M9 18l6-6-6-6" /></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" strokeWidth="2.5"><path d="M9 18l6-6-6-6" /></svg>
             </button>
           ))}
         </div>

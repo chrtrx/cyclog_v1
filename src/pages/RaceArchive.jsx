@@ -75,6 +75,9 @@ export default function RaceArchive() {
   const [resetting, setResetting] = useState(false)
   const [templateSheet, setTemplateSheet] = useState(false)
   const [tplLoading, setTplLoading] = useState(false)
+  const [toast, setToast] = useState('')
+
+  function showToast(m) { setToast(m); setTimeout(() => setToast(''), 3000) }
 
   useEffect(() => { load() }, [])
 
@@ -94,8 +97,11 @@ export default function RaceArchive() {
     try {
       const p = await getPackItems(user.id)
       setPackItems(p)
-    } catch {
+    } catch (e) {
       setPackItems([])
+      if (e?.message?.includes('does not exist') || e?.code === '42P01') {
+        showToast('⚠ Packliste: Migration 004 im Supabase Dashboard ausführen')
+      }
     }
     setPackLoading(false)
   }
@@ -125,7 +131,10 @@ export default function RaceArchive() {
         items.map((item, i) => addPackItem(user.id, { ...item, checked: false, sort_order: i }))
       )
       await loadPack()
-    } catch {}
+      showToast(`✓ Vorlage "${type}" geladen`)
+    } catch (e) {
+      showToast('⚠ Fehler: ' + (e?.message || 'Vorlage konnte nicht geladen werden'))
+    }
     setTplLoading(false)
     setTemplateSheet(false)
   }
@@ -287,6 +296,7 @@ export default function RaceArchive() {
       {templateSheet && (
         <TemplateSheet loading={tplLoading} onClose={() => setTemplateSheet(false)} onSelect={loadTemplate} />
       )}
+      {toast && <div className="ra-toast">{toast}</div>}
 
       <style>{`
         .rtabs { display:flex; border:1px solid var(--line); margin-bottom:16px; overflow:hidden; }
@@ -345,6 +355,7 @@ export default function RaceArchive() {
         .pi-body { flex:1; display:flex; align-items:center; gap:8px; text-align:left; background:none; border:none; padding:0; cursor:pointer; min-width:0; }
         .pi-name { font-family:var(--sans); font-size:14px; font-weight:700; color:var(--ink1); }
         .pi-crit-tag { font-family:var(--mono); font-size:9px; font-weight:900; background:rgba(224,86,110,.15); color:var(--crit); border:1px solid rgba(224,86,110,.35); padding:1px 5px; letter-spacing:.5px; flex-shrink:0; }
+        .ra-toast { position:fixed; bottom:140px; left:50%; transform:translateX(-50%); background:var(--panel); border:1px solid var(--acc); color:var(--ink1); padding:11px 22px; font-family:var(--mono); font-weight:500; font-size:13px; letter-spacing:.5px; z-index:1000; white-space:nowrap; }
       `}</style>
     </Page>
   )
@@ -385,10 +396,11 @@ function PackItemSheet({ user, item, onClose, onSaved }) {
   const [critical, setCritical] = useState(item?.critical || false)
   const [saving, setSaving]   = useState(false)
   const [armed, setArmed]     = useState(false)
+  const [err, setErr]         = useState('')
 
   async function save() {
     if (!name.trim()) return
-    setSaving(true)
+    setSaving(true); setErr('')
     try {
       if (item?.id) {
         await updatePackItem(item.id, { name: name.trim(), category, critical })
@@ -396,7 +408,10 @@ function PackItemSheet({ user, item, onClose, onSaved }) {
         await addPackItem(user.id, { name: name.trim(), category, critical, checked: false, sort_order: 0 })
       }
       onSaved()
-    } catch { setSaving(false) }
+    } catch (e) {
+      setSaving(false)
+      setErr(e?.message || 'Speichern fehlgeschlagen — Migration 004 ausführen?')
+    }
   }
 
   async function remove() {
@@ -418,11 +433,13 @@ function PackItemSheet({ user, item, onClose, onSaved }) {
         </span>
         <span className="pi-crit-label">Als kritisch markieren</span>
       </button>
+      {err && <div className="pi-err">{err}</div>}
       <BtnGreen onClick={save}>{saving ? 'Speichert…' : 'Speichern'}</BtnGreen>
       {item?.id && (
         <BtnDelete armed={armed} onClick={() => armed ? remove() : (setArmed(true), setTimeout(() => setArmed(false), 3000))} />
       )}
       <style>{`
+        .pi-err { font-family:var(--mono); font-size:11px; color:var(--crit); background:rgba(224,86,110,.07); border:1px solid rgba(224,86,110,.3); padding:10px 12px; margin-bottom:12px; line-height:1.5; }
         .pi-field { margin-bottom:14px; }
         .pi-lbl { display:block; font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--ink3); margin-bottom:6px; }
         .pi-sel { width:100%; background:var(--panel2); border:1px solid var(--line); padding:12px 14px; font-family:var(--mono); font-size:13px; font-weight:700; color:var(--ink1); outline:none; }

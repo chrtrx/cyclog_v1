@@ -12,6 +12,7 @@ import RaceArchive from './pages/RaceArchive'
 import TyrePressureDB from './pages/TyrePressureDB'
 import ConnectStrava from './pages/ConnectStrava'
 import NavBar from './components/NavBar'
+import InstallHint from './components/InstallHint'
 
 function Loader() {
   return (
@@ -63,6 +64,7 @@ function Gate() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <NavBar />
+      <InstallHint />
     </>
   )
 }

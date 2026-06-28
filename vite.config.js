@@ -30,6 +30,8 @@ export default defineConfig({
         // SPA: alle Navigationen auf index.html zurückfallen lassen
         navigateFallback: 'index.html',
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // Push-/Notification-Handler in den generierten SW importieren
+        importScripts: ['push-sw.js'],
         runtimeCaching: [
           {
             // Google Fonts (JetBrains Mono + Inter) offline verfügbar machen

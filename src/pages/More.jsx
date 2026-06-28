@@ -1,19 +1,56 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { Page } from '../components/ui'
 import { getTheme, setTheme } from '../lib/theme'
+import { getPushState, enablePush, disablePush, sendTestPush } from '../lib/push'
 
 export default function More() {
   const nav = useNavigate()
-  const { signOut } = useAuth()
+  const { user, signOut } = useAuth()
   const [theme, setThemeState] = useState(getTheme)
+  const [push, setPush] = useState('off') // 'on'|'off'|'denied'|'unsupported'|'busy'
+
+  useEffect(() => { getPushState().then(setPush).catch(() => setPush('off')) }, [])
 
   function toggleTheme() {
     const next = theme === 'dark' ? 'light' : 'dark'
     setTheme(next)
     setThemeState(next)
   }
+
+  async function togglePush() {
+    if (push === 'busy') return
+    const prev = push
+    try {
+      if (prev === 'on') {
+        setPush('busy'); await disablePush(); setPush('off')
+      } else if (prev === 'off') {
+        setPush('busy'); await enablePush(user.id); setPush('on')
+      } else if (prev === 'denied') {
+        alert('Benachrichtigungen sind im Browser/den Einstellungen für Cyclog blockiert. Bitte dort wieder erlauben.')
+      }
+    } catch (e) {
+      setPush(await getPushState().catch(() => 'off'))
+      alert(e?.message || 'Push konnte nicht aktiviert werden.')
+    }
+  }
+
+  async function handleTestPush() {
+    try {
+      const n = await sendTestPush()
+      alert(n > 0 ? 'Test-Benachrichtigung gesendet 📬' : 'Kein Gerät registriert – Benachrichtigungen erst aktivieren.')
+    } catch (e) {
+      alert(e?.message || 'Test fehlgeschlagen.')
+    }
+  }
+
+  const pushPill = push === 'on' ? 'AN' : push === 'busy' ? '…' : push === 'denied' ? 'BLOCKIERT' : push === 'unsupported' ? 'N/V' : 'AUS'
+  const pushSub = push === 'unsupported'
+    ? 'Auf dem iPhone zuerst „Zum Home-Bildschirm" hinzufügen'
+    : push === 'denied'
+      ? 'Im Browser für Cyclog wieder erlauben'
+      : 'Erinnerung, wenn Wartung fällig ist'
 
   const items = [
     { path:'/setups',   icon:'🔧', label:'Setups',        sub:'Konfigurationen speichern & vergleichen' },
@@ -34,6 +71,25 @@ export default function More() {
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
         </button>
       ))}
+
+      <button className="more-row" onClick={togglePush} disabled={push === 'busy'}>
+        <div className="mr-icon">🔔</div>
+        <div className="mr-body">
+          <div className="mr-label">Benachrichtigungen</div>
+          <div className="mr-sub">{pushSub}</div>
+        </div>
+        <div className={`push-pill ${push}`}>{pushPill}</div>
+      </button>
+
+      {push === 'on' && (
+        <button className="more-row" onClick={handleTestPush}>
+          <div className="mr-icon">📨</div>
+          <div className="mr-body">
+            <div className="mr-label">Test senden</div>
+            <div className="mr-sub">Probe-Benachrichtigung an dieses Gerät</div>
+          </div>
+        </button>
+      )}
 
       <button className="more-row" onClick={toggleTheme}>
         <div className="mr-icon">{theme === 'dark' ? '☀️' : '🌙'}</div>
@@ -64,6 +120,9 @@ export default function More() {
         .theme-pill { font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;padding:4px 9px;border:1px solid var(--line);color:var(--ink3); }
         .theme-pill.dark { border-color:rgba(47,123,255,.3);color:var(--acc); }
         .theme-pill.light { border-color:rgba(180,140,0,.3);color:var(--warn); }
+        .push-pill { font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;padding:4px 9px;border:1px solid var(--line);color:var(--ink3);flex-shrink:0; }
+        .push-pill.on { border-color:rgba(52,199,154,.4);color:var(--ok); }
+        .push-pill.denied, .push-pill.unsupported { border-color:rgba(224,86,110,.3);color:var(--crit); }
       `}</style>
     </Page>
   )

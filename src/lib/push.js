@@ -73,3 +73,17 @@ export async function disablePush() {
   try { await sub.unsubscribe() } catch (e) {}
   await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint)
 }
+
+// Schickt eine Probe-Push an die eigenen Geräte (über die Vercel-Funktion).
+export async function sendTestPush() {
+  const { data } = await supabase.auth.getSession()
+  const token = data?.session?.access_token
+  if (!token) throw new Error('Nicht eingeloggt.')
+  const res = await fetch('/api/test-push', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(json?.error || 'Test fehlgeschlagen.')
+  return json.sent ?? 0
+}

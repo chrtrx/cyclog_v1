@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { Page } from '../components/ui'
 import { getTheme, setTheme } from '../lib/theme'
-import { getPushState, enablePush, disablePush } from '../lib/push'
+import { getPushState, enablePush, disablePush, sendTestPush } from '../lib/push'
 
 export default function More() {
   const nav = useNavigate()
@@ -33,6 +33,15 @@ export default function More() {
     } catch (e) {
       setPush(await getPushState().catch(() => 'off'))
       alert(e?.message || 'Push konnte nicht aktiviert werden.')
+    }
+  }
+
+  async function handleTestPush() {
+    try {
+      const n = await sendTestPush()
+      alert(n > 0 ? 'Test-Benachrichtigung gesendet 📬' : 'Kein Gerät registriert – Benachrichtigungen erst aktivieren.')
+    } catch (e) {
+      alert(e?.message || 'Test fehlgeschlagen.')
     }
   }
 
@@ -71,6 +80,16 @@ export default function More() {
         </div>
         <div className={`push-pill ${push}`}>{pushPill}</div>
       </button>
+
+      {push === 'on' && (
+        <button className="more-row" onClick={handleTestPush}>
+          <div className="mr-icon">📨</div>
+          <div className="mr-body">
+            <div className="mr-label">Test senden</div>
+            <div className="mr-sub">Probe-Benachrichtigung an dieses Gerät</div>
+          </div>
+        </button>
+      )}
 
       <button className="more-row" onClick={toggleTheme}>
         <div className="mr-icon">{theme === 'dark' ? '☀️' : '🌙'}</div>

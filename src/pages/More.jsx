@@ -4,14 +4,24 @@ import { useAuth } from '../lib/auth'
 import { Page } from '../components/ui'
 import { getTheme, setTheme } from '../lib/theme'
 import { getPushState, enablePush, disablePush, sendTestPush } from '../lib/push'
+import { getProfile, updateProfile } from '../lib/data'
 
 export default function More() {
   const nav = useNavigate()
   const { user, signOut } = useAuth()
   const [theme, setThemeState] = useState(getTheme)
   const [push, setPush] = useState('off') // 'on'|'off'|'denied'|'unsupported'|'busy'
+  const [everyRide, setEveryRide] = useState(false)
 
   useEffect(() => { getPushState().then(setPush).catch(() => setPush('off')) }, [])
+  useEffect(() => { getProfile(user.id).then(p => setEveryRide(!!p?.notify_every_ride)).catch(() => {}) }, [])
+
+  async function toggleEveryRide() {
+    const next = !everyRide
+    setEveryRide(next)
+    try { await updateProfile(user.id, { notify_every_ride: next }) }
+    catch (e) { setEveryRide(!next); alert('Konnte Einstellung nicht speichern.') }
+  }
 
   function toggleTheme() {
     const next = theme === 'dark' ? 'light' : 'dark'
@@ -80,6 +90,17 @@ export default function More() {
         </div>
         <div className={`push-pill ${push}`}>{pushPill}</div>
       </button>
+
+      {push === 'on' && (
+        <button className="more-row" onClick={toggleEveryRide}>
+          <div className="mr-icon">📈</div>
+          <div className="mr-body">
+            <div className="mr-label">Nach jeder Fahrt</div>
+            <div className="mr-sub">{everyRide ? 'Bestätigung nach jedem Strava-Upload' : 'Nur bei fällig / bald fällig'}</div>
+          </div>
+          <div className={`push-pill ${everyRide ? 'on' : ''}`}>{everyRide ? 'AN' : 'AUS'}</div>
+        </button>
+      )}
 
       {push === 'on' && (
         <button className="more-row" onClick={handleTestPush}>

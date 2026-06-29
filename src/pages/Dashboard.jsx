@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import {
@@ -33,6 +33,16 @@ export default function Dashboard() {
     if (!activeBikeId) return
     getBikeHours(activeBikeId).then(setActiveBikeHours).catch(() => setActiveBikeHours(0))
   }, [activeBikeId])
+  // Auto-Sync beim Öffnen: einmal pro Session, höchstens alle 30 Min,
+  // nur wenn Strava verbunden ist – läuft still im Hintergrund.
+  const autoSyncTried = useRef(false)
+  useEffect(() => {
+    if (!stravaStatus || autoSyncTried.current) return
+    autoSyncTried.current = true
+    const last = Number(localStorage.getItem('lastAutoSync') || 0)
+    if (Date.now() - last < 30 * 60 * 1000) return
+    autoSync()
+  }, [stravaStatus])
   async function load() {
     setLoading(true)
     try {
@@ -85,6 +95,15 @@ export default function Dashboard() {
     setSyncing(true)
     try { await syncStrava(user.id); await load(); showToast('✓ Strava synchronisiert') }
     catch (e) { showToast('⚠ ' + (e.message || 'Sync fehlgeschlagen')) }
+    setSyncing(false)
+  }
+
+  // Stiller Hintergrund-Sync (kein Toast). Zeitstempel zuerst setzen, damit
+  // er sich nicht durch das erneute Laden mehrfach selbst auslöst.
+  async function autoSync() {
+    localStorage.setItem('lastAutoSync', String(Date.now()))
+    setSyncing(true)
+    try { await syncStrava(user.id); await load() } catch (e) { /* still */ }
     setSyncing(false)
   }
 
@@ -141,7 +160,11 @@ export default function Dashboard() {
 
   // Fällig-Dialog: "Gewechselt" → Zähler startet neu beim aktuellen km-Stand
   async function handleServiceDone(t) {
-    const updates = { km_at_start: activeBike.km, start_date: new Date().toISOString() }
+    // Zähler neu starten + Benachrichtigungs-Marker leeren (neuer Zyklus)
+    const updates = {
+      km_at_start: activeBike.km, start_date: new Date().toISOString(),
+      last_notified_at: null, warn_notified_at: null,
+    }
     if (t.interval_type === 'h') {
       try { updates.hours_at_start = await getBikeHours(activeBike.id) } catch {}
     }
@@ -157,18 +180,19 @@ export default function Dashboard() {
 
   // Fällig-Dialog: "Hält noch" → Intervall verlängern
   async function handleExtend(t) {
+    const clear = { last_notified_at: null, warn_notified_at: null }
     if (t.interval_type === 'date') {
       const newMonths = (t.interval_km || 3) + 1
-      await updateTracker(t.id, { interval_km: newMonths })
+      await updateTracker(t.id, { interval_km: newMonths, ...clear })
       setDueTracker(null); await load()
       showToast(`↗ Intervall auf ${newMonths} Monate erhöht`)
     } else if (t.interval_type === 'h') {
       const newH = (t.interval_hours || 0) + 25
-      await updateTracker(t.id, { interval_hours: newH })
+      await updateTracker(t.id, { interval_hours: newH, ...clear })
       setDueTracker(null); await load()
       showToast(`↗ Intervall auf ${newH} h erhöht`)
     } else {
-      await updateTracker(t.id, { interval_km: t.interval_km + 1000 })
+      await updateTracker(t.id, { interval_km: t.interval_km + 1000, ...clear })
       setDueTracker(null); await load()
       showToast(`↗ Intervall auf ${fmtKm(t.interval_km + 1000)} km erhöht`)
     }
@@ -353,7 +377,7 @@ export default function Dashboard() {
       )}
       {editTracker && (
         <EditTrackerSheet tracker={editTracker} bikeKm={activeBike.km} bikeHours={activeBikeHours}
-          onSave={async (u) => { await updateTracker(editTracker.id, u); setEditTracker(null); await load() }}
+          onSave={async (u) => { await updateTracker(editTracker.id, { ...u, last_notified_at: null, warn_notified_at: null }); setEditTracker(null); await load() }}
           onDelete={async () => {
             const removed = editTracker
             await deleteTracker(removed.id)

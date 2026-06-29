@@ -45,6 +45,66 @@ export function pct(t, bikeKm, bikeHours = 0) {
   return isFinite(p) && p > 0 ? Math.min(p, 1) : 0
 }
 
+export const WARN_THRESHOLD = 0.9
+export const WEEK_MS = 7 * 86400000
+
+// Teilt die Tracker eines Nutzers in „jetzt melden" (entprellt) und Gesamtzahlen.
+// items: [{ t, bike, p }]
+export function evaluateBucket(items, now) {
+  const b = { due: [], soon: [], dueAll: 0, soonAll: 0 }
+  for (const { t, bike, p } of items) {
+    if (p >= 1) {
+      b.dueAll++
+      const last = t.last_notified_at ? new Date(t.last_notified_at).getTime() : 0
+      if (!last || last <= now - WEEK_MS) b.due.push({ t, bike })
+    } else if (p >= WARN_THRESHOLD) {
+      b.soonAll++
+      if (!t.warn_notified_at) b.soon.push({ t, bike })
+    }
+  }
+  return b
+}
+
+// Baut die „fällig/bald fällig"-Nachricht (oder null, wenn nichts Neues).
+export function buildDueMessage(b) {
+  if (b.due.length) {
+    const title = b.due.length === 1 ? `🔧 ${b.due[0].t.title} fällig` : `🔧 ${b.due.length} Wartungen fällig`
+    const list = b.due.slice(0, 3).map((i) => `${i.t.title} (${i.bike.name})`).join(', ')
+    const body = list + (b.due.length > 3 ? ' …' : '') + (b.soon.length ? ` · ${b.soon.length} bald fällig` : '')
+    return { title, body, url: '/', tag: 'cyclog-due' }
+  }
+  if (b.soon.length) {
+    const title = b.soon.length === 1 ? `🟡 ${b.soon[0].t.title} bald fällig` : `🟡 ${b.soon.length} bald fällig`
+    const body = b.soon.slice(0, 3).map((i) => `${i.t.title} (${i.bike.name})`).join(', ') + (b.soon.length > 3 ? ' …' : '')
+    return { title, body, url: '/', tag: 'cyclog-due' }
+  }
+  return null
+}
+
+// Stunden je Bike aus activities (defensiv – Tabelle evtl. leer/abweichend).
+export async function hoursByBike(admin) {
+  const map = {}
+  try {
+    const { data: acts } = await admin.from('activities').select('bike_id,moving_time')
+    for (const a of acts || []) map[a.bike_id] = (map[a.bike_id] || 0) + (Number(a.moving_time) || 0) / 3600
+  } catch (e) { /* ignorieren */ }
+  return map
+}
+
+// Strava serverseitig für EINEN Nutzer synchronisieren (Edge Function).
+export async function syncStravaUser(userId) {
+  const url = process.env.SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return
+  try {
+    await fetch(`${url}/functions/v1/strava-sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}`, apikey: key },
+      body: JSON.stringify({ userId }),
+    })
+  } catch (e) { /* best effort */ }
+}
+
 // Sendet ein Payload an alle übergebenen Subscriptions; räumt tote Endpoints auf.
 export async function sendToSubscriptions(wp, admin, subs, payload) {
   let sent = 0

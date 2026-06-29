@@ -14,8 +14,14 @@ export default function Setups() {
   useEffect(() => { load() }, [])
   async function load() {
     setLoading(true)
-    const [s, b] = await Promise.all([getSetups(user.id), getBikes(user.id)])
-    setSetups(s); setBikes(b); setLoading(false)
+    try {
+      const [s, b] = await Promise.all([getSetups(user.id), getBikes(user.id)])
+      setSetups(s); setBikes(b)
+    } catch (e) {
+      console.error('Setups laden fehlgeschlagen', e)
+    } finally {
+      setLoading(false)
+    }
   }
 
   function toggleCompare(id) {

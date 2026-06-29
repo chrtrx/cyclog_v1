@@ -84,6 +84,6 @@ export async function sendTestPush() {
     headers: { Authorization: `Bearer ${token}` },
   })
   const json = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(json?.error || 'Test fehlgeschlagen.')
+  if (!res.ok) throw new Error((json?.error || 'Test fehlgeschlagen.') + (json?.detail ? ' – ' + json.detail : ''))
   return json.sent ?? 0
 }

@@ -16,8 +16,14 @@ export default function Bikes() {
   useEffect(() => { load() }, [])
   async function load() {
     setLoading(true)
-    const [b, t] = await Promise.all([getBikes(user.id), getTrackers(user.id)])
-    setBikes(b); setTrackers(t); setLoading(false)
+    try {
+      const [b, t] = await Promise.all([getBikes(user.id), getTrackers(user.id)])
+      setBikes(b); setTrackers(t)
+    } catch (e) {
+      console.error('Räder laden fehlgeschlagen', e)
+    } finally {
+      setLoading(false)
+    }
   }
 
   function statusFor(bikeId, bikeKm) {

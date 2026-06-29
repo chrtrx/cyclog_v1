@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { kmSince, hoursSince, daysSince, dueDateOf, daysUntilDue, pct, statusOf, fmtKm, fmtH, fmtDate, predictDue } from '../lib/helpers'
 
 export default function TrackerCard({ tracker, bikeKm, bikeHours = 0, onClick, onPin }) {
@@ -9,9 +9,24 @@ export default function TrackerCard({ tracker, bikeKm, bikeHours = 0, onClick, o
   const w      = Math.round(p * 100)
 
   const [open, setOpen] = useState(st === 'crit')
+  const rootRef = useRef(null)
+  const mounted = useRef(false)
+
+  // Beim Aufklappen die Karte in den sichtbaren Bereich rollen, damit auch die
+  // unterste Karte nicht halb hinter der Navigationsleiste verschwindet.
+  // Das anfängliche Auto-Öffnen kritischer Karten (beim Mount) wird übersprungen.
+  useEffect(() => {
+    if (!mounted.current) { mounted.current = true; return }
+    if (open && rootRef.current) {
+      const t = setTimeout(() => {
+        rootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 60)
+      return () => clearTimeout(t)
+    }
+  }, [open])
 
   return (
-    <div className={`tc tc-${st}`} onClick={() => setOpen(o => !o)}>
+    <div ref={rootRef} className={`tc tc-${st}`} onClick={() => setOpen(o => !o)}>
 
       {/* Kompakte Zeile */}
       <div className="tc-row">

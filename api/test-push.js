@@ -13,7 +13,12 @@ export default async function handler(req, res) {
   try {
     const admin = getAdmin()
     const { data: userData, error: uErr } = await admin.auth.getUser(token)
-    if (uErr || !userData?.user) return res.status(401).json({ error: 'invalid token' })
+    if (uErr || !userData?.user) {
+      return res.status(401).json({
+        error: 'invalid token',
+        detail: uErr?.message || 'Token nicht verifizierbar – stimmt SUPABASE_URL mit der App-Projekt-URL überein?',
+      })
+    }
     const userId = userData.user.id
 
     const { data: subs } = await admin

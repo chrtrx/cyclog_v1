@@ -24,6 +24,7 @@ export default function Dashboard() {
   const [sheet, setSheet] = useState(null) // 'log' | 'addBike' | null
   const [editTracker, setEditTracker] = useState(null)
   const [dueTracker, setDueTracker] = useState(null)  // Fällig-Dialog
+  const [dupSvc, setDupSvc] = useState(null)  // Duplikat-Bestätigung
   const [toast, setToast] = useState('')
   const [lastDeleted, setLastDeleted] = useState(null)  // für Rückgängig
 
@@ -87,7 +88,15 @@ export default function Dashboard() {
     setSyncing(false)
   }
 
-  async function handleAddTracker(svc) {
+  // Tippt der Nutzer einen Service an: existiert er schon? → nachfragen.
+  function handleAddTracker(svc) {
+    if (!activeBike) return
+    const exists = trackers.some(t => t.bike_id === activeBike.id && t.type_id === svc.typeId)
+    if (exists) { setSheet(null); setDupSvc(svc); return }
+    doAddTracker(svc, false)
+  }
+
+  async function doAddTracker(svc, allowDuplicate) {
     if (!activeBike) return
     const isH    = svc.intervalType === 'h'
     const isDate = svc.intervalType === 'date'
@@ -104,12 +113,12 @@ export default function Dashboard() {
         km_at_start: activeBike.km,
         hours_at_start: isH ? hoursNow : 0,
         note: '', start_date: new Date().toISOString(),
-      })
+      }, { replace: !allowDuplicate })
       await addServiceLog(user.id, {
         bike_id: activeBike.id, service_type: svc.typeId, title: svc.title,
         icon: svc.icon, km_at_service: activeBike.km, service_date: new Date().toISOString(),
       })
-      setSheet(null); await load()
+      setSheet(null); setDupSvc(null); await load()
       const label = isDate ? `alle ${svc.interval} Monate` : isH ? `${svc.interval}h Intervall` : `${fmtKm(activeBike.km)} km`
       showToast(`🎉 Tracker gestartet — ${label}`)
     } catch (e) {
@@ -280,6 +289,22 @@ export default function Dashboard() {
         )}
       </main>
 
+      {dupSvc && (
+        <Sheet title="Tracker existiert bereits" sub={dupSvc.title} onClose={() => setDupSvc(null)}>
+          <div className="dup-msg">
+            „{dupSvc.title}" gibt es für <b>{activeBike?.name}</b> schon. Möchtest du wirklich einen <b>zweiten</b> anlegen?
+          </div>
+          <button className="dup-yes" onClick={() => doAddTracker(dupSvc, true)}>＋ Zweiten anlegen</button>
+          <button className="dup-no" onClick={() => setDupSvc(null)}>Abbrechen</button>
+          <style>{`
+            .dup-msg { font-family:var(--mono); font-size:13px; color:var(--ink2); line-height:1.6; margin-bottom:16px; padding:0 2px; }
+            .dup-msg b { color:var(--ink1); }
+            .dup-yes { width:100%; font-family:var(--sans); font-weight:800; font-size:14px; letter-spacing:.5px; text-transform:uppercase; color:#fff; background:var(--acc); border:none; padding:14px; margin-bottom:10px; }
+            .dup-yes:active { background:var(--acc-d); }
+            .dup-no { width:100%; font-family:var(--mono); font-weight:700; font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--ink2); background:var(--panel2); border:1px solid var(--line); padding:13px; }
+          `}</style>
+        </Sheet>
+      )}
       {sheet === 'log' && <LogSheet bike={activeBike} onAdd={handleAddTracker} onClose={() => setSheet(null)} />}
       {sheet === 'addBike' && <AddBikeSheet user={user} onClose={() => setSheet(null)} onSaved={(id) => { setSheet(null); setActiveBikeId(id); load() }} />}
       {dueTracker && (
@@ -537,7 +562,7 @@ function DashStyles() {
     .loading { display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:14px;font-family:var(--mono);font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink2); }
     .spinner { width:38px;height:38px;border:3px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
-    .dash { min-height:100vh;padding-bottom:84px; }
+    .dash { min-height:100vh;padding-bottom:120px; }
     .hdr { background:var(--bg2);border-bottom:1px solid var(--line);padding:max(env(safe-area-inset-top),14px) 16px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50; }
     .logo { display:flex;align-items:center;gap:10px; }
     .logo-icon { width:36px;height:36px;overflow:hidden;box-shadow:0 4px 12px rgba(34,211,238,.3); }

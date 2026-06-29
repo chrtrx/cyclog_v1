@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import {
@@ -33,6 +33,16 @@ export default function Dashboard() {
     if (!activeBikeId) return
     getBikeHours(activeBikeId).then(setActiveBikeHours).catch(() => setActiveBikeHours(0))
   }, [activeBikeId])
+  // Auto-Sync beim Öffnen: einmal pro Session, höchstens alle 30 Min,
+  // nur wenn Strava verbunden ist – läuft still im Hintergrund.
+  const autoSyncTried = useRef(false)
+  useEffect(() => {
+    if (!stravaStatus || autoSyncTried.current) return
+    autoSyncTried.current = true
+    const last = Number(localStorage.getItem('lastAutoSync') || 0)
+    if (Date.now() - last < 30 * 60 * 1000) return
+    autoSync()
+  }, [stravaStatus])
   async function load() {
     setLoading(true)
     try {
@@ -85,6 +95,15 @@ export default function Dashboard() {
     setSyncing(true)
     try { await syncStrava(user.id); await load(); showToast('✓ Strava synchronisiert') }
     catch (e) { showToast('⚠ ' + (e.message || 'Sync fehlgeschlagen')) }
+    setSyncing(false)
+  }
+
+  // Stiller Hintergrund-Sync (kein Toast). Zeitstempel zuerst setzen, damit
+  // er sich nicht durch das erneute Laden mehrfach selbst auslöst.
+  async function autoSync() {
+    localStorage.setItem('lastAutoSync', String(Date.now()))
+    setSyncing(true)
+    try { await syncStrava(user.id); await load() } catch (e) { /* still */ }
     setSyncing(false)
   }
 

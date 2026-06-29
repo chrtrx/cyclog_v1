@@ -27,8 +27,11 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // SPA: alle Navigationen auf index.html zurückfallen lassen
+        // SPA: alle Navigationen auf index.html zurückfallen lassen …
         navigateFallback: 'index.html',
+        // … außer /api/* – die müssen die echten Serverless-Funktionen treffen,
+        // nicht von der App-Hülle abgefangen werden.
+        navigateFallbackDenylist: [/^\/api\//],
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         // Push-/Notification-Handler in den generierten SW importieren
         importScripts: ['push-sw.js'],

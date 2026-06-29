@@ -4,7 +4,7 @@ import { useAuth } from '../lib/auth'
 import {
   getBikes, addBike, getTrackers, addTracker, updateTracker, deleteTracker,
   getServiceLogs, addServiceLog, syncStrava, getStravaStatus, getProfile,
-  getBikeHours, SERVICE_TYPES, BIKE_TYPES,
+  getBikeHours, getUnreadCount, SERVICE_TYPES, BIKE_TYPES,
 } from '../lib/data'
 import { BIKE_ICONS, fmtKm, fmtH, kmSince, hoursSince, pct, statusOf } from '../lib/helpers'
 import { Sheet, Field, BtnGreen, BtnDelete, Empty } from '../components/ui'
@@ -27,6 +27,7 @@ export default function Dashboard() {
   const [dupSvc, setDupSvc] = useState(null)  // Duplikat-Bestätigung
   const [toast, setToast] = useState('')
   const [lastDeleted, setLastDeleted] = useState(null)  // für Rückgängig
+  const [unread, setUnread] = useState(0)
 
   useEffect(() => { load() }, [])
   useEffect(() => {
@@ -46,11 +47,12 @@ export default function Dashboard() {
   async function load() {
     setLoading(true)
     try {
-      const [b, t, s, p] = await Promise.all([
+      const [b, t, s, p, u] = await Promise.all([
         getBikes(user.id), getTrackers(user.id), getStravaStatus(user.id), getProfile(user.id),
+        getUnreadCount(user.id).catch(() => 0),
       ])
       const activeB = b.filter(x => !x.archived)
-      setBikes(activeB); setTrackers(t); setStravaStatus(s); setProfile(p)
+      setBikes(activeB); setTrackers(t); setStravaStatus(s); setProfile(p); setUnread(u)
       if (activeB.length && !activeBikeId) {
         // aktivstes Rad zuerst auswählen (zuletzt aktualisierter Tracker)
         const la = (bikeId) => {
@@ -211,6 +213,10 @@ export default function Dashboard() {
         </div>
         <div className="hdr-right">
           {profile?.streak > 0 && <div className="streak">🔥 {profile.streak}</div>}
+          <button className="bell-btn" onClick={() => nav('/inbox')} aria-label="Benachrichtigungen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            {unread > 0 && <span className="bell-badge">{unread > 9 ? '9+' : unread}</span>}
+          </button>
           <button className="strava-btn" onClick={stravaStatus ? handleSync : () => nav('/connect-strava')} disabled={syncing}>
             <span className={`sdot ${syncing ? 'spin' : ''}`} />
             {syncing ? 'Sync…' : stravaStatus ? 'Sync' : 'Verbinden'}
@@ -594,6 +600,9 @@ function DashStyles() {
     .logo-text { font-family:var(--sans);font-size:20px;font-weight:900;color:var(--ink1);letter-spacing:4px; }
     .hdr-right { display:flex;align-items:center;gap:12px; }
     .streak { font-family:var(--mono);font-weight:700;font-size:14px;color:var(--warn); }
+    .bell-btn { position:relative;background:var(--panel2);border:1px solid var(--line);color:var(--ink2);padding:8px;display:flex; }
+    .bell-btn svg { width:18px;height:18px; }
+    .bell-badge { position:absolute;top:-6px;right:-6px;min-width:16px;height:16px;padding:0 4px;background:var(--crit);color:#fff;border-radius:9px;font-family:var(--sans);font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center; }
     .strava-btn { display:flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid #5a3320;padding:8px 14px;font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#ff8a5c; }
     .sdot { width:6px;height:6px;background:var(--strava); }
     .sdot.spin { animation:pulse 1s infinite; }

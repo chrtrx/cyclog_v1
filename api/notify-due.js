@@ -6,7 +6,7 @@
 
 import {
   getAdmin, configureWebPush, pct, sendToSubscriptions,
-  evaluateBucket, buildKmChanges, composePush, hoursByBike, syncStravaUser, updateNotifiedKm,
+  evaluateBucket, buildKmChanges, composePush, hoursByBike, syncStravaUser, updateNotifiedKm, logNotification,
 } from './_due.js'
 
 export default async function handler(req, res) {
@@ -73,6 +73,7 @@ export default async function handler(req, res) {
       if (!payload) continue
 
       const sent = await sendToSubscriptions(wp, admin, userSubs, payload)
+      await logNotification(admin, userId, payload)
       if (sent > 0) {
         pushesSent += sent
         for (const i of b.due) stampDue.push(i.t.id)

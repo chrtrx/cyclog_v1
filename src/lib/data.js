@@ -271,6 +271,36 @@ export async function archiveBike(bikeId, archived) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// BENACHRICHTIGUNGS-INBOX
+// ═══════════════════════════════════════════════════════════
+export async function getNotifications(userId) {
+  const { data, error } = await supabase
+    .from('notifications').select('*').eq('user_id', userId)
+    .order('created_at', { ascending: false }).limit(100)
+  if (error) throw error
+  return data
+}
+export async function getUnreadCount(userId) {
+  const { count } = await supabase
+    .from('notifications').select('id', { count: 'exact', head: true })
+    .eq('user_id', userId).eq('read', false)
+  return count || 0
+}
+export async function markNotificationsRead(userId) {
+  const { error } = await supabase
+    .from('notifications').update({ read: true }).eq('user_id', userId).eq('read', false)
+  if (error) throw error
+}
+export async function deleteNotification(id) {
+  const { error } = await supabase.from('notifications').delete().eq('id', id)
+  if (error) throw error
+}
+export async function clearNotifications(userId) {
+  const { error } = await supabase.from('notifications').delete().eq('user_id', userId)
+  if (error) throw error
+}
+
+// ═══════════════════════════════════════════════════════════
 // PACKLISTE
 // ═══════════════════════════════════════════════════════════
 export async function getPackItems(userId) {

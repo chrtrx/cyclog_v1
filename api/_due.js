@@ -106,6 +106,13 @@ export function composePush(bucket, kmChanges, everyRide) {
   return { title: hasDown ? '🔁 Fahrt umgebucht' : '📈 Tracker aktualisiert', body: kmText, url: '/', tag: 'cyclog-km' }
 }
 
+// Gesendete Push zusätzlich in der Inbox-Tabelle ablegen (für die In-App-Liste).
+export async function logNotification(admin, userId, payload) {
+  try {
+    await admin.from('notifications').insert({ user_id: userId, title: payload.title, body: payload.body || '' })
+  } catch (e) { /* Inbox ist optional, Fehler ignorieren */ }
+}
+
 // Basislinie nachziehen: notified_km = aktueller km-Stand (für geänderte Räder).
 export async function updateNotifiedKm(admin, bikes) {
   for (const b of bikes || []) {

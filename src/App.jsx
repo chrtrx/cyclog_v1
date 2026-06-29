@@ -9,6 +9,7 @@ import More from './pages/More'
 import Setups from './pages/Setups'
 import BikeFitArchive from './pages/BikeFitArchive'
 import RaceArchive from './pages/RaceArchive'
+import Inbox from './pages/Inbox'
 import TyrePressureDB from './pages/TyrePressureDB'
 import ConnectStrava from './pages/ConnectStrava'
 import NavBar from './components/NavBar'
@@ -59,6 +60,7 @@ function Gate() {
         <Route path="/setups" element={<Setups />} />
         <Route path="/fit" element={<BikeFitArchive />} />
         <Route path="/races" element={<RaceArchive />} />
+        <Route path="/inbox" element={<Inbox />} />
         <Route path="/pressure" element={<TyrePressureDB />} />
         <Route path="/connect-strava" element={<ConnectStrava />} />
         <Route path="*" element={<Navigate to="/" replace />} />

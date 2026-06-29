@@ -3,7 +3,7 @@
 
 import {
   getAdmin, configureWebPush, pct, sendToSubscriptions,
-  evaluateBucket, buildKmChanges, composePush, hoursByBike, syncStravaUser, updateNotifiedKm,
+  evaluateBucket, buildKmChanges, composePush, hoursByBike, syncStravaUser, updateNotifiedKm, logNotification,
 } from './_due.js'
 
 export default async function handler(req, res) {
@@ -60,6 +60,7 @@ export default async function handler(req, res) {
 
     const wp = configureWebPush()
     const sent = await sendToSubscriptions(wp, admin, subs, payload)
+    await logNotification(admin, userId, payload)
     const nowIso = new Date().toISOString()
     if (b.due.length) await admin.from('trackers').update({ last_notified_at: nowIso }).in('id', b.due.map((i) => i.t.id))
     if (b.soon.length) await admin.from('trackers').update({ warn_notified_at: nowIso }).in('id', b.soon.map((i) => i.t.id))

@@ -34,7 +34,9 @@ export default async function handler(req, res) {
     }
 
     if (action === 'create') {
-      const callback = req.query.callback
+      // Callback bei Bedarf selbst aus der aufgerufenen Domain ableiten.
+      const host = req.headers['x-forwarded-host'] || req.headers.host
+      const callback = req.query.callback || (host ? `https://${host}/api/strava-webhook` : null)
       if (!callback) return res.status(400).json({ error: 'callback (https-URL zu /api/strava-webhook) fehlt' })
       if (!process.env.STRAVA_VERIFY_TOKEN) return res.status(500).json({ error: 'STRAVA_VERIFY_TOKEN fehlt in Vercel' })
       const backfilled = await backfillAthleteIds(admin)

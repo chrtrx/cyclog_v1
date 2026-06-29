@@ -15,6 +15,24 @@ import TrackerCard from '../components/TrackerCard'
 // (kein Lade-Flackern) und nur still im Hintergrund aktualisiert.
 let dashCache = null
 
+// Baut aus den km-Ständen vorher/nachher einen kurzen Hinweis (Toast),
+// damit man auch in der App mitbekommt, welches Rad sich geändert hat.
+function kmChangeToast(prevBikes, newBikes) {
+  if (!prevBikes || !prevBikes.length) return ''
+  const prevById = {}
+  for (const b of prevBikes) prevById[b.id] = b
+  const changes = []
+  for (const b of newBikes) {
+    const old = prevById[b.id]
+    if (!old) continue
+    const delta = Math.round((b.km || 0) - (old.km || 0))
+    if (Math.abs(delta) >= 1) changes.push({ name: b.name, delta })
+  }
+  if (!changes.length) return ''
+  const txt = changes.map(c => `${c.name} ${c.delta > 0 ? '+' : '−'}${Math.abs(c.delta)} km`).join(' · ')
+  return `${changes.some(c => c.delta < 0) ? '🔁' : '📈'} ${txt}`
+}
+
 export default function Dashboard() {
   const { user, signOut } = useAuth()
   const nav = useNavigate()
@@ -35,7 +53,7 @@ export default function Dashboard() {
   const [lastDeleted, setLastDeleted] = useState(null)  // für Rückgängig
   const [unread, setUnread] = useState(cached?.unread || 0)
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load().then(m => { if (m) showToast(m) }) }, [])
   useEffect(() => {
     if (!activeBikeId) return
     getBikeHours(activeBikeId).then(setActiveBikeHours).catch(() => setActiveBikeHours(0))
@@ -52,12 +70,14 @@ export default function Dashboard() {
   }, [stravaStatus])
   async function load() {
     setLoading(true)
+    let changeMsg = ''
     try {
       const [b, t, s, p, u] = await Promise.all([
         getBikes(user.id), getTrackers(user.id), getStravaStatus(user.id), getProfile(user.id),
         getUnreadCount(user.id).catch(() => 0),
       ])
       const activeB = b.filter(x => !x.archived)
+      changeMsg = kmChangeToast(dashCache?.bikes, activeB)
       setBikes(activeB); setTrackers(t); setStravaStatus(s); setProfile(p); setUnread(u)
       // aktives Rad bestimmen bzw. validieren (falls das gemerkte weg ist)
       const la = (bikeId) => {
@@ -72,6 +92,7 @@ export default function Dashboard() {
       dashCache = { userId: user.id, bikes: activeB, trackers: t, stravaStatus: s, profile: p, unread: u, activeBikeId: nextActive }
     } catch (e) { showToast('Fehler beim Laden') }
     setLoading(false)
+    return changeMsg
   }
 
   function showToast(m) { setToast(m); setTimeout(() => setToast(''), 2400) }
@@ -103,7 +124,7 @@ export default function Dashboard() {
 
   async function handleSync() {
     setSyncing(true)
-    try { await syncStrava(user.id); await load(); showToast('✓ Strava synchronisiert') }
+    try { await syncStrava(user.id); const m = await load(); showToast(m || '✓ Strava synchronisiert') }
     catch (e) { showToast('⚠ ' + (e.message || 'Sync fehlgeschlagen')) }
     setSyncing(false)
   }
@@ -113,7 +134,7 @@ export default function Dashboard() {
   async function autoSync() {
     localStorage.setItem('lastAutoSync', String(Date.now()))
     setSyncing(true)
-    try { await syncStrava(user.id); await load() } catch (e) { /* still */ }
+    try { await syncStrava(user.id); const m = await load(); if (m) showToast(m) } catch (e) { /* still */ }
     setSyncing(false)
   }
 

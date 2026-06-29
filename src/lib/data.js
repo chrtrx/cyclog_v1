@@ -115,9 +115,13 @@ export async function getTrackers(userId) {
   if (error) throw error
   return data
 }
-export async function addTracker(userId, tracker) {
-  await supabase.from('trackers').delete()
-    .eq('user_id', userId).eq('bike_id', tracker.bike_id).eq('type_id', tracker.type_id)
+export async function addTracker(userId, tracker, { replace = true } = {}) {
+  // replace=true (Standard): vorhandenen Tracker gleichen Typs ersetzen.
+  // replace=false: zusätzlichen Tracker anlegen (bewusstes Duplikat).
+  if (replace) {
+    await supabase.from('trackers').delete()
+      .eq('user_id', userId).eq('bike_id', tracker.bike_id).eq('type_id', tracker.type_id)
+  }
   const { data, error } = await supabase
     .from('trackers').insert({ ...tracker, user_id: userId }).select().single()
   if (error) throw error

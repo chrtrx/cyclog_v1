@@ -60,7 +60,7 @@ export default function NavBar() {
       <style>{`
         .navbar {
           position: fixed; bottom: 0; left: 0; right: 0;
-          max-width: 720px; margin: 0 auto; z-index: 150;
+          max-width: 560px; margin: 0 auto; z-index: 150;
           background: var(--bg2);
           border-top: 1px solid var(--line);
           display: flex; justify-content: space-around;

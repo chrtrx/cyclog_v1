@@ -81,6 +81,40 @@ export function buildDueMessage(b) {
   return null
 }
 
+// Welche Räder haben sich seit der letzten Benachrichtigung verändert?
+// bikes: [{ name, km, notified_km, archived }] → [{ name, delta }] (|delta| >= 1 km)
+export function buildKmChanges(bikes) {
+  const changed = []
+  for (const b of bikes || []) {
+    if (b.archived) continue
+    if (b.notified_km == null) continue // erstes Mal: nur Basislinie setzen
+    const delta = Math.round((Number(b.km) || 0) - (Number(b.notified_km) || 0))
+    if (Math.abs(delta) >= 1) changed.push({ name: b.name, delta })
+  }
+  return changed
+}
+
+// Baut eine Push aus „bald/überfällig" + (optional) km-Änderung je Rad.
+export function composePush(bucket, kmChanges, everyRide) {
+  const dueMsg = buildDueMessage(bucket)
+  const showKm = everyRide && kmChanges.length > 0
+  if (!dueMsg && !showKm) return null
+  const kmText = kmChanges.map((c) => `${c.name} ${c.delta > 0 ? '+' : '−'}${Math.abs(c.delta)} km`).join(' · ')
+  if (dueMsg && showKm) return { title: dueMsg.title, body: `${kmText} · ${dueMsg.body}`, url: '/', tag: 'cyclog-due' }
+  if (dueMsg) return dueMsg
+  const hasDown = kmChanges.some((c) => c.delta < 0)
+  return { title: hasDown ? '🔁 Fahrt umgebucht' : '📈 Tracker aktualisiert', body: kmText, url: '/', tag: 'cyclog-km' }
+}
+
+// Basislinie nachziehen: notified_km = aktueller km-Stand (für geänderte Räder).
+export async function updateNotifiedKm(admin, bikes) {
+  for (const b of bikes || []) {
+    if (b.notified_km !== b.km) {
+      await admin.from('bikes').update({ notified_km: b.km }).eq('id', b.id)
+    }
+  }
+}
+
 // Stunden je Bike aus activities (defensiv – Tabelle evtl. leer/abweichend).
 export async function hoursByBike(admin) {
   const map = {}

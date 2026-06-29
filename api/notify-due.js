@@ -1,14 +1,12 @@
 // Täglicher Cron (Vercel):
-//  1) Strava serverseitig synchronisieren (km auffrischen) – damit Push auch
-//     für Leute funktioniert, die die App lange nicht öffnen
-//  2) Fällige (100%) und bald fällige (>=90%) Tracker je Nutzer melden
-//     – höchstens eine Push pro Nutzer/Tag, entprellt pro Tracker
+//  1) Strava serverseitig synchronisieren (km auffrischen)
+//  2) Fällig/bald fällig + km-Änderungen je Rad melden (eine Push/Nutzer)
 //  3) Montags zusätzlich ein kurzer Wochenüberblick
-// Geschützt über CRON_SECRET (Vercel sendet es automatisch mit).
+// Geschützt über CRON_SECRET.
 
 import {
   getAdmin, configureWebPush, pct, sendToSubscriptions,
-  evaluateBucket, buildDueMessage, hoursByBike, syncStravaUser,
+  evaluateBucket, buildKmChanges, composePush, hoursByBike, syncStravaUser, updateNotifiedKm,
 } from './_due.js'
 
 export default async function handler(req, res) {
@@ -22,22 +20,27 @@ export default async function handler(req, res) {
     const admin = getAdmin()
     const wp = configureWebPush()
 
-    // 1) km serverseitig auffrischen (best effort, pro Nutzer)
     const { data: toks } = await admin.from('strava_tokens').select('user_id')
     for (const tk of toks || []) await syncStravaUser(tk.user_id)
 
-    // 2) frische Daten
-    const [{ data: bikes }, { data: trackers }, { data: subs }] = await Promise.all([
-      admin.from('bikes').select('id,user_id,name,km,archived'),
+    const [{ data: bikes }, { data: trackers }, { data: subs }, { data: profiles }] = await Promise.all([
+      admin.from('bikes').select('id,user_id,name,km,archived,notified_km'),
       admin.from('trackers').select('*'),
       admin.from('push_subscriptions').select('endpoint,subscription,user_id'),
+      admin.from('profiles').select('user_id,notify_every_ride'),
     ])
     const hours = await hoursByBike(admin)
 
     const bikeById = {}
-    for (const b of bikes || []) bikeById[b.id] = b
+    const bikesByUser = {}
+    for (const b of bikes || []) {
+      bikeById[b.id] = b
+      ;(bikesByUser[b.user_id] ||= []).push(b)
+    }
     const subsByUser = {}
     for (const s of subs || []) (subsByUser[s.user_id] ||= []).push(s)
+    const everyRideByUser = {}
+    for (const p of profiles || []) everyRideByUser[p.user_id] = !!p.notify_every_ride
     const itemsByUser = {}
     for (const t of trackers || []) {
       const bike = bikeById[t.bike_id]
@@ -51,10 +54,12 @@ export default async function handler(req, res) {
     const stampDue = []
     const stampWarn = []
 
-    for (const [userId, items] of Object.entries(itemsByUser)) {
+    const userIds = new Set([...Object.keys(itemsByUser), ...Object.keys(bikesByUser)])
+    for (const userId of userIds) {
       const userSubs = subsByUser[userId]
       if (!userSubs || !userSubs.length) continue
-      const b = evaluateBucket(items, now)
+      const b = evaluateBucket(itemsByUser[userId] || [], now)
+      const everyRide = everyRideByUser[userId]
 
       let payload = null
       if (isMonday && (b.dueAll > 0 || b.soonAll > 0)) {
@@ -63,7 +68,7 @@ export default async function handler(req, res) {
         if (b.soonAll > 0) parts.push(`${b.soonAll} bald fällig`)
         payload = { title: '📋 Wochenüberblick', body: `Diese Woche: ${parts.join(' · ')}.`, url: '/', tag: 'cyclog-weekly' }
       } else {
-        payload = buildDueMessage(b)
+        payload = composePush(b, buildKmChanges(bikesByUser[userId] || []), everyRide)
       }
       if (!payload) continue
 
@@ -78,8 +83,9 @@ export default async function handler(req, res) {
     const nowIso = new Date().toISOString()
     if (stampDue.length) await admin.from('trackers').update({ last_notified_at: nowIso }).in('id', stampDue)
     if (stampWarn.length) await admin.from('trackers').update({ warn_notified_at: nowIso }).in('id', stampWarn)
+    await updateNotifiedKm(admin, bikes) // Basislinie für alle Räder nachziehen
 
-    return res.status(200).json({ ok: true, users: Object.keys(itemsByUser).length, pushesSent, monday: isMonday })
+    return res.status(200).json({ ok: true, users: userIds.size, pushesSent, monday: isMonday })
   } catch (e) {
     return res.status(500).json({ error: e?.message || 'failed' })
   }

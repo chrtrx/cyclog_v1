@@ -96,7 +96,7 @@ export default function More() {
           <div className="mr-icon">📈</div>
           <div className="mr-body">
             <div className="mr-label">Nach jeder Fahrt</div>
-            <div className="mr-sub">{everyRide ? 'Bestätigung nach jedem Strava-Upload' : 'Nur bei fällig / bald fällig'}</div>
+            <div className="mr-sub">{everyRide ? 'Zeigt, welches Rad sich um wie viele km änderte' : 'Nur bei fällig / bald fällig'}</div>
           </div>
           <div className={`push-pill ${everyRide ? 'on' : ''}`}>{everyRide ? 'AN' : 'AUS'}</div>
         </button>

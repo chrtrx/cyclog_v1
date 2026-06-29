@@ -14,7 +14,13 @@ self.addEventListener('push', (event) => {
     data: { url: data.url || '/' },
     vibrate: [80, 40, 80],
   }
-  event.waitUntil(self.registration.showNotification(title, options))
+  event.waitUntil((async () => {
+    await self.registration.showNotification(title, options)
+    // Offene App-Fenster zusätzlich informieren → In-App-Banner, falls die
+    // System-Benachrichtigung im Vordergrund nicht angezeigt wird.
+    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    for (const c of clients) c.postMessage({ type: 'cyclog-push', title, body: options.body, url: options.data.url })
+  })())
 })
 
 self.addEventListener('notificationclick', (event) => {

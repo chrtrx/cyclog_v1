@@ -59,13 +59,6 @@
       --bg:#f0f5ff; --white:#ffffff;
       --t1:#0a1628; --t2:#3a5080; --t3:#8098c4; --border:#ccd5ec;
     }
-    [data-theme="light"] body {
-      background:
-        radial-gradient(120% 90% at 85% -10%, rgba(47,123,255,.07), transparent 55%),
-        radial-gradient(110% 80% at 5% 8%, rgba(34,211,238,.04), transparent 50%),
-        linear-gradient(180deg, #f8fbff, #edf2fc);
-      background-attachment: fixed;
-    }
     html, body { background: var(--bg0); overflow-x: hidden; }
     body {
       font-family: var(--sans);
@@ -75,11 +68,21 @@
       overflow-x: hidden;
       overscroll-behavior: none;
       overscroll-behavior-x: none;
+    }
+    /* Hintergrund-Verlauf als fixer Layer hinter dem Inhalt – kein teures
+       Neuzeichnen beim Scrollen (ersetzt background-attachment: fixed). */
+    body::before {
+      content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
       background:
         radial-gradient(120% 90% at 85% -10%, rgba(47,123,255,.16), transparent 55%),
         radial-gradient(110% 80% at 5% 8%, rgba(34,211,238,.10), transparent 50%),
         linear-gradient(180deg, #0c1730, #070d1a);
-      background-attachment: fixed;
+    }
+    [data-theme="light"] body::before {
+      background:
+        radial-gradient(120% 90% at 85% -10%, rgba(47,123,255,.07), transparent 55%),
+        radial-gradient(110% 80% at 5% 8%, rgba(34,211,238,.04), transparent 50%),
+        linear-gradient(180deg, #f8fbff, #edf2fc);
     }
     #root {
       max-width: 480px;

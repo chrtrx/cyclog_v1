@@ -62,6 +62,17 @@ export default defineConfig({
       devOptions: { enabled: false },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // Große, selten geänderte Bibliotheken in eigene, lange cachebare Bündel.
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          supabase: ['@supabase/supabase-js'],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     host: true, // erlaubt Zugriff von anderen Geräten im Netzwerk

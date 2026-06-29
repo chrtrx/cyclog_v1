@@ -1,4 +1,5 @@
 // Gemeinsame UI-Bausteine – Datenblatt-Stil (dunkelblau, Mono)
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 // ─── Seiten-Hülle mit Header ───────────────────────────────
@@ -64,13 +65,37 @@ export function AddButton({ onClick, label = 'Neu' }) {
 
 // ─── Bottom-Sheet ──────────────────────────────────────────
 export function Sheet({ title, sub, onClose, children }) {
+  // Eintritts-Animation + Nach-unten-Wegwischen über den oberen Griff-Bereich.
+  const [dy, setDy] = useState(900)
+  const startY = useRef(0)
+  const dragging = useRef(false)
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setDy(0))
+    return () => cancelAnimationFrame(id)
+  }, [])
+
+  function onStart(e) { startY.current = e.touches[0].clientY; dragging.current = true }
+  function onMove(e) {
+    if (!dragging.current) return
+    setDy(Math.max(0, e.touches[0].clientY - startY.current))
+  }
+  function onEnd() {
+    dragging.current = false
+    if (dy > 110) { setDy(900); setTimeout(onClose, 200) }
+    else setDy(0)
+  }
+
   return (
     <>
       <div className="sheet-ovl" onClick={onClose} />
-      <div className="sheet-panel">
-        <div className="sheet-hdl" />
-        <div className="sheet-ttl">{title}</div>
-        {sub && <div className="sheet-sub">{sub}</div>}
+      <div className="sheet-panel"
+        style={{ transform: `translateY(${dy}px)`, transition: dragging.current ? 'none' : 'transform .28s cubic-bezier(0.32,0.72,0,1)' }}>
+        <div className="sheet-grab" onTouchStart={onStart} onTouchMove={onMove} onTouchEnd={onEnd}>
+          <div className="sheet-hdl" />
+          <div className="sheet-ttl">{title}</div>
+          {sub && <div className="sheet-sub">{sub}</div>}
+        </div>
         <div className="sheet-content">{children}</div>
         <div style={{ height: 8 }} />
       </div>
@@ -80,11 +105,10 @@ export function Sheet({ title, sub, onClose, children }) {
           position: fixed; bottom: 0; left: 0; right: 0; max-width: 560px; margin: 0 auto;
           z-index: 400; background: var(--panel); border-top: 1px solid var(--acc);
           padding-bottom: max(env(safe-area-inset-bottom),24px);
-          max-height: 90vh; overflow-y: auto;
-          animation: sheetUp 0.3s cubic-bezier(0.32,0.72,0,1);
+          max-height: 90vh; overflow-y: auto; will-change: transform;
         }
-        @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .sheet-hdl { width: 36px; height: 3px; background: var(--line); margin: 12px auto 0; }
+        .sheet-grab { touch-action: none; cursor: grab; }
+        .sheet-hdl { width: 40px; height: 4px; border-radius: 3px; background: var(--ink3); margin: 12px auto 0; }
         .sheet-ttl { font-family: var(--sans); font-size: 17px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; padding: 14px 18px 4px; color: var(--ink1); }
         .sheet-sub { font-family: var(--mono); font-size: 11px; color: var(--ink3); letter-spacing: 1px; text-transform: uppercase; padding: 0 18px 14px; }
         .sheet-content { padding: 0 16px; }

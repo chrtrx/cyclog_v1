@@ -10,16 +10,22 @@ import { BIKE_ICONS, fmtKm, fmtH, kmSince, hoursSince, pct, statusOf } from '../
 import { Sheet, Field, BtnGreen, BtnDelete, Empty } from '../components/ui'
 import TrackerCard from '../components/TrackerCard'
 
+// Modul-Cache: hält die zuletzt geladenen Dashboard-Daten über
+// Seitenwechsel hinweg, damit „Start" beim Zurückkehren sofort erscheint
+// (kein Lade-Flackern) und nur still im Hintergrund aktualisiert.
+let dashCache = null
+
 export default function Dashboard() {
   const { user, signOut } = useAuth()
   const nav = useNavigate()
-  const [bikes, setBikes] = useState([])
-  const [trackers, setTrackers] = useState([])
-  const [activeBikeId, setActiveBikeId] = useState(null)
-  const [stravaStatus, setStravaStatus] = useState(null)
-  const [profile, setProfile] = useState(null)
+  const cached = dashCache && dashCache.userId === user.id ? dashCache : null
+  const [bikes, setBikes] = useState(cached?.bikes || [])
+  const [trackers, setTrackers] = useState(cached?.trackers || [])
+  const [activeBikeId, setActiveBikeId] = useState(cached?.activeBikeId || null)
+  const [stravaStatus, setStravaStatus] = useState(cached?.stravaStatus || null)
+  const [profile, setProfile] = useState(cached?.profile || null)
   const [activeBikeHours, setActiveBikeHours] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!cached)
   const [syncing, setSyncing] = useState(false)
   const [sheet, setSheet] = useState(null) // 'log' | 'addBike' | null
   const [editTracker, setEditTracker] = useState(null)
@@ -27,7 +33,7 @@ export default function Dashboard() {
   const [dupSvc, setDupSvc] = useState(null)  // Duplikat-Bestätigung
   const [toast, setToast] = useState('')
   const [lastDeleted, setLastDeleted] = useState(null)  // für Rückgängig
-  const [unread, setUnread] = useState(0)
+  const [unread, setUnread] = useState(cached?.unread || 0)
 
   useEffect(() => { load() }, [])
   useEffect(() => {
@@ -53,15 +59,17 @@ export default function Dashboard() {
       ])
       const activeB = b.filter(x => !x.archived)
       setBikes(activeB); setTrackers(t); setStravaStatus(s); setProfile(p); setUnread(u)
-      if (activeB.length && !activeBikeId) {
-        // aktivstes Rad zuerst auswählen (zuletzt aktualisierter Tracker)
-        const la = (bikeId) => {
-          const ts = t.filter(x => x.bike_id === bikeId)
-          return ts.length ? Math.max(...ts.map(x => new Date(x.start_date || 0).getTime())) : 0
-        }
-        const best = [...activeB].sort((x, y) => la(y.id) - la(x.id))[0]
-        setActiveBikeId(best.id)
+      // aktives Rad bestimmen bzw. validieren (falls das gemerkte weg ist)
+      const la = (bikeId) => {
+        const ts = t.filter(x => x.bike_id === bikeId)
+        return ts.length ? Math.max(...ts.map(x => new Date(x.start_date || 0).getTime())) : 0
       }
+      let nextActive = activeBikeId
+      if (!activeB.some(x => x.id === nextActive)) {
+        nextActive = activeB.length ? [...activeB].sort((x, y) => la(y.id) - la(x.id))[0].id : null
+      }
+      if (nextActive !== activeBikeId) setActiveBikeId(nextActive)
+      dashCache = { userId: user.id, bikes: activeB, trackers: t, stravaStatus: s, profile: p, unread: u, activeBikeId: nextActive }
     } catch (e) { showToast('Fehler beim Laden') }
     setLoading(false)
   }
@@ -200,7 +208,7 @@ export default function Dashboard() {
     }
   }
 
-  if (loading) return <div className="loading"><div className="spinner" />Lade…</div>
+  if (loading && !bikes.length) return <div className="loading"><div className="spinner" />Lade…</div>
 
   return (
     <div className="dash">
@@ -589,7 +597,7 @@ function EditTrackerSheet({ tracker, bikeKm, bikeHours, onSave, onDelete, onClos
 // ─── STYLES ────────────────────────────────────────────────
 function DashStyles() {
   return <style>{`
-    .loading { display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:14px;font-family:var(--mono);font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink2); }
+    .loading { display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:14px;font-family:var(--mono);font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink2);background:var(--bg0); }
     .spinner { width:38px;height:38px;border:3px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
     .dash { min-height:100vh;padding-bottom:120px; }

@@ -16,10 +16,15 @@ export default function BikeFitArchive() {
 
   async function loadBikes() {
     setLoading(true)
-    const b = await getBikes(user.id)
-    setBikes(b)
-    if (b.length) setActiveBikeId(b[0].id)
-    setLoading(false)
+    try {
+      const b = (await getBikes(user.id)).filter(x => !x.archived)
+      setBikes(b)
+      if (b.length) setActiveBikeId(b[0].id)
+    } catch (e) {
+      console.error('Bikes laden fehlgeschlagen', e)
+    } finally {
+      setLoading(false)
+    }
   }
   async function loadFits() {
     const f = await getBikeFits(activeBikeId)

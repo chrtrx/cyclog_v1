@@ -14,8 +14,14 @@ export default function TyrePressureDB() {
   useEffect(() => { load() }, [])
   async function load() {
     setLoading(true)
-    const [e, b, p] = await Promise.all([getTyrePressures(user.id), getBikes(user.id), getProfile(user.id)])
-    setEntries(e); setBikes(b); setProfile(p); setLoading(false)
+    try {
+      const [e, b, p] = await Promise.all([getTyrePressures(user.id), getBikes(user.id), getProfile(user.id)])
+      setEntries(e); setBikes(b); setProfile(p)
+    } catch (err) {
+      console.error('Reifendruck-DB laden fehlgeschlagen', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const stars = (n) => '★'.repeat(n || 0) + '☆'.repeat(5 - (n || 0))

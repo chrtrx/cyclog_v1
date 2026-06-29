@@ -75,9 +75,9 @@ export function Sheet({ title, sub, onClose, children }) {
         <div style={{ height: 8 }} />
       </div>
       <style>{`
-        .sheet-ovl { position: fixed; inset: 0; max-width: 720px; margin: 0 auto; background: rgba(0,0,0,0.6); z-index: 300; }
+        .sheet-ovl { position: fixed; inset: 0; max-width: 560px; margin: 0 auto; background: rgba(0,0,0,0.6); z-index: 300; }
         .sheet-panel {
-          position: fixed; bottom: 0; left: 0; right: 0; max-width: 720px; margin: 0 auto;
+          position: fixed; bottom: 0; left: 0; right: 0; max-width: 560px; margin: 0 auto;
           z-index: 400; background: var(--panel); border-top: 1px solid var(--acc);
           padding-bottom: max(env(safe-area-inset-bottom),24px);
           max-height: 90vh; overflow-y: auto;

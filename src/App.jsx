@@ -1,8 +1,9 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/auth'
 import NavBar from './components/NavBar'
 import InstallHint from './components/InstallHint'
+import ForegroundToast from './components/ForegroundToast'
 
 // Seiten erst bei Bedarf laden → kleinerer Start, flüssigeres Öffnen.
 const Login           = lazy(() => import('./pages/Login'))
@@ -68,6 +69,7 @@ function Gate() {
         </Routes>
         <NavBar />
         <InstallHint />
+        <ForegroundToast />
       </>
     )
   }
@@ -76,6 +78,17 @@ function Gate() {
 }
 
 export default function App() {
+  // Übrige Seiten-Bündel nach dem Start im Hintergrund vorladen, damit das
+  // Navigieren später ohne kurzen Lade-Spinner (Suspense) auskommt.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      import('./pages/Dashboard'); import('./pages/Bikes'); import('./pages/BikeDetail')
+      import('./pages/More'); import('./pages/RaceArchive'); import('./pages/Setups')
+      import('./pages/Inbox'); import('./pages/TyrePressureDB'); import('./pages/BikeFitArchive')
+    }, 1200)
+    return () => clearTimeout(id)
+  }, [])
+
   return (
     <AuthProvider>
       <Gate />

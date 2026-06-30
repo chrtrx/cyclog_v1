@@ -99,7 +99,7 @@ function computePoints(g, c) {
   return { BB, rearAxle, frontAxle, headTop, headBot, seatTubeTop, saddle, stemClamp, bar, crankEnd, R, barReach, barDrop, barRise }
 }
 
-function BikeDrawing({ geo, cockpit }) {
+function BikeDrawing({ geo, cockpit, showDims }) {
   const p = computePoints(geo, cockpit)
   const hood = { x: p.bar.x + p.barReach, y: p.bar.y + p.barRise }
   const dropB = { x: hood.x - 30, y: hood.y - p.barDrop }
@@ -163,6 +163,15 @@ function BikeDrawing({ geo, cockpit }) {
         <path d={barD} fill="none" stroke="var(--warn)" strokeWidth="7" strokeLinecap="round" />
         {/* Tretlager */}
         <circle cx={X(p.BB)} cy={Y(p.BB)} r="6" fill="var(--acc)" />
+        {/* Maße (umschaltbar): Stack senkrecht, Reach waagerecht */}
+        {showDims && (
+          <g>
+            <line x1={X(p.BB)} y1={Y(p.BB)} x2={X({ x: p.BB.x, y: p.headTop.y })} y2={Y({ x: p.BB.x, y: p.headTop.y })} stroke="var(--ink3)" strokeWidth="2" strokeDasharray="7 7" />
+            <line x1={X({ x: p.BB.x, y: p.headTop.y })} y1={Y({ x: p.BB.x, y: p.headTop.y })} x2={X(p.headTop)} y2={Y(p.headTop)} stroke="var(--ink3)" strokeWidth="2" strokeDasharray="7 7" />
+            <text x={X(p.BB) - 12} y={(Y(p.BB) + Y({ x: p.BB.x, y: p.headTop.y })) / 2} fontSize="32" fontFamily="var(--mono)" fill="var(--acc)" textAnchor="end">Stack {Math.round(n(geo.stack))}</text>
+            <text x={(X({ x: p.BB.x, y: p.headTop.y }) + X(p.headTop)) / 2} y={Y(p.headTop) - 14} fontSize="32" fontFamily="var(--mono)" fill="var(--acc)" textAnchor="middle">Reach {Math.round(n(geo.reach))}</text>
+          </g>
+        )}
       </svg>
       <style>{`
         .bd-draw { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 16px; }
@@ -188,6 +197,15 @@ function NumField({ label, unit, value, placeholder, onChange, signed }) {
   )
 }
 
+function Metric({ label, val }) {
+  return (
+    <div className="metric">
+      <div className="metric-val">{val}</div>
+      <div className="metric-lbl">{label}</div>
+    </div>
+  )
+}
+
 export default function BikeFitArchive() {
   const { user } = useAuth()
   const [bikes, setBikes] = useState([])
@@ -196,6 +214,7 @@ export default function BikeFitArchive() {
   const [cockpit, setCockpit] = useState({})
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState('')
+  const [showDims, setShowDims] = useState(false)
 
   useEffect(() => { load() }, [])
   useEffect(() => {
@@ -228,6 +247,11 @@ export default function BikeFitArchive() {
   }
 
   const str = (n(geo.reach) > 0) ? (n(geo.stack) / n(geo.reach)).toFixed(2) : '—'
+  // Fitting-Kennzahlen aus den aktuellen Werten
+  const pp = computePoints(geo, cockpit)
+  const hoodPt = { x: pp.bar.x + pp.barReach, y: pp.bar.y + pp.barRise }
+  const saddleDrop = Math.round(pp.saddle.y - hoodPt.y)   // Sattel über Lenker
+  const s2bar = Math.round(hoodPt.x - pp.saddle.x)         // Sattel → Lenker (horiz.)
 
   return (
     <Page title="Bike-Fit" subtitle="Geometrie & Sitzposition – live gezeichnet" back="/">
@@ -243,8 +267,18 @@ export default function BikeFitArchive() {
             ))}
           </div>
 
-          <BikeDrawing geo={geo} cockpit={cockpit} />
-          <div className="bf-str">STR (Stack/Reach): <b>{str}</b></div>
+          <BikeDrawing geo={geo} cockpit={cockpit} showDims={showDims} />
+          <div className="bf-tools">
+            <button className={`bf-dim ${showDims ? 'on' : ''}`} onClick={() => setShowDims(s => !s)}>
+              📏 Maße {showDims ? 'an' : 'aus'}
+            </button>
+          </div>
+          <div className="bf-metrics">
+            <Metric label="STR" val={str} />
+            <Metric label="Radstand" val={`${Math.round(n(geo.wheelbase))} mm`} />
+            <Metric label="Sattelüberh." val={`${saddleDrop} mm`} />
+            <Metric label="Sattel→Lenker" val={`${s2bar} mm`} />
+          </div>
 
           <div className="bf-sec">Rahmen-Geometrie</div>
           <div className="bf-grid">
@@ -276,8 +310,13 @@ export default function BikeFitArchive() {
         .bf-chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 14px; }
         .bf-chip { flex-shrink: 0; padding: 9px 15px; background: var(--panel); border: 1px solid var(--line); font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: .5px; color: var(--ink2); white-space: nowrap; }
         .bf-chip.on { background: var(--acc); border-color: var(--acc); color: #fff; }
-        .bf-str { font-family: var(--mono); font-size: 11px; color: var(--ink3); letter-spacing: .5px; text-transform: uppercase; margin-bottom: 16px; }
-        .bf-str b { color: var(--acc); }
+        .bf-tools { display: flex; justify-content: flex-end; margin: -8px 0 10px; }
+        .bf-dim { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; padding: 7px 12px; background: var(--panel); border: 1px solid var(--line); color: var(--ink2); }
+        .bf-dim.on { background: rgba(47,123,255,.12); border-color: rgba(47,123,255,.5); color: var(--acc); }
+        .bf-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px; }
+        .metric { background: var(--panel2); border: 1px solid var(--line); padding: 10px 6px; text-align: center; }
+        .metric-val { font-family: var(--sans); font-size: 15px; font-weight: 900; color: var(--ink1); letter-spacing: -.3px; }
+        .metric-lbl { font-family: var(--mono); font-size: 8.5px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--ink3); margin-top: 3px; }
         .bf-sec { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink3); margin: 4px 0 10px; }
         .bf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; }
         .nf { display: flex; flex-direction: column; gap: 5px; }

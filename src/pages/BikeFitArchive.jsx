@@ -90,62 +90,83 @@ function computePoints(g, c) {
   const stemLen = n(c.stem_length, 100)
   const bar = { x: stemClamp.x + stemLen * stemDir.x, y: stemClamp.y + stemLen * stemDir.y }
 
-  // Lenker (Drop-Bar): Reach nach vorn, dann Drop nach unten.
   const barReach = n(c.bar_reach, 80)
   const barDrop = n(c.bar_drop, 125)
-  const barFwd = { x: bar.x + barReach, y: bar.y + n(c.bar_rise, 0) }
-  const barLow = { x: barFwd.x, y: barFwd.y - barDrop }
-
-  // Kurbel: vom Tretlager nach unten-vorn.
+  const barRise = n(c.bar_rise, 0)
   const crankLen = n(c.crank_length, 172)
-  const crank = { x: crankLen * Math.cos(rad(-65)), y: crankLen * Math.sin(rad(-65)) }
+  const crankEnd = { x: crankLen * Math.cos(rad(-65)), y: crankLen * Math.sin(rad(-65)) }
 
-  return { BB, rearAxle, frontAxle, headTop, headBot, seatTubeTop, saddle, stemClamp, bar, barFwd, barLow, crank, R }
+  return { BB, rearAxle, frontAxle, headTop, headBot, seatTubeTop, saddle, stemClamp, bar, crankEnd, R, barReach, barDrop, barRise }
 }
 
 function BikeDrawing({ geo, cockpit }) {
   const p = computePoints(geo, cockpit)
-  const pts = [p.BB, p.rearAxle, p.frontAxle, p.headTop, p.headBot, p.seatTubeTop, p.saddle, p.stemClamp, p.bar, p.barFwd, p.barLow, p.crank]
-  const minX = Math.min(...pts.map(q => q.x)) - p.R, maxX = Math.max(...pts.map(q => q.x)) + p.R
-  const minY = Math.min(...pts.map(q => q.y)) - p.R, maxY = Math.max(...pts.map(q => q.y)) + p.R
-  const pad = 36
+  const hood = { x: p.bar.x + p.barReach, y: p.bar.y + p.barRise }
+  const dropB = { x: hood.x - 30, y: hood.y - p.barDrop }
+  const corners = [p.BB, p.rearAxle, p.frontAxle, p.headTop, p.headBot, p.seatTubeTop, p.saddle, p.stemClamp, p.bar, hood, dropB, p.crankEnd]
+  const minX = Math.min(...corners.map(q => q.x)) - p.R, maxX = Math.max(...corners.map(q => q.x)) + p.R
+  const minY = Math.min(...corners.map(q => q.y)) - p.R, maxY = Math.max(...corners.map(q => q.y)) + p.R
+  const pad = 40
   const W = maxX - minX + pad * 2, H = maxY - minY + pad * 2
   const X = (q) => q.x - minX + pad
   const Y = (q) => maxY - q.y + pad
-  const line = (a, b, w = 7, col = 'var(--acc)') =>
-    <line x1={X(a)} y1={Y(a)} x2={X(b)} y2={Y(b)} stroke={col} strokeWidth={w} strokeLinecap="round" />
+  const line = (a, b, w, col) => <line x1={X(a)} y1={Y(a)} x2={X(b)} y2={Y(b)} stroke={col} strokeWidth={w} strokeLinecap="round" />
+
+  // gebogene Gabel
+  const fmid = { x: (p.headBot.x + p.frontAxle.x) / 2 + 18, y: (p.headBot.y + p.frontAxle.y) / 2 }
+  const forkD = `M ${X(p.headBot)} ${Y(p.headBot)} Q ${X(fmid)} ${Y(fmid)} ${X(p.frontAxle)} ${Y(p.frontAxle)}`
+  // gebogener Drop-Lenker
+  const clamp = p.bar
+  const topB = { x: clamp.x - 38, y: clamp.y - 4 }
+  const cp1 = { x: clamp.x + p.barReach * 0.7, y: clamp.y + 12 }
+  const dropF = { x: hood.x + 6, y: hood.y - p.barDrop * 0.6 }
+  const dropMid = { x: dropF.x - 4, y: dropF.y - p.barDrop * 0.4 }
+  const cp2 = { x: dropB.x + 18, y: dropB.y }
+  const barD = `M ${X(topB)} ${Y(topB)} L ${X(clamp)} ${Y(clamp)} Q ${X(cp1)} ${Y(cp1)} ${X(hood)} ${Y(hood)} Q ${X(dropF)} ${Y(dropF)} ${X(dropMid)} ${Y(dropMid)} Q ${X(cp2)} ${Y(cp2)} ${X(dropB)} ${Y(dropB)}`
+  // Sattel-Silhouette
+  const sx = X(p.saddle), sy = Y(p.saddle)
+  const saddleD = `M ${sx - 78} ${sy + 2} Q ${sx - 80} ${sy - 9} ${sx - 55} ${sy - 9} L ${sx + 18} ${sy - 9} Q ${sx + 40} ${sy - 9} ${sx + 34} ${sy + 2} Q ${sx + 5} ${sy + 6} ${sx - 78} ${sy + 2} Z`
 
   return (
     <div className="bd-draw">
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
-        <circle cx={X(p.rearAxle)} cy={Y(p.rearAxle)} r={p.R} fill="none" stroke="var(--ink3)" strokeWidth="6" />
-        <circle cx={X(p.frontAxle)} cy={Y(p.frontAxle)} r={p.R} fill="none" stroke="var(--ink3)" strokeWidth="6" />
+        <defs>
+          <pattern id="bgrid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M40 0H0V40" fill="none" stroke="var(--line2)" strokeWidth="1" />
+          </pattern>
+        </defs>
+        <rect width={W} height={H} fill="url(#bgrid)" />
+        {/* Räder: Reifen + Felge */}
+        <circle cx={X(p.rearAxle)} cy={Y(p.rearAxle)} r={p.R} fill="none" stroke="var(--ink2)" strokeWidth="9" />
+        <circle cx={X(p.rearAxle)} cy={Y(p.rearAxle)} r={p.R - 26} fill="none" stroke="var(--ink3)" strokeWidth="3" />
+        <circle cx={X(p.frontAxle)} cy={Y(p.frontAxle)} r={p.R} fill="none" stroke="var(--ink2)" strokeWidth="9" />
+        <circle cx={X(p.frontAxle)} cy={Y(p.frontAxle)} r={p.R - 26} fill="none" stroke="var(--ink3)" strokeWidth="3" />
         {/* Rahmen */}
-        {line(p.BB, p.rearAxle)}
-        {line(p.rearAxle, p.seatTubeTop)}
-        {line(p.BB, p.seatTubeTop)}
-        {line(p.seatTubeTop, p.headTop)}
-        {line(p.BB, p.headTop)}
-        {line(p.headTop, p.headBot)}
-        {line(p.headBot, p.frontAxle, 6)}
-        {/* Kurbel */}
-        {line(p.BB, p.crank, 6, 'var(--ink2)')}
-        <circle cx={X(p.crank)} cy={Y(p.crank)} r="6" fill="var(--ink2)" />
+        {line(p.BB, p.rearAxle, 9, 'var(--acc)')}
+        {line(p.rearAxle, p.seatTubeTop, 9, 'var(--acc)')}
+        {line(p.BB, p.seatTubeTop, 10, 'var(--acc)')}
+        {line(p.seatTubeTop, p.headTop, 10, 'var(--acc)')}
+        {line(p.BB, p.headTop, 11, 'var(--acc)')}
+        {line(p.headTop, p.headBot, 12, 'var(--acc)')}
+        {/* Gabel */}
+        <path d={forkD} fill="none" stroke="var(--acc)" strokeWidth="8" strokeLinecap="round" />
+        {/* Kettenblatt + Kurbel */}
+        <circle cx={X(p.BB)} cy={Y(p.BB)} r="46" fill="none" stroke="var(--ink3)" strokeWidth="3" />
+        {line(p.BB, p.crankEnd, 7, 'var(--ink1)')}
+        <circle cx={X(p.crankEnd)} cy={Y(p.crankEnd)} r="6" fill="var(--ink1)" />
         {/* Sattelstütze + Sattel */}
-        {line(p.seatTubeTop, p.saddle, 5)}
-        <line x1={X(p.saddle) - 30} y1={Y(p.saddle)} x2={X(p.saddle) + 22} y2={Y(p.saddle)} stroke="var(--ok)" strokeWidth="8" strokeLinecap="round" />
-        {/* Spacer + Vorbau + Lenker (Reach + Drop) */}
-        {line(p.headTop, p.stemClamp, 6, 'var(--ink2)')}
-        {line(p.stemClamp, p.bar, 6, 'var(--warn)')}
-        {line(p.bar, p.barFwd, 6, 'var(--warn)')}
-        {line(p.barFwd, p.barLow, 6, 'var(--warn)')}
-        <circle cx={X(p.barLow)} cy={Y(p.barLow)} r="6" fill="var(--warn)" />
+        {line(p.seatTubeTop, p.saddle, 6, 'var(--acc)')}
+        <path d={saddleD} fill="var(--ok)" />
+        {/* Spacer + Vorbau + Lenker */}
+        {line(p.headTop, p.stemClamp, 8, 'var(--ink2)')}
+        {line(p.stemClamp, p.bar, 7, 'var(--warn)')}
+        <path d={barD} fill="none" stroke="var(--warn)" strokeWidth="7" strokeLinecap="round" />
         {/* Tretlager */}
-        <circle cx={X(p.BB)} cy={Y(p.BB)} r="7" fill="var(--acc)" />
+        <circle cx={X(p.BB)} cy={Y(p.BB)} r="6" fill="var(--acc)" />
       </svg>
       <style>{`
         .bd-draw { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 16px; }
-        .bd-draw svg { width: 100%; height: 210px; display: block; }
+        .bd-draw svg { width: 100%; height: 230px; display: block; }
       `}</style>
     </div>
   )

@@ -188,52 +188,127 @@ function deriveDraw(geo, cockpit) {
   return { p, mtb, hood, dropEnd, riserTop, gripEnd, barTip, axisTop }
 }
 
-// Zeichnet ein einzelnes Rad (Rahmen, Räder, Gabel, Lenker) in gemeinsamen Koordinaten.
+// Zeichnet ein einzelnes Rad in gemeinsamen Koordinaten – so realitätsnah wie
+// möglich: Speichen, Reifen in echter Breite, Antrieb mit Kette, beide Kurbeln
+// mit Pedalen, realistischer Sattel, Gabel mit echtem Vorlauf.
 function BikeFrame({ d, X, Y, col }) {
   const { p, mtb, hood, dropEnd, riserTop, gripEnd } = d
-  const line = (a, b, w, dash) => <line x1={X(a)} y1={Y(a)} x2={X(b)} y2={Y(b)} stroke={col} strokeWidth={w} strokeLinecap="round" strokeDasharray={dash} />
-  const wheel = (c) => (
-    <g>
-      <circle cx={X(c)} cy={Y(c)} r={p.R} fill="none" stroke={col} strokeWidth="3" />
-      <circle cx={X(c)} cy={Y(c)} r={p.rimR} fill="none" stroke={col} strokeWidth="3" />
-      <circle cx={X(c)} cy={Y(c)} r={Math.max(p.rimR - 18, 8)} fill="none" stroke={col} strokeWidth="2" opacity="0.6" />
-      <circle cx={X(c)} cy={Y(c)} r="13" fill="none" stroke={col} strokeWidth="3" />
-    </g>
-  )
-  const fmid = { x: (p.headBot.x + p.frontAxle.x) / 2 + 18, y: (p.headBot.y + p.frontAxle.y) / 2 }
+  const line = (a, b, w, o) => <line x1={X(a)} y1={Y(a)} x2={X(b)} y2={Y(b)} stroke={col} strokeWidth={w} strokeLinecap="round" opacity={o} />
+  const tw = Math.max(p.R - p.rimR, 18)   // Reifenbreite (real, mm)
+
+  // Laufrad: Reifen als Band in echter Breite, Felge, Speichen, Nabe.
+  const Wheel = ({ c }) => {
+    const spokes = []
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2
+      spokes.push(<line key={i}
+        x1={X(c) + 15 * Math.cos(a)} y1={Y(c) + 15 * Math.sin(a)}
+        x2={X(c) + (p.rimR - 18) * Math.cos(a)} y2={Y(c) + (p.rimR - 18) * Math.sin(a)}
+        stroke={col} strokeWidth="1.5" opacity="0.4" />)
+    }
+    return (
+      <g>
+        <circle cx={X(c)} cy={Y(c)} r={p.rimR + tw / 2} fill="none" stroke={col} strokeWidth={tw} opacity="0.2" />
+        <circle cx={X(c)} cy={Y(c)} r={p.R} fill="none" stroke={col} strokeWidth="2.5" />
+        <circle cx={X(c)} cy={Y(c)} r={p.rimR} fill="none" stroke={col} strokeWidth="2.5" />
+        <circle cx={X(c)} cy={Y(c)} r={Math.max(p.rimR - 16, 10)} fill="none" stroke={col} strokeWidth="5" opacity="0.7" />
+        {spokes}
+        <circle cx={X(c)} cy={Y(c)} r="14" fill="none" stroke={col} strokeWidth="5" />
+        {mtb && <circle cx={X(c)} cy={Y(c)} r="80" fill="none" stroke={col} strokeWidth="5" opacity="0.45" />}
+      </g>
+    )
+  }
+
+  // Gabel: Blatt folgt der Steuerachse und schwingt mit echtem Vorlauf zur
+  // Achse (Rennrad). MTB: gerade Federgabel entlang der Achse.
+  const fl = Math.hypot(p.frontAxle.x - p.headBot.x, p.frontAxle.y - p.headBot.y)
+  const fCtrl = { x: p.headBot.x - p.steerUp.x * fl * 0.62, y: p.headBot.y - p.steerUp.y * fl * 0.62 }
+  const fMid = { x: p.headBot.x - p.steerUp.x * fl * 0.45, y: p.headBot.y - p.steerUp.y * fl * 0.45 }
   const forkD = mtb
-    ? `M ${X(p.headBot)} ${Y(p.headBot)} L ${X(p.frontAxle)} ${Y(p.frontAxle)}`
-    : `M ${X(p.headBot)} ${Y(p.headBot)} Q ${X(fmid)} ${Y(fmid)} ${X(p.frontAxle)} ${Y(p.frontAxle)}`
+    ? `M ${X(p.headBot)} ${Y(p.headBot)} L ${X(fMid)} ${Y(fMid)} L ${X(p.frontAxle)} ${Y(p.frontAxle)}`
+    : `M ${X(p.headBot)} ${Y(p.headBot)} Q ${X(fCtrl)} ${Y(fCtrl)} ${X(p.frontAxle)} ${Y(p.frontAxle)}`
+
+  // Antrieb in realen Größen: Kettenblatt (Rennrad ≈ 52 Z, MTB ≈ 32 Z),
+  // Kassette, Kette oben/unten, beide Kurbeln + Pedale.
+  const bigR = mtb ? 64 : 100
+  const cogR = mtb ? 50 : 36
+  const chainTopA = { x: p.BB.x, y: p.BB.y + bigR }
+  const chainTopB = { x: p.rearAxle.x, y: p.rearAxle.y + cogR }
+  const chainBotA = { x: p.BB.x, y: p.BB.y - bigR }
+  const chainBotB = { x: p.rearAxle.x, y: p.rearAxle.y - cogR }
+  const oppCrank = { x: -p.crankEnd.x, y: -p.crankEnd.y }
+  const Pedal = ({ c, o }) => <line x1={X(c) - 45} y1={Y(c)} x2={X(c) + 45} y2={Y(c)} stroke={col} strokeWidth="7" strokeLinecap="round" opacity={o} />
+
+  // Rennrad-Lenker: Oberseite, runder Bogen, Endstück + Bremsgriff (Hood).
   const rr = p.barDrop / 2
   const curveTop = { x: hood.x - rr, y: hood.y }
   const curveBot = { x: hood.x - rr, y: hood.y - p.barDrop }
   const dropD = `M ${X(p.bar)} ${Y(p.bar)} L ${X(curveTop)} ${Y(curveTop)}`
     + ` A ${rr} ${rr} 0 0 1 ${X(curveBot)} ${Y(curveBot)} L ${X(dropEnd)} ${Y(dropEnd)}`
-  const saddleBack = { x: p.saddle.x - 72, y: p.saddle.y }
-  const saddleFront = { x: p.saddle.x + 32, y: p.saddle.y }
+  const lever = { x: hood.x + 28, y: hood.y - 52 }
+  const mtbLever = { x: gripEnd.x + 42, y: gripEnd.y - 16 }
+
+  // Sitzstreben setzen etwas unterhalb der Sitzrohr-Oberkante an.
+  const stl = Math.hypot(p.seatTubeTop.x, p.seatTubeTop.y) || 1
+  const stayTop = { x: p.seatTubeTop.x * (1 - 32 / stl), y: p.seatTubeTop.y * (1 - 32 / stl) }
+
+  // Sattel: realistische Seitensilhouette (Länge ≈ 260 mm, Nase nach vorn).
+  const sx = X(p.saddle), sy = Y(p.saddle)
+  const saddleD = `M ${sx - 125} ${sy - 2}`
+    + ` C ${sx - 130} ${sy - 16}, ${sx - 92} ${sy - 18}, ${sx - 58} ${sy - 14}`
+    + ` C ${sx - 8} ${sy - 10}, ${sx + 62} ${sy - 8}, ${sx + 124} ${sy - 4}`
+    + ` C ${sx + 137} ${sy - 3}, ${sx + 137} ${sy + 4}, ${sx + 122} ${sy + 5}`
+    + ` C ${sx + 58} ${sy + 9}, ${sx - 68} ${sy + 11}, ${sx - 114} ${sy + 7}`
+    + ` C ${sx - 127} ${sy + 5}, ${sx - 123} ${sy + 1}, ${sx - 125} ${sy - 2} Z`
+
   return (
     <g>
-      {wheel(p.rearAxle)}{wheel(p.frontAxle)}
-      {line(p.BB, p.rearAxle, 15)}
-      {line(p.rearAxle, p.seatTubeTop, 15)}
+      <Wheel c={p.rearAxle} />
+      <Wheel c={p.frontAxle} />
+
+      {/* Abgewandte Kurbel + Pedal (hinter dem Rahmen) */}
+      {line(p.BB, oppCrank, 9, 0.35)}
+      <Pedal c={oppCrank} o={0.35} />
+
+      {/* Rahmen: Kettenstrebe, Sitzstrebe, Sitzrohr, Oberrohr, Unterrohr, Steuerrohr */}
+      {line(p.BB, p.rearAxle, 13)}
+      {line(p.rearAxle, stayTop, 12)}
       {line(p.BB, p.seatTubeTop, 16)}
       {line(p.seatTubeTop, p.headTop, 16)}
-      {line(p.BB, p.headTop, 17)}
-      {line(p.headTop, p.headBot, 18)}
+      {line(p.BB, p.headTop, 18)}
+      {line(p.headTop, p.headBot, 20)}
       <path d={forkD} fill="none" stroke={col} strokeWidth={mtb ? 16 : 13} strokeLinecap="round" />
-      <circle cx={X(p.BB)} cy={Y(p.BB)} r="46" fill="none" stroke={col} strokeWidth="3" />
-      {line(p.BB, p.crankEnd, 9)}
+
+      {/* Kassette, Kette, Kettenblatt */}
+      <circle cx={X(p.rearAxle)} cy={Y(p.rearAxle)} r={cogR} fill="none" stroke={col} strokeWidth="2.5" opacity="0.8" />
+      <circle cx={X(p.rearAxle)} cy={Y(p.rearAxle)} r={Math.max(cogR - 16, 12)} fill="none" stroke={col} strokeWidth="2" opacity="0.5" />
+      {line(chainTopA, chainTopB, 4, 0.8)}
+      {line(chainBotA, chainBotB, 4, 0.8)}
+      <circle cx={X(p.BB)} cy={Y(p.BB)} r={bigR} fill="none" stroke={col} strokeWidth="3.5" />
+      {!mtb && <circle cx={X(p.BB)} cy={Y(p.BB)} r="78" fill="none" stroke={col} strokeWidth="2" opacity="0.45" />}
+
+      {/* Zugewandte Kurbel + Pedal */}
+      {line(p.BB, p.crankEnd, 10)}
+      <Pedal c={p.crankEnd} />
+
+      {/* Sattelstütze + Sattel */}
       {line(p.seatTubeTop, p.saddle, 9)}
-      {line(saddleBack, saddleFront, 11)}
-      {line(p.headTop, p.stemClamp, 13)}
+      <path d={saddleD} fill={col} />
+
+      {/* Vorbau + Lenker + Bremsgriff */}
+      {line(p.headTop, p.stemClamp, 14)}
       {line(p.stemClamp, p.bar, 13)}
       {mtb ? (
         <>
           {line(riserTop, gripEnd, 13)}
+          {line(gripEnd, mtbLever, 5)}
           <circle cx={X(gripEnd)} cy={Y(gripEnd)} r="10" fill="none" stroke={col} strokeWidth="4" />
         </>
       ) : (
-        <path d={dropD} fill="none" stroke={col} strokeWidth="13" strokeLinecap="round" />
+        <>
+          <path d={dropD} fill="none" stroke={col} strokeWidth="13" strokeLinecap="round" />
+          {line(hood, lever, 8)}
+        </>
       )}
       <circle cx={X(p.BB)} cy={Y(p.BB)} r="7" fill={col} />
     </g>

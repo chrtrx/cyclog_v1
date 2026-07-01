@@ -203,13 +203,23 @@ function BikeFrame({ d, X, Y, col }) {
   )
 }
 
-function BikeDrawing({ bikes, showDims, svgRef }) {
+function BikeDrawing({ bikes, showDims, svgRef, alignH = 'bb', alignV = 'bb' }) {
   const ds = bikes.map(b => ({ ...deriveDraw(b.geo, b.cockpit), col: b.col, geo: b.geo }))
-  const maxR = Math.max(...ds.map(d => d.p.R))
-  const all = ds.flatMap(d => {
+  // Ausrichtung: Räder so verschieben, dass ihr Referenzpunkt auf dem des
+  // aktiven Rades liegt (horizontal: Tretlager/Hinter-/Vorderrad, vertikal:
+  // Tretlager/Boden).
+  const cornersOf = (d) => {
     const p = d.p
     return [p.BB, p.rearAxle, p.frontAxle, p.headTop, p.headBot, p.seatTubeTop, p.saddle, p.stemClamp, p.bar, d.hood, d.barTip, d.axisTop, p.crankEnd]
-  })
+  }
+  const refX = (d) => alignH === 'rear' ? d.p.rearAxle.x : alignH === 'front' ? d.p.frontAxle.x : 0
+  const refY = (d) => alignV === 'ground' ? d.p.rearAxle.y - d.p.R : 0
+  const base = ds[0]
+  ds.forEach(d => { d.ox = refX(base) - refX(d); d.oy = refY(base) - refY(d) })
+  const sh = (d) => (q) => ({ x: q.x + d.ox, y: q.y + d.oy })
+
+  const maxR = Math.max(...ds.map(d => d.p.R))
+  const all = ds.flatMap(d => cornersOf(d).map(sh(d)))
   const minX = Math.min(...all.map(q => q.x)) - maxR, maxX = Math.max(...all.map(q => q.x)) + maxR
   const minY = Math.min(...all.map(q => q.y)) - maxR, maxY = Math.max(...all.map(q => q.y)) + maxR
   const pad = 46
@@ -235,7 +245,10 @@ function BikeDrawing({ bikes, showDims, svgRef }) {
         <line x1={X(p.headBot)} y1={Y(p.headBot)} x2={X(primary.axisTop)} y2={Y(primary.axisTop)} stroke={COL.ink3} strokeWidth="2" strokeDasharray="3 9" />
 
         {/* Vergleichsrad zuerst (liegt hinten), dann das aktive Rad */}
-        {ds.slice(1).map((d, i) => <BikeFrame key={i} d={d} X={X} Y={Y} col={d.col} />)}
+        {ds.slice(1).map((d, i) => {
+          const Xo = (q) => X(sh(d)(q)), Yo = (q) => Y(sh(d)(q))
+          return <BikeFrame key={i} d={d} X={Xo} Y={Yo} col={d.col} />
+        })}
         <BikeFrame d={primary} X={X} Y={Y} col={primary.col} />
 
         {/* Maßstab 100 mm */}
@@ -297,6 +310,8 @@ export default function BikeFitArchive() {
   const [openGeo, setOpenGeo] = useState(true)
   const [openCockpit, setOpenCockpit] = useState(true)
   const [compareId, setCompareId] = useState(null)
+  const [alignH, setAlignH] = useState('bb')
+  const [alignV, setAlignV] = useState('bb')
   const svgRef = useRef(null)
 
   useEffect(() => { load() }, [])
@@ -402,13 +417,32 @@ export default function BikeFitArchive() {
             <button className={`bf-tbtn ${geo.frame_type === 'mtb' ? 'on' : ''}`} onClick={() => setG('frame_type')('mtb')}>⛰️ MTB</button>
           </div>
 
-          <BikeDrawing bikes={drawBikes} showDims={showDims} svgRef={svgRef} />
+          <BikeDrawing bikes={drawBikes} showDims={showDims} svgRef={svgRef} alignH={alignH} alignV={alignV} />
 
           {cmp && cmpHasGeo && (
-            <div className="bf-legend">
-              <span className="bf-leg"><i style={{ background: COL.acc }} />{activeName}</span>
-              <span className="bf-leg"><i style={{ background: COL.b }} />{compareBike.name}</span>
-            </div>
+            <>
+              <div className="bf-legend">
+                <span className="bf-leg"><i style={{ background: COL.acc }} />{activeName}</span>
+                <span className="bf-leg"><i style={{ background: COL.b }} />{compareBike.name}</span>
+              </div>
+              <div className="bf-align">
+                <label className="bf-al">
+                  <span className="bf-al-lbl">Ausrichtung ⟷</span>
+                  <select className="nf-in" value={alignH} onChange={(e) => setAlignH(e.target.value)}>
+                    <option value="bb">Tretlager</option>
+                    <option value="rear">Hinterrad</option>
+                    <option value="front">Vorderrad</option>
+                  </select>
+                </label>
+                <label className="bf-al">
+                  <span className="bf-al-lbl">Ausrichtung ↕</span>
+                  <select className="nf-in" value={alignV} onChange={(e) => setAlignV(e.target.value)}>
+                    <option value="bb">Tretlager</option>
+                    <option value="ground">Boden</option>
+                  </select>
+                </label>
+              </div>
+            </>
           )}
 
           <div className="bf-tools">
@@ -503,6 +537,9 @@ export default function BikeFitArchive() {
         .bf-chip.on { background: var(--acc); border-color: var(--acc); color: #fff; }
         .bf-type { display: flex; gap: 8px; margin-bottom: 12px; }
         .bf-legend { display: flex; gap: 16px; justify-content: center; margin-bottom: 10px; }
+        .bf-align { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+        .bf-al { display: flex; flex-direction: column; gap: 6px; }
+        .bf-al-lbl { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--ink3); }
         .bf-leg { display: flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink1); }
         .bf-leg i { width: 14px; height: 4px; border-radius: 2px; display: inline-block; }
         .bf-compare { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }

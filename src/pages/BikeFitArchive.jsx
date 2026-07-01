@@ -49,18 +49,35 @@ const outOfRange = (k, v) => {
   const x = Number(v); return isFinite(x) && (x < r[0] || x > r[1])
 }
 
-function prefillGeo(bike) {
+// Kern-Geometrie eines Rades aus den geo_*-Spalten (Quelle = Geometrie-Tab).
+function coreGeo(bike) {
   return {
-    reach: bike.geo_reach ?? '', stack: bike.geo_stack ?? '',
-    head_angle: bike.geo_head_angle ?? '', seat_angle: bike.geo_seat_angle ?? '',
-    top_tube: bike.geo_top_tube ?? '', seat_tube: bike.geo_seat_tube ?? '',
-    head_tube: bike.geo_head_tube ?? '', chainstay: bike.geo_chainstay ?? '',
-    bb_drop: bike.geo_bb_drop ?? '', wheelbase: bike.geo_wheelbase ?? '',
-    standover: bike.geo_standover ?? '', wheel: 'road', tire_width: 28, frame_type: 'road',
+    reach: bike.geo_reach, stack: bike.geo_stack, head_angle: bike.geo_head_angle,
+    seat_angle: bike.geo_seat_angle, top_tube: bike.geo_top_tube, seat_tube: bike.geo_seat_tube,
+    head_tube: bike.geo_head_tube, chainstay: bike.geo_chainstay, bb_drop: bike.geo_bb_drop,
+    wheelbase: bike.geo_wheelbase, standover: bike.geo_standover,
   }
 }
 
-const n = (v, d = 0) => { const x = Number(v); return v !== '' && v != null && isFinite(x) ? x : d }
+// Lädt Geometrie + Cockpit eines Rades. Die Kern-Geometrie kommt aus den
+// geo_*-Spalten (im Geometrie-Tab gepflegt) und hat Vorrang, damit dort
+// eingegebene Werte direkt im Bike-Setup erscheinen. Bike-Fit-Extras
+// (Laufrad, Reifen, Rahmentyp, Gabel-Offset) kommen aus dem fit-JSON.
+function loadGeo(bike) {
+  const fit = bike?.fit || {}
+  const fg = fit.geo || {}
+  const geo = { ...fg }
+  for (const [k, v] of Object.entries(coreGeo(bike))) {
+    if (v != null && v !== '') geo[k] = v          // geo_* überschreibt, wenn vorhanden
+    else if (geo[k] == null) geo[k] = ''           // sonst leeres Eingabefeld
+  }
+  geo.wheel = fg.wheel ?? 'road'
+  geo.tire_width = fg.tire_width ?? 28
+  geo.frame_type = fg.frame_type ?? 'road'
+  return { geo, cockpit: fit.cockpit || {} }
+}
+
+const n = (v, d = 0) => { const x = Number(typeof v === 'string' ? v.replace(',', '.') : v); return v !== '' && v != null && isFinite(x) ? x : d }
 // Zeichnungs-Palette im bike-stats-Stil: rote Linien auf hellem Raster.
 const COL = { acc: '#e2382e', b: '#2f7bff', ink2: '#7a8598', ink3: '#aeb6c6', grid: '#dbe0ea', bg: '#f4f6fb' }
 
@@ -85,14 +102,6 @@ function cmpValue(g, k) {
 const roundDec = (x, dec) => { const f = Math.pow(10, dec); return Math.round(x * f) / f }
 const fmtDelta = (d, u, dec) => `${d > 0 ? '+' : d < 0 ? '−' : '±'}${Math.abs(roundDec(d, dec))}${u === '°' ? '°' : u ? ' ' + u : ''}`
 
-// Liefert Geometrie + Cockpit eines Rades (aus fit-JSON, sonst aus geo_*-Spalten).
-function fitOf(bike) {
-  const fit = bike?.fit || {}
-  const geo = fit.geo && Object.keys(fit.geo).length
-    ? { wheel: 'road', tire_width: 28, frame_type: 'road', ...fit.geo }
-    : prefillGeo(bike)
-  return { geo, cockpit: fit.cockpit || {} }
-}
 
 function computePoints(g, c) {
   const rad = (d) => (d * Math.PI) / 180
@@ -318,9 +327,9 @@ export default function BikeFitArchive() {
   useEffect(() => {
     const b = bikes.find(x => x.id === activeBikeId)
     if (!b) return
-    const fit = b.fit || {}
-    setGeo(fit.geo && Object.keys(fit.geo).length ? { wheel: 'road', tire_width: 28, frame_type: 'road', ...fit.geo } : prefillGeo(b))
-    setCockpit(fit.cockpit || {})
+    const { geo, cockpit } = loadGeo(b)
+    setGeo(geo)
+    setCockpit(cockpit)
   }, [activeBikeId, bikes])
 
   async function load() {
@@ -340,7 +349,7 @@ export default function BikeFitArchive() {
     try {
       // Bike-Fit-Geometrie zusätzlich in die geo_*-Spalten des Rades schreiben,
       // damit sie überall (Geometrie-Tab, Tracker) gleich mitgespeichert ist.
-      const num = (v) => (v !== '' && v != null && isFinite(Number(v)) ? Number(v) : null)
+      const num = (v) => { const x = Number(typeof v === 'string' ? v.replace(',', '.') : v); return (v !== '' && v != null && isFinite(x) ? x : null) }
       const updates = {
         fit: { geo, cockpit },
         geo_reach: num(geo.reach), geo_stack: num(geo.stack),
@@ -391,7 +400,7 @@ export default function BikeFitArchive() {
 
   const activeName = bikes.find(b => b.id === activeBikeId)?.name || 'Aktiv'
   const compareBike = bikes.find(b => b.id === compareId && b.id !== activeBikeId) || null
-  const cmp = compareBike ? fitOf(compareBike) : null
+  const cmp = compareBike ? loadGeo(compareBike) : null
   // Nur überlagern, wenn das Vergleichsrad überhaupt Geometrie hat – sonst
   // würde ein irreführendes Standard-Rad gezeichnet.
   const cmpHasGeo = cmp && ['reach', 'stack', 'wheelbase', 'head_angle'].some(k => cmp.geo[k] !== '' && cmp.geo[k] != null)

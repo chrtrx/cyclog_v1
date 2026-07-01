@@ -56,7 +56,7 @@ function prefillGeo(bike) {
     top_tube: bike.geo_top_tube ?? '', seat_tube: bike.geo_seat_tube ?? '',
     head_tube: bike.geo_head_tube ?? '', chainstay: bike.geo_chainstay ?? '',
     bb_drop: bike.geo_bb_drop ?? '', wheelbase: bike.geo_wheelbase ?? '',
-    standover: bike.geo_standover ?? '', wheel: 'road', tire_width: 28,
+    standover: bike.geo_standover ?? '', wheel: 'road', tire_width: 28, frame_type: 'road',
   }
 }
 
@@ -103,39 +103,59 @@ function computePoints(g, c) {
   const crankLen = n(c.crank_length, 172)
   const crankEnd = { x: crankLen * Math.cos(rad(-65)), y: crankLen * Math.sin(rad(-65)) }
 
-  return { BB, rearAxle, frontAxle, headTop, headBot, seatTubeTop, saddle, stemClamp, bar, crankEnd, R, rimR, barReach, barDrop, barRise }
+  return { BB, rearAxle, frontAxle, headTop, headBot, seatTubeTop, saddle, stemClamp, bar, crankEnd, R, rimR, barReach, barDrop, barRise, steerUp }
 }
 
 function BikeDrawing({ geo, cockpit, showDims, svgRef }) {
   const p = computePoints(geo, cockpit)
+  const mtb = geo.frame_type === 'mtb'
   const hood = { x: p.bar.x + p.barReach, y: p.bar.y + p.barRise }
   const dropEnd = { x: hood.x - p.barDrop / 2 - 34, y: hood.y - p.barDrop }
-  const corners = [p.BB, p.rearAxle, p.frontAxle, p.headTop, p.headBot, p.seatTubeTop, p.saddle, p.stemClamp, p.bar, hood, dropEnd, p.crankEnd]
+  // MTB: Flat-/Riser-Bar – kurzer Anstieg + Griff mit leichtem Rückschwung.
+  const riserTop = { x: p.bar.x, y: p.bar.y + p.barRise }
+  const gripEnd = { x: p.bar.x - 105, y: riserTop.y - 8 }
+  const barTip = mtb ? gripEnd : dropEnd
+  // Steuerachse verlängert (gepunktet) – wie bei bike-stats.
+  const axisLen = p.barDrop + 150
+  const axisTop = { x: p.headTop.x + p.steerUp.x * axisLen, y: p.headTop.y + p.steerUp.y * axisLen }
+  const corners = [p.BB, p.rearAxle, p.frontAxle, p.headTop, p.headBot, p.seatTubeTop, p.saddle, p.stemClamp, p.bar, hood, barTip, axisTop, p.crankEnd]
   const minX = Math.min(...corners.map(q => q.x)) - p.R, maxX = Math.max(...corners.map(q => q.x)) + p.R
   const minY = Math.min(...corners.map(q => q.y)) - p.R, maxY = Math.max(...corners.map(q => q.y)) + p.R
-  const pad = 40
+  const pad = 46
   const W = maxX - minX + pad * 2, H = maxY - minY + pad * 2
   const X = (q) => q.x - minX + pad
   const Y = (q) => maxY - q.y + pad
-  const line = (a, b, w, col) => <line x1={X(a)} y1={Y(a)} x2={X(b)} y2={Y(b)} stroke={col} strokeWidth={w} strokeLinecap="round" />
-  const poly = (...qs) => qs.map(q => `${X(q)},${Y(q)}`).join(' ')
+  const line = (a, b, w, col, dash) => <line x1={X(a)} y1={Y(a)} x2={X(b)} y2={Y(b)} stroke={col} strokeWidth={w} strokeLinecap="round" strokeDasharray={dash} />
+  const A = COL.acc
 
-  const tw = p.R - p.rimR, tireR = p.rimR + tw / 2
+  // Laufrad als Strichzeichnung: Reifen (außen), Felge, Felgenbett, Nabe.
+  const Wheel = ({ c }) => (
+    <g>
+      <circle cx={X(c)} cy={Y(c)} r={p.R} fill="none" stroke={A} strokeWidth="3" />
+      <circle cx={X(c)} cy={Y(c)} r={p.rimR} fill="none" stroke={A} strokeWidth="3" />
+      <circle cx={X(c)} cy={Y(c)} r={Math.max(p.rimR - 18, 8)} fill="none" stroke={A} strokeWidth="2" opacity="0.7" />
+      <circle cx={X(c)} cy={Y(c)} r="13" fill="none" stroke={A} strokeWidth="3" />
+    </g>
+  )
+
+  // Gabel: Rennrad gebogen, MTB gerade (Federgabel).
   const fmid = { x: (p.headBot.x + p.frontAxle.x) / 2 + 18, y: (p.headBot.y + p.frontAxle.y) / 2 }
-  const forkD = `M ${X(p.headBot)} ${Y(p.headBot)} Q ${X(fmid)} ${Y(fmid)} ${X(p.frontAxle)} ${Y(p.frontAxle)}`
-  // Lenker als echter runder Drop-Bar: gerade Oberseite, dann ein
-  // halbkreisförmiger Bogen (SVG-Arc) nach vorn-unten, kurzes Endstück.
-  const clamp = p.bar
-  const rr = p.barDrop / 2                              // Radius des runden Bogens
-  const topBack = { x: clamp.x - 42, y: clamp.y }       // hinteres Ende der Oberseite
-  const curveTop = { x: hood.x - rr, y: hood.y }        // wo die Oberseite in den Bogen übergeht
-  const curveBot = { x: hood.x - rr, y: hood.y - p.barDrop } // Tiefpunkt des Bogens
-  const barD = `M ${X(topBack)} ${Y(topBack)} L ${X(clamp)} ${Y(clamp)} L ${X(curveTop)} ${Y(curveTop)}`
-    + ` A ${rr} ${rr} 0 0 1 ${X(curveBot)} ${Y(curveBot)}`
-    + ` L ${X(dropEnd)} ${Y(dropEnd)}`
-  const sx = X(p.saddle), sy = Y(p.saddle)
-  const saddleD = `M ${sx - 78} ${sy + 2} Q ${sx - 80} ${sy - 9} ${sx - 55} ${sy - 9} L ${sx + 18} ${sy - 9} Q ${sx + 40} ${sy - 9} ${sx + 34} ${sy + 2} Q ${sx + 5} ${sy + 6} ${sx - 78} ${sy + 2} Z`
+  const forkD = mtb
+    ? `M ${X(p.headBot)} ${Y(p.headBot)} L ${X(p.frontAxle)} ${Y(p.frontAxle)}`
+    : `M ${X(p.headBot)} ${Y(p.headBot)} Q ${X(fmid)} ${Y(fmid)} ${X(p.frontAxle)} ${Y(p.frontAxle)}`
+
+  // Rennrad-Lenker: gerade Oberseite, runder Halbkreis-Bogen, kurzes Endstück.
+  const rr = p.barDrop / 2
+  const curveTop = { x: hood.x - rr, y: hood.y }
+  const curveBot = { x: hood.x - rr, y: hood.y - p.barDrop }
+  const dropD = `M ${X(p.bar)} ${Y(p.bar)} L ${X(curveTop)} ${Y(curveTop)}`
+    + ` A ${rr} ${rr} 0 0 1 ${X(curveBot)} ${Y(curveBot)} L ${X(dropEnd)} ${Y(dropEnd)}`
+
+  // Sattel als kurze bold Linie auf der Sattelstütze.
+  const saddleBack = { x: p.saddle.x - 72, y: p.saddle.y }
+  const saddleFront = { x: p.saddle.x + 32, y: p.saddle.y }
   const corner = { x: p.BB.x, y: p.headTop.y }
+  const scaleY = pad + 6, scaleX2 = W - pad, scaleX1 = scaleX2 - 100
 
   return (
     <div className="bd-draw">
@@ -147,40 +167,58 @@ function BikeDrawing({ geo, cockpit, showDims, svgRef }) {
         </defs>
         <rect width={W} height={H} fill="#0a1426" />
         <rect width={W} height={H} fill="url(#bgrid)" />
-        {/* Reifen + Felge */}
-        <circle cx={X(p.rearAxle)} cy={Y(p.rearAxle)} r={tireR} fill="none" stroke={COL.tire} strokeWidth={tw} />
-        <circle cx={X(p.rearAxle)} cy={Y(p.rearAxle)} r={p.rimR} fill="none" stroke={COL.ink3} strokeWidth="3" />
-        <circle cx={X(p.frontAxle)} cy={Y(p.frontAxle)} r={tireR} fill="none" stroke={COL.tire} strokeWidth={tw} />
-        <circle cx={X(p.frontAxle)} cy={Y(p.frontAxle)} r={p.rimR} fill="none" stroke={COL.ink3} strokeWidth="3" />
-        {/* gefüllte Rahmen-Silhouette */}
-        <polygon points={poly(p.BB, p.headTop, p.seatTubeTop)} fill={COL.fill} />
-        <polygon points={poly(p.BB, p.seatTubeTop, p.rearAxle)} fill={COL.fill} />
-        {/* Rahmen-Rohre */}
-        {line(p.BB, p.rearAxle, 9, COL.acc)}
-        {line(p.rearAxle, p.seatTubeTop, 9, COL.acc)}
-        {line(p.BB, p.seatTubeTop, 10, COL.acc)}
-        {line(p.seatTubeTop, p.headTop, 10, COL.acc)}
-        {line(p.BB, p.headTop, 11, COL.acc)}
-        {line(p.headTop, p.headBot, 12, COL.acc)}
-        <path d={forkD} fill="none" stroke={COL.acc} strokeWidth="8" strokeLinecap="round" />
+
+        {/* Steuerachse verlängert (gepunktet) */}
+        {line(p.headBot, axisTop, 2, COL.ink3, '3 9')}
+
+        {/* Laufräder */}
+        <Wheel c={p.rearAxle} />
+        <Wheel c={p.frontAxle} />
+
+        {/* Rahmen-Rohre (einfarbig, wie bei bike-stats) */}
+        {line(p.BB, p.rearAxle, 15, A)}
+        {line(p.rearAxle, p.seatTubeTop, 15, A)}
+        {line(p.BB, p.seatTubeTop, 16, A)}
+        {line(p.seatTubeTop, p.headTop, 16, A)}
+        {line(p.BB, p.headTop, 17, A)}
+        {line(p.headTop, p.headBot, 18, A)}
+        <path d={forkD} fill="none" stroke={A} strokeWidth={mtb ? 16 : 13} strokeLinecap="round" />
+
         {/* Kettenblatt + Kurbel */}
-        <circle cx={X(p.BB)} cy={Y(p.BB)} r="46" fill="none" stroke={COL.ink3} strokeWidth="3" />
-        {line(p.BB, p.crankEnd, 7, COL.ink1)}
-        <circle cx={X(p.crankEnd)} cy={Y(p.crankEnd)} r="6" fill={COL.ink1} />
-        {/* Sattel */}
-        {line(p.seatTubeTop, p.saddle, 6, COL.acc)}
-        <path d={saddleD} fill={COL.ok} />
+        <circle cx={X(p.BB)} cy={Y(p.BB)} r="46" fill="none" stroke={A} strokeWidth="3" />
+        {line(p.BB, p.crankEnd, 9, A)}
+
+        {/* Sattelstütze + Sattel */}
+        {line(p.seatTubeTop, p.saddle, 9, A)}
+        {line(saddleBack, saddleFront, 11, A)}
+
         {/* Vorbau + Lenker */}
-        {line(p.headTop, p.stemClamp, 8, COL.ink2)}
-        {line(p.stemClamp, p.bar, 7, COL.warn)}
-        <path d={barD} fill="none" stroke={COL.warn} strokeWidth="7" strokeLinecap="round" />
-        <circle cx={X(p.BB)} cy={Y(p.BB)} r="6" fill={COL.acc} />
+        {line(p.headTop, p.stemClamp, 13, A)}
+        {line(p.stemClamp, p.bar, 13, A)}
+        {mtb ? (
+          <>
+            {line(riserTop, gripEnd, 13, A)}
+            <circle cx={X(gripEnd)} cy={Y(gripEnd)} r="10" fill="none" stroke={A} strokeWidth="4" />
+          </>
+        ) : (
+          <path d={dropD} fill="none" stroke={A} strokeWidth="13" strokeLinecap="round" />
+        )}
+        <circle cx={X(p.BB)} cy={Y(p.BB)} r="7" fill={A} />
+
+        {/* Maßstab 100 mm */}
+        <line x1={scaleX1} y1={scaleY} x2={scaleX2} y2={scaleY} stroke={COL.ink2} strokeWidth="2" />
+        <line x1={scaleX1} y1={scaleY - 6} x2={scaleX1} y2={scaleY + 6} stroke={COL.ink2} strokeWidth="2" />
+        <line x1={scaleX2} y1={scaleY - 6} x2={scaleX2} y2={scaleY + 6} stroke={COL.ink2} strokeWidth="2" />
+        <text x={(scaleX1 + scaleX2) / 2} y={scaleY - 12} fontSize="24" fontFamily="monospace" fill={COL.ink2} textAnchor="middle">100 mm</text>
+
         {showDims && (
           <g>
-            <line x1={X(p.BB)} y1={Y(p.BB)} x2={X(corner)} y2={Y(corner)} stroke={COL.ink3} strokeWidth="2" strokeDasharray="7 7" />
-            <line x1={X(corner)} y1={Y(corner)} x2={X(p.headTop)} y2={Y(p.headTop)} stroke={COL.ink3} strokeWidth="2" strokeDasharray="7 7" />
-            <text x={X(p.BB) - 12} y={(Y(p.BB) + Y(corner)) / 2} fontSize="32" fontFamily="monospace" fill={COL.acc} textAnchor="end">Stack {Math.round(n(geo.stack))}</text>
-            <text x={(X(corner) + X(p.headTop)) / 2} y={Y(p.headTop) - 14} fontSize="32" fontFamily="monospace" fill={COL.acc} textAnchor="middle">Reach {Math.round(n(geo.reach))}</text>
+            <line x1={X(p.BB)} y1={Y(p.BB)} x2={X(corner)} y2={Y(corner)} stroke={COL.ink2} strokeWidth="2" strokeDasharray="8 8" />
+            <line x1={X(corner)} y1={Y(corner)} x2={X(p.headTop)} y2={Y(p.headTop)} stroke={COL.ink2} strokeWidth="2" strokeDasharray="8 8" />
+            <line x1={X(p.headTop)} y1={Y(p.headTop)} x2={X({ x: p.headTop.x, y: 0 })} y2={Y({ x: p.headTop.x, y: 0 })} stroke={COL.ink2} strokeWidth="2" strokeDasharray="8 8" />
+            <line x1={X({ x: p.headTop.x, y: 0 })} y1={Y({ x: p.headTop.x, y: 0 })} x2={X(p.BB)} y2={Y(p.BB)} stroke={COL.ink2} strokeWidth="2" strokeDasharray="8 8" />
+            <text x={X(p.BB) - 12} y={(Y(p.BB) + Y(corner)) / 2} fontSize="30" fontFamily="monospace" fill={A} textAnchor="end">Stack {Math.round(n(geo.stack))}</text>
+            <text x={(X(corner) + X(p.headTop)) / 2} y={Y(p.headTop) - 14} fontSize="30" fontFamily="monospace" fill={A} textAnchor="middle">Reach {Math.round(n(geo.reach))}</text>
           </g>
         )}
       </svg>
@@ -232,7 +270,7 @@ export default function BikeFitArchive() {
     const b = bikes.find(x => x.id === activeBikeId)
     if (!b) return
     const fit = b.fit || {}
-    setGeo(fit.geo && Object.keys(fit.geo).length ? { wheel: 'road', tire_width: 28, ...fit.geo } : prefillGeo(b))
+    setGeo(fit.geo && Object.keys(fit.geo).length ? { wheel: 'road', tire_width: 28, frame_type: 'road', ...fit.geo } : prefillGeo(b))
     setCockpit(fit.cockpit || {})
   }, [activeBikeId, bikes])
 
@@ -304,6 +342,11 @@ export default function BikeFitArchive() {
             ))}
           </div>
 
+          <div className="bf-type">
+            <button className={`bf-tbtn ${geo.frame_type !== 'mtb' ? 'on' : ''}`} onClick={() => setG('frame_type')('road')}>🚴 Rennrad</button>
+            <button className={`bf-tbtn ${geo.frame_type === 'mtb' ? 'on' : ''}`} onClick={() => setG('frame_type')('mtb')}>⛰️ MTB</button>
+          </div>
+
           <BikeDrawing geo={geo} cockpit={cockpit} showDims={showDims} svgRef={svgRef} />
           <div className="bf-tools">
             <button className={`bf-tbtn ${showDims ? 'on' : ''}`} onClick={() => setShowDims(s => !s)}>📏 Maße</button>
@@ -355,6 +398,7 @@ export default function BikeFitArchive() {
         .bf-chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 14px; }
         .bf-chip { flex-shrink: 0; padding: 9px 15px; background: var(--panel); border: 1px solid var(--line); font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: .5px; color: var(--ink2); white-space: nowrap; }
         .bf-chip.on { background: var(--acc); border-color: var(--acc); color: #fff; }
+        .bf-type { display: flex; gap: 8px; margin-bottom: 12px; }
         .bf-tools { display: flex; gap: 8px; margin-bottom: 14px; }
         .bf-tbtn { flex: 1; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; padding: 9px 6px; background: var(--panel); border: 1px solid var(--line); color: var(--ink2); }
         .bf-tbtn.on { background: rgba(47,123,255,.12); border-color: rgba(47,123,255,.5); color: var(--acc); }

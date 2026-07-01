@@ -323,8 +323,20 @@ export default function BikeFitArchive() {
 
   async function save() {
     try {
-      await updateBike(activeBikeId, { fit: { geo, cockpit } })
-      setBikes(prev => prev.map(b => b.id === activeBikeId ? { ...b, fit: { geo, cockpit } } : b))
+      // Bike-Fit-Geometrie zusätzlich in die geo_*-Spalten des Rades schreiben,
+      // damit sie überall (Geometrie-Tab, Tracker) gleich mitgespeichert ist.
+      const num = (v) => (v !== '' && v != null && isFinite(Number(v)) ? Number(v) : null)
+      const updates = {
+        fit: { geo, cockpit },
+        geo_reach: num(geo.reach), geo_stack: num(geo.stack),
+        geo_head_angle: num(geo.head_angle), geo_seat_angle: num(geo.seat_angle),
+        geo_top_tube: num(geo.top_tube), geo_seat_tube: num(geo.seat_tube),
+        geo_head_tube: num(geo.head_tube), geo_chainstay: num(geo.chainstay),
+        geo_bb_drop: num(geo.bb_drop), geo_wheelbase: num(geo.wheelbase),
+        geo_standover: num(geo.standover),
+      }
+      await updateBike(activeBikeId, updates)
+      setBikes(prev => prev.map(b => b.id === activeBikeId ? { ...b, ...updates } : b))
       showToast('✓ Gespeichert')
     } catch (e) { showToast('⚠ Fehler beim Speichern') }
   }

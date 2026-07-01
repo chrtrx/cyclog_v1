@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../lib/auth'
 import { getBikes, updateBike } from '../lib/data'
 import { Page, BtnGreen, Empty } from '../components/ui'
 
-// key, Label, Einheit, Platzhalter, signed? (Minus erlaubt)
+// key, Label, Einheit, Platzhalter, signed?
 const GEO_FIELDS = [
   ['reach',      'Reach',          'mm', '390'],
   ['stack',      'Stack',          'mm', '560'],
@@ -17,6 +17,7 @@ const GEO_FIELDS = [
   ['wheelbase',  'Radstand',       'mm', '995'],
   ['fork_offset','Gabel-Offset',   'mm', '45'],
   ['standover',  'Überstand',      'mm', '800'],
+  ['tire_width', 'Reifenbreite',   'mm', '28'],
 ]
 const COCKPIT_FIELDS = [
   ['saddle_height','Sitzhöhe',      'mm', '740'],
@@ -31,14 +32,27 @@ const COCKPIT_FIELDS = [
   ['crank_length', 'Kurbel-Länge',  'mm', '172.5'],
 ]
 
-// Laufradgrößen (Zoll) → ungefährer Außendurchmesser in mm (für die Zeichnung).
-const WHEELS = [
-  ['road', '700c / 28″', 675],
-  ['29',   '29″ MTB',    736],
-  ['275',  '27,5″',      698],
-  ['26',   '26″',        660],
-]
-const wheelDia = (key) => (WHEELS.find(w => w[0] === key) || WHEELS[0])[2]
+// Laufradgrößen (Zoll) → Felgen-Innendurchmesser (ETRTO) in mm.
+const WHEELS = [['road', '700c / 28″', 622], ['29', '29″ MTB', 622], ['275', '27,5″', 584], ['26', '26″', 559]]
+const rimEtrto = (key) => (WHEELS.find(w => w[0] === key) || WHEELS[0])[2]
+
+// Plausible Bereiche für die Validierung.
+const RANGES = {
+  reach: [330, 460], stack: [470, 700], head_angle: [60, 76], seat_angle: [68, 80],
+  top_tube: [480, 650], seat_tube: [400, 680], head_tube: [80, 280], chainstay: [380, 470],
+  bb_drop: [40, 95], wheelbase: [900, 1120], fork_offset: [30, 60], standover: [600, 920], tire_width: [18, 70],
+  saddle_height: [600, 900], saddle_offset: [0, 130], stem_length: [50, 170], stem_angle: [-30, 30],
+  spacer: [0, 140], bar_reach: [60, 120], bar_drop: [90, 170], bar_width: [340, 500], bar_rise: [-30, 80], crank_length: [150, 185],
+}
+const outOfRange = (k, v) => {
+  const r = RANGES[k]; if (!r || v === '' || v == null) return false
+  const x = Number(v); return isFinite(x) && (x < r[0] || x > r[1])
+}
+
+const EXAMPLE = {
+  geo: { reach: 392, stack: 565, head_angle: 73, seat_angle: 73.5, top_tube: 560, seat_tube: 540, head_tube: 175, chainstay: 415, bb_drop: 72, wheelbase: 1000, fork_offset: 45, standover: 790, wheel: 'road', tire_width: 30 },
+  cockpit: { saddle_height: 745, saddle_offset: 75, stem_length: 110, stem_angle: -7, spacer: 25, bar_reach: 80, bar_drop: 128, bar_width: 420, bar_rise: 0, crank_length: 172.5 },
+}
 
 function prefillGeo(bike) {
   return {
@@ -47,16 +61,17 @@ function prefillGeo(bike) {
     top_tube: bike.geo_top_tube ?? '', seat_tube: bike.geo_seat_tube ?? '',
     head_tube: bike.geo_head_tube ?? '', chainstay: bike.geo_chainstay ?? '',
     bb_drop: bike.geo_bb_drop ?? '', wheelbase: bike.geo_wheelbase ?? '',
-    standover: bike.geo_standover ?? '', wheel: 'road',
+    standover: bike.geo_standover ?? '', wheel: 'road', tire_width: 28,
   }
 }
 
-// Zahl mit Fallback (greift auch bei leerem Feld → Zeichnung bleibt vollständig).
 const n = (v, d = 0) => { const x = Number(v); return v !== '' && v != null && isFinite(x) ? x : d }
+const COL = { acc: '#2f7bff', ink1: '#cfd8ea', ink2: '#8fa3c8', ink3: '#54678c', ok: '#34c79a', warn: '#e0a84d', tire: '#3a4d6e', grid: '#16243f', fill: 'rgba(47,123,255,0.10)' }
 
 function computePoints(g, c) {
   const rad = (d) => (d * Math.PI) / 180
-  const R = wheelDia(g.wheel) / 2
+  const rimR = rimEtrto(g.wheel) / 2
+  const R = rimR + n(g.tire_width, 28)
   const bbDrop = n(g.bb_drop, 70)
   const chain = n(g.chainstay, 410)
   const wb = n(g.wheelbase, 995)
@@ -83,10 +98,7 @@ function computePoints(g, c) {
   const stemClamp = { x: headTop.x + spacer * steerUp.x, y: headTop.y + spacer * steerUp.y }
   const sAng = rad(n(c.stem_angle, -7))
   const base = { x: Math.sin(ha), y: Math.cos(ha) }
-  const stemDir = {
-    x: base.x * Math.cos(sAng) - base.y * Math.sin(sAng),
-    y: base.x * Math.sin(sAng) + base.y * Math.cos(sAng),
-  }
+  const stemDir = { x: base.x * Math.cos(sAng) - base.y * Math.sin(sAng), y: base.x * Math.sin(sAng) + base.y * Math.cos(sAng) }
   const stemLen = n(c.stem_length, 100)
   const bar = { x: stemClamp.x + stemLen * stemDir.x, y: stemClamp.y + stemLen * stemDir.y }
 
@@ -96,10 +108,10 @@ function computePoints(g, c) {
   const crankLen = n(c.crank_length, 172)
   const crankEnd = { x: crankLen * Math.cos(rad(-65)), y: crankLen * Math.sin(rad(-65)) }
 
-  return { BB, rearAxle, frontAxle, headTop, headBot, seatTubeTop, saddle, stemClamp, bar, crankEnd, R, barReach, barDrop, barRise }
+  return { BB, rearAxle, frontAxle, headTop, headBot, seatTubeTop, saddle, stemClamp, bar, crankEnd, R, rimR, barReach, barDrop, barRise }
 }
 
-function BikeDrawing({ geo, cockpit, showDims }) {
+function BikeDrawing({ geo, cockpit, showDims, svgRef }) {
   const p = computePoints(geo, cockpit)
   const hood = { x: p.bar.x + p.barReach, y: p.bar.y + p.barRise }
   const dropB = { x: hood.x - 30, y: hood.y - p.barDrop }
@@ -111,11 +123,11 @@ function BikeDrawing({ geo, cockpit, showDims }) {
   const X = (q) => q.x - minX + pad
   const Y = (q) => maxY - q.y + pad
   const line = (a, b, w, col) => <line x1={X(a)} y1={Y(a)} x2={X(b)} y2={Y(b)} stroke={col} strokeWidth={w} strokeLinecap="round" />
+  const poly = (...qs) => qs.map(q => `${X(q)},${Y(q)}`).join(' ')
 
-  // gebogene Gabel
+  const tw = p.R - p.rimR, tireR = p.rimR + tw / 2
   const fmid = { x: (p.headBot.x + p.frontAxle.x) / 2 + 18, y: (p.headBot.y + p.frontAxle.y) / 2 }
   const forkD = `M ${X(p.headBot)} ${Y(p.headBot)} Q ${X(fmid)} ${Y(fmid)} ${X(p.frontAxle)} ${Y(p.frontAxle)}`
-  // gebogener Drop-Lenker
   const clamp = p.bar
   const topB = { x: clamp.x - 38, y: clamp.y - 4 }
   const cp1 = { x: clamp.x + p.barReach * 0.7, y: clamp.y + 12 }
@@ -123,70 +135,71 @@ function BikeDrawing({ geo, cockpit, showDims }) {
   const dropMid = { x: dropF.x - 4, y: dropF.y - p.barDrop * 0.4 }
   const cp2 = { x: dropB.x + 18, y: dropB.y }
   const barD = `M ${X(topB)} ${Y(topB)} L ${X(clamp)} ${Y(clamp)} Q ${X(cp1)} ${Y(cp1)} ${X(hood)} ${Y(hood)} Q ${X(dropF)} ${Y(dropF)} ${X(dropMid)} ${Y(dropMid)} Q ${X(cp2)} ${Y(cp2)} ${X(dropB)} ${Y(dropB)}`
-  // Sattel-Silhouette
   const sx = X(p.saddle), sy = Y(p.saddle)
   const saddleD = `M ${sx - 78} ${sy + 2} Q ${sx - 80} ${sy - 9} ${sx - 55} ${sy - 9} L ${sx + 18} ${sy - 9} Q ${sx + 40} ${sy - 9} ${sx + 34} ${sy + 2} Q ${sx + 5} ${sy + 6} ${sx - 78} ${sy + 2} Z`
+  const corner = { x: p.BB.x, y: p.headTop.y }
 
   return (
     <div className="bd-draw">
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
+      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
         <defs>
           <pattern id="bgrid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M40 0H0V40" fill="none" stroke="var(--line2)" strokeWidth="1" />
+            <path d="M40 0H0V40" fill="none" stroke={COL.grid} strokeWidth="1" />
           </pattern>
         </defs>
+        <rect width={W} height={H} fill="#0a1426" />
         <rect width={W} height={H} fill="url(#bgrid)" />
-        {/* Räder: Reifen + Felge */}
-        <circle cx={X(p.rearAxle)} cy={Y(p.rearAxle)} r={p.R} fill="none" stroke="var(--ink2)" strokeWidth="9" />
-        <circle cx={X(p.rearAxle)} cy={Y(p.rearAxle)} r={p.R - 26} fill="none" stroke="var(--ink3)" strokeWidth="3" />
-        <circle cx={X(p.frontAxle)} cy={Y(p.frontAxle)} r={p.R} fill="none" stroke="var(--ink2)" strokeWidth="9" />
-        <circle cx={X(p.frontAxle)} cy={Y(p.frontAxle)} r={p.R - 26} fill="none" stroke="var(--ink3)" strokeWidth="3" />
-        {/* Rahmen */}
-        {line(p.BB, p.rearAxle, 9, 'var(--acc)')}
-        {line(p.rearAxle, p.seatTubeTop, 9, 'var(--acc)')}
-        {line(p.BB, p.seatTubeTop, 10, 'var(--acc)')}
-        {line(p.seatTubeTop, p.headTop, 10, 'var(--acc)')}
-        {line(p.BB, p.headTop, 11, 'var(--acc)')}
-        {line(p.headTop, p.headBot, 12, 'var(--acc)')}
-        {/* Gabel */}
-        <path d={forkD} fill="none" stroke="var(--acc)" strokeWidth="8" strokeLinecap="round" />
+        {/* Reifen + Felge */}
+        <circle cx={X(p.rearAxle)} cy={Y(p.rearAxle)} r={tireR} fill="none" stroke={COL.tire} strokeWidth={tw} />
+        <circle cx={X(p.rearAxle)} cy={Y(p.rearAxle)} r={p.rimR} fill="none" stroke={COL.ink3} strokeWidth="3" />
+        <circle cx={X(p.frontAxle)} cy={Y(p.frontAxle)} r={tireR} fill="none" stroke={COL.tire} strokeWidth={tw} />
+        <circle cx={X(p.frontAxle)} cy={Y(p.frontAxle)} r={p.rimR} fill="none" stroke={COL.ink3} strokeWidth="3" />
+        {/* gefüllte Rahmen-Silhouette */}
+        <polygon points={poly(p.BB, p.headTop, p.seatTubeTop)} fill={COL.fill} />
+        <polygon points={poly(p.BB, p.seatTubeTop, p.rearAxle)} fill={COL.fill} />
+        {/* Rahmen-Rohre */}
+        {line(p.BB, p.rearAxle, 9, COL.acc)}
+        {line(p.rearAxle, p.seatTubeTop, 9, COL.acc)}
+        {line(p.BB, p.seatTubeTop, 10, COL.acc)}
+        {line(p.seatTubeTop, p.headTop, 10, COL.acc)}
+        {line(p.BB, p.headTop, 11, COL.acc)}
+        {line(p.headTop, p.headBot, 12, COL.acc)}
+        <path d={forkD} fill="none" stroke={COL.acc} strokeWidth="8" strokeLinecap="round" />
         {/* Kettenblatt + Kurbel */}
-        <circle cx={X(p.BB)} cy={Y(p.BB)} r="46" fill="none" stroke="var(--ink3)" strokeWidth="3" />
-        {line(p.BB, p.crankEnd, 7, 'var(--ink1)')}
-        <circle cx={X(p.crankEnd)} cy={Y(p.crankEnd)} r="6" fill="var(--ink1)" />
-        {/* Sattelstütze + Sattel */}
-        {line(p.seatTubeTop, p.saddle, 6, 'var(--acc)')}
-        <path d={saddleD} fill="var(--ok)" />
-        {/* Spacer + Vorbau + Lenker */}
-        {line(p.headTop, p.stemClamp, 8, 'var(--ink2)')}
-        {line(p.stemClamp, p.bar, 7, 'var(--warn)')}
-        <path d={barD} fill="none" stroke="var(--warn)" strokeWidth="7" strokeLinecap="round" />
-        {/* Tretlager */}
-        <circle cx={X(p.BB)} cy={Y(p.BB)} r="6" fill="var(--acc)" />
-        {/* Maße (umschaltbar): Stack senkrecht, Reach waagerecht */}
+        <circle cx={X(p.BB)} cy={Y(p.BB)} r="46" fill="none" stroke={COL.ink3} strokeWidth="3" />
+        {line(p.BB, p.crankEnd, 7, COL.ink1)}
+        <circle cx={X(p.crankEnd)} cy={Y(p.crankEnd)} r="6" fill={COL.ink1} />
+        {/* Sattel */}
+        {line(p.seatTubeTop, p.saddle, 6, COL.acc)}
+        <path d={saddleD} fill={COL.ok} />
+        {/* Vorbau + Lenker */}
+        {line(p.headTop, p.stemClamp, 8, COL.ink2)}
+        {line(p.stemClamp, p.bar, 7, COL.warn)}
+        <path d={barD} fill="none" stroke={COL.warn} strokeWidth="7" strokeLinecap="round" />
+        <circle cx={X(p.BB)} cy={Y(p.BB)} r="6" fill={COL.acc} />
         {showDims && (
           <g>
-            <line x1={X(p.BB)} y1={Y(p.BB)} x2={X({ x: p.BB.x, y: p.headTop.y })} y2={Y({ x: p.BB.x, y: p.headTop.y })} stroke="var(--ink3)" strokeWidth="2" strokeDasharray="7 7" />
-            <line x1={X({ x: p.BB.x, y: p.headTop.y })} y1={Y({ x: p.BB.x, y: p.headTop.y })} x2={X(p.headTop)} y2={Y(p.headTop)} stroke="var(--ink3)" strokeWidth="2" strokeDasharray="7 7" />
-            <text x={X(p.BB) - 12} y={(Y(p.BB) + Y({ x: p.BB.x, y: p.headTop.y })) / 2} fontSize="32" fontFamily="var(--mono)" fill="var(--acc)" textAnchor="end">Stack {Math.round(n(geo.stack))}</text>
-            <text x={(X({ x: p.BB.x, y: p.headTop.y }) + X(p.headTop)) / 2} y={Y(p.headTop) - 14} fontSize="32" fontFamily="var(--mono)" fill="var(--acc)" textAnchor="middle">Reach {Math.round(n(geo.reach))}</text>
+            <line x1={X(p.BB)} y1={Y(p.BB)} x2={X(corner)} y2={Y(corner)} stroke={COL.ink3} strokeWidth="2" strokeDasharray="7 7" />
+            <line x1={X(corner)} y1={Y(corner)} x2={X(p.headTop)} y2={Y(p.headTop)} stroke={COL.ink3} strokeWidth="2" strokeDasharray="7 7" />
+            <text x={X(p.BB) - 12} y={(Y(p.BB) + Y(corner)) / 2} fontSize="32" fontFamily="monospace" fill={COL.acc} textAnchor="end">Stack {Math.round(n(geo.stack))}</text>
+            <text x={(X(corner) + X(p.headTop)) / 2} y={Y(p.headTop) - 14} fontSize="32" fontFamily="monospace" fill={COL.acc} textAnchor="middle">Reach {Math.round(n(geo.reach))}</text>
           </g>
         )}
       </svg>
       <style>{`
-        .bd-draw { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 16px; }
+        .bd-draw { background: #0a1426; border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
         .bd-draw svg { width: 100%; height: 230px; display: block; }
       `}</style>
     </div>
   )
 }
 
-function NumField({ label, unit, value, placeholder, onChange, signed }) {
+function NumField({ label, unit, value, placeholder, onChange, signed, invalid }) {
   return (
     <label className="nf">
       <span className="nf-lbl">{label}{unit ? ` (${unit})` : ''}</span>
       <input
-        className="nf-in"
+        className={`nf-in ${invalid ? 'bad' : ''}`}
         type={signed ? 'text' : 'number'}
         inputMode={signed ? 'text' : 'decimal'}
         value={value ?? ''}
@@ -199,10 +212,7 @@ function NumField({ label, unit, value, placeholder, onChange, signed }) {
 
 function Metric({ label, val }) {
   return (
-    <div className="metric">
-      <div className="metric-val">{val}</div>
-      <div className="metric-lbl">{label}</div>
-    </div>
+    <div className="metric"><div className="metric-val">{val}</div><div className="metric-lbl">{label}</div></div>
   )
 }
 
@@ -215,13 +225,16 @@ export default function BikeFitArchive() {
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState('')
   const [showDims, setShowDims] = useState(false)
+  const [openGeo, setOpenGeo] = useState(true)
+  const [openCockpit, setOpenCockpit] = useState(true)
+  const svgRef = useRef(null)
 
   useEffect(() => { load() }, [])
   useEffect(() => {
     const b = bikes.find(x => x.id === activeBikeId)
     if (!b) return
     const fit = b.fit || {}
-    setGeo(fit.geo && Object.keys(fit.geo).length ? { wheel: 'road', ...fit.geo } : prefillGeo(b))
+    setGeo(fit.geo && Object.keys(fit.geo).length ? { wheel: 'road', tire_width: 28, ...fit.geo } : prefillGeo(b))
     setCockpit(fit.cockpit || {})
   }, [activeBikeId, bikes])
 
@@ -246,12 +259,39 @@ export default function BikeFitArchive() {
     } catch (e) { showToast('⚠ Fehler beim Speichern') }
   }
 
+  function loadExample() { setGeo({ ...EXAMPLE.geo }); setCockpit({ ...EXAMPLE.cockpit }); showToast('Beispiel geladen') }
+
+  function exportPng() {
+    const svg = svgRef.current
+    if (!svg) return
+    const xml = new XMLSerializer().serializeToString(svg)
+    const url = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(xml)))
+    const img = new Image()
+    img.onload = () => {
+      const scale = 2, vb = svg.viewBox.baseVal
+      const canvas = document.createElement('canvas')
+      canvas.width = vb.width * scale; canvas.height = vb.height * scale
+      const ctx = canvas.getContext('2d')
+      ctx.fillStyle = '#0a1426'; ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      canvas.toBlob(async (blob) => {
+        if (!blob) return
+        const file = new File([blob], 'cyclog-geometrie.png', { type: 'image/png' })
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try { await navigator.share({ files: [file], title: 'Cyclog Geometrie' }); return } catch (e) {}
+        }
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'cyclog-geometrie.png'; a.click()
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+      }, 'image/png')
+    }
+    img.src = url
+  }
+
   const str = (n(geo.reach) > 0) ? (n(geo.stack) / n(geo.reach)).toFixed(2) : '—'
-  // Fitting-Kennzahlen aus den aktuellen Werten
   const pp = computePoints(geo, cockpit)
   const hoodPt = { x: pp.bar.x + pp.barReach, y: pp.bar.y + pp.barRise }
-  const saddleDrop = Math.round(pp.saddle.y - hoodPt.y)   // Sattel über Lenker
-  const s2bar = Math.round(hoodPt.x - pp.saddle.x)         // Sattel → Lenker (horiz.)
+  const saddleDrop = Math.round(pp.saddle.y - hoodPt.y)
+  const s2bar = Math.round(hoodPt.x - pp.saddle.x)
 
   return (
     <Page title="Bike-Fit" subtitle="Geometrie & Sitzposition – live gezeichnet" back="/">
@@ -267,12 +307,13 @@ export default function BikeFitArchive() {
             ))}
           </div>
 
-          <BikeDrawing geo={geo} cockpit={cockpit} showDims={showDims} />
+          <BikeDrawing geo={geo} cockpit={cockpit} showDims={showDims} svgRef={svgRef} />
           <div className="bf-tools">
-            <button className={`bf-dim ${showDims ? 'on' : ''}`} onClick={() => setShowDims(s => !s)}>
-              📏 Maße {showDims ? 'an' : 'aus'}
-            </button>
+            <button className={`bf-tbtn ${showDims ? 'on' : ''}`} onClick={() => setShowDims(s => !s)}>📏 Maße</button>
+            <button className="bf-tbtn" onClick={loadExample}>✨ Beispiel</button>
+            <button className="bf-tbtn" onClick={exportPng}>⤓ Als Bild</button>
           </div>
+
           <div className="bf-metrics">
             <Metric label="STR" val={str} />
             <Metric label="Radstand" val={`${Math.round(n(geo.wheelbase))} mm`} />
@@ -280,25 +321,33 @@ export default function BikeFitArchive() {
             <Metric label="Sattel→Lenker" val={`${s2bar} mm`} />
           </div>
 
-          <div className="bf-sec">Rahmen-Geometrie</div>
-          <div className="bf-grid">
-            {GEO_FIELDS.map(([k, l, u, ph, s]) => (
-              <NumField key={k} label={l} unit={u} value={geo[k]} placeholder={ph} signed={s} onChange={setG(k)} />
-            ))}
-            <label className="nf">
-              <span className="nf-lbl">Laufradgröße</span>
-              <select className="nf-in" value={geo.wheel || 'road'} onChange={(e) => setG('wheel')(e.target.value)}>
-                {WHEELS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-              </select>
-            </label>
-          </div>
+          <button className="bf-sec" onClick={() => setOpenGeo(o => !o)}>
+            <span>Rahmen-Geometrie</span><span className="bf-caret">{openGeo ? '▾' : '▸'}</span>
+          </button>
+          {openGeo && (
+            <div className="bf-grid">
+              {GEO_FIELDS.map(([k, l, u, ph, s]) => (
+                <NumField key={k} label={l} unit={u} value={geo[k]} placeholder={ph} signed={s} invalid={outOfRange(k, geo[k])} onChange={setG(k)} />
+              ))}
+              <label className="nf">
+                <span className="nf-lbl">Laufradgröße</span>
+                <select className="nf-in" value={geo.wheel || 'road'} onChange={(e) => setG('wheel')(e.target.value)}>
+                  {WHEELS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                </select>
+              </label>
+            </div>
+          )}
 
-          <div className="bf-sec">Cockpit / Sitzposition</div>
-          <div className="bf-grid">
-            {COCKPIT_FIELDS.map(([k, l, u, ph, s]) => (
-              <NumField key={k} label={l} unit={u} value={cockpit[k]} placeholder={ph} signed={s} onChange={setC(k)} />
-            ))}
-          </div>
+          <button className="bf-sec" onClick={() => setOpenCockpit(o => !o)}>
+            <span>Cockpit / Sitzposition</span><span className="bf-caret">{openCockpit ? '▾' : '▸'}</span>
+          </button>
+          {openCockpit && (
+            <div className="bf-grid">
+              {COCKPIT_FIELDS.map(([k, l, u, ph, s]) => (
+                <NumField key={k} label={l} unit={u} value={cockpit[k]} placeholder={ph} signed={s} invalid={outOfRange(k, cockpit[k])} onChange={setC(k)} />
+              ))}
+            </div>
+          )}
 
           <BtnGreen onClick={save}>Speichern</BtnGreen>
         </>
@@ -310,19 +359,21 @@ export default function BikeFitArchive() {
         .bf-chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 14px; }
         .bf-chip { flex-shrink: 0; padding: 9px 15px; background: var(--panel); border: 1px solid var(--line); font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: .5px; color: var(--ink2); white-space: nowrap; }
         .bf-chip.on { background: var(--acc); border-color: var(--acc); color: #fff; }
-        .bf-tools { display: flex; justify-content: flex-end; margin: -8px 0 10px; }
-        .bf-dim { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; padding: 7px 12px; background: var(--panel); border: 1px solid var(--line); color: var(--ink2); }
-        .bf-dim.on { background: rgba(47,123,255,.12); border-color: rgba(47,123,255,.5); color: var(--acc); }
+        .bf-tools { display: flex; gap: 8px; margin-bottom: 14px; }
+        .bf-tbtn { flex: 1; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; padding: 9px 6px; background: var(--panel); border: 1px solid var(--line); color: var(--ink2); }
+        .bf-tbtn.on { background: rgba(47,123,255,.12); border-color: rgba(47,123,255,.5); color: var(--acc); }
         .bf-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px; }
         .metric { background: var(--panel2); border: 1px solid var(--line); padding: 10px 6px; text-align: center; }
         .metric-val { font-family: var(--sans); font-size: 15px; font-weight: 900; color: var(--ink1); letter-spacing: -.3px; }
         .metric-lbl { font-family: var(--mono); font-size: 8.5px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--ink3); margin-top: 3px; }
-        .bf-sec { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink3); margin: 4px 0 10px; }
-        .bf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; }
+        .bf-sec { display: flex; align-items: center; justify-content: space-between; width: 100%; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink2); background: var(--panel2); border: 1px solid var(--line); padding: 11px 13px; margin-bottom: 10px; }
+        .bf-caret { color: var(--ink3); }
+        .bf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
         .nf { display: flex; flex-direction: column; gap: 5px; }
         .nf-lbl { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--ink3); }
         .nf-in { background: var(--panel2); border: 1px solid var(--line); padding: 11px 12px; font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--ink1); outline: none; }
         .nf-in:focus { border-color: var(--acc); }
+        .nf-in.bad { border-color: var(--crit); color: var(--crit); }
         .nf-in::-webkit-outer-spin-button, .nf-in::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         select.nf-in { -webkit-appearance: none; appearance: none; }
         .bf-toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--acc); color: var(--ink1); padding: 11px 22px; font-family: var(--mono); font-size: 13px; z-index: 500; }

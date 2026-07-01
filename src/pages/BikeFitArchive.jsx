@@ -102,6 +102,67 @@ function cmpValue(g, k) {
 const roundDec = (x, dec) => { const f = Math.pow(10, dec); return Math.round(x * f) / f }
 const fmtDelta = (d, u, dec) => `${d > 0 ? '+' : d < 0 ? '−' : '±'}${Math.abs(roundDec(d, dec))}${u === '°' ? '°' : u ? ' ' + u : ''}`
 
+// Cockpit-/Sitzpositions-Ansicht: Kontaktpunkte relativ zum Tretlager,
+// um die Sitzposition exakt zwischen Rädern zu vergleichen.
+const COCKPIT_ROWS = [
+  ['saddle_height', 'Sitzhöhe (Sattelstütze)', 'mm', 0],
+  ['saddle_setback', 'Sattel-Rücklage (ab TL)', 'mm', 0],
+  ['saddle_y', 'Sattelhöhe über TL', 'mm', 0],
+  ['bar_x', 'Lenker horizontal (ab TL)', 'mm', 0],
+  ['bar_y', 'Lenker Höhe (über TL)', 'mm', 0],
+  ['s2bar_x', 'Sattel → Lenker (horiz.)', 'mm', 0],
+  ['s2bar_drop', 'Sattelüberhöhung', 'mm', 0],
+  ['stem_length', 'Vorbaulänge', 'mm', 0],
+  ['stem_angle', 'Vorbauwinkel', '°', 1],
+  ['spacer', 'Spacer', 'mm', 0],
+  ['crank_length', 'Kurbellänge', 'mm', 1],
+]
+const numOrNull = (v) => { const x = Number(typeof v === 'string' ? v.replace(',', '.') : v); return v !== '' && v != null && isFinite(x) ? x : null }
+function fitMetrics(g, c) {
+  const p = computePoints(g, c)
+  const hood = { x: p.bar.x + p.barReach, y: p.bar.y + p.barRise }
+  return {
+    saddle_height: numOrNull(c.saddle_height),
+    saddle_setback: -p.saddle.x,
+    saddle_y: p.saddle.y,
+    bar_x: hood.x,
+    bar_y: hood.y,
+    s2bar_x: hood.x - p.saddle.x,
+    s2bar_drop: p.saddle.y - hood.y,
+    stem_length: numOrNull(c.stem_length),
+    stem_angle: numOrNull(c.stem_angle),
+    spacer: numOrNull(c.spacer),
+    crank_length: numOrNull(c.crank_length),
+  }
+}
+
+// Wiederverwendbare Vergleichstabelle (Wert + Abweichung in Klammern).
+function DiffTable({ title, rows, aVals, bVals, aName, bName }) {
+  return (
+    <div className="bf-difftable">
+      <div className="bf-diff-row bf-diff-head">
+        <span>{title}</span>
+        <span style={{ color: COL.acc }}>{aName}</span>
+        <span style={{ color: COL.b }}>{bName}</span>
+      </div>
+      {rows.map(([k, l, u, dec]) => {
+        const a = aVals[k] == null || !isFinite(Number(aVals[k])) ? null : Number(aVals[k])
+        const b = bVals[k] == null || !isFinite(Number(bVals[k])) ? null : Number(bVals[k])
+        const fmt = (x) => x == null ? 'N/A' : `${roundDec(x, dec)}${u === '°' ? ' °' : u ? ' ' + u : ''}`
+        const d = a != null && b != null ? b - a : null
+        const dr = d == null ? 0 : roundDec(d, dec)
+        return (
+          <div className="bf-diff-row" key={k}>
+            <span className="bf-diff-lbl">{l}</span>
+            <span>{fmt(a)}</span>
+            <span>{fmt(b)}{d != null && dr !== 0 && <em className={dr > 0 ? 'pos' : 'neg'}> ({fmtDelta(d, u, dec)})</em>}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 
 function computePoints(g, c) {
   const rad = (d) => (d * Math.PI) / 180
@@ -321,6 +382,7 @@ export default function BikeFitArchive() {
   const [compareId, setCompareId] = useState(null)
   const [alignH, setAlignH] = useState('bb')
   const [alignV, setAlignV] = useState('bb')
+  const [cmpView, setCmpView] = useState('frame')
   const svgRef = useRef(null)
 
   useEffect(() => { load() }, [])
@@ -472,31 +534,24 @@ export default function BikeFitArchive() {
           {cmp && !cmpHasGeo ? (
             <div className="bf-cmp-hint">„{compareBike.name}" hat noch keine Geometrie gespeichert. Wähle das Rad oben aus und speichere zuerst seine Geometrie.</div>
           ) : cmp ? (
-            <div className="bf-difftable">
-              <div className="bf-diff-row bf-diff-head">
-                <span>Geometrie</span>
-                <span style={{ color: COL.acc }}>{activeName}</span>
-                <span style={{ color: COL.b }}>{compareBike.name}</span>
+            <>
+              <div className="bf-view">
+                <button className={`bf-tbtn ${cmpView === 'frame' ? 'on' : ''}`} onClick={() => setCmpView('frame')}>Rahmen</button>
+                <button className={`bf-tbtn ${cmpView === 'cockpit' ? 'on' : ''}`} onClick={() => setCmpView('cockpit')}>Cockpit / Position</button>
               </div>
-              {CMP_ROWS.map(([k, l, u, dec]) => {
-                const a = cmpValue(geo, k), b = cmpValue(cmp.geo, k)
-                const unit = (x) => x == null ? 'N/A' : `${roundDec(x, dec)}${u === '°' ? ' °' : u ? ' ' + u : ''}`
-                const d = a != null && b != null ? b - a : null
-                const dr = d == null ? 0 : roundDec(d, dec)
-                return (
-                  <div className="bf-diff-row" key={k}>
-                    <span className="bf-diff-lbl">{l}</span>
-                    <span>{unit(a)}</span>
-                    <span>
-                      {unit(b)}
-                      {d != null && dr !== 0 && (
-                        <em className={dr > 0 ? 'pos' : 'neg'}> ({fmtDelta(d, u, dec)})</em>
-                      )}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
+              {cmpView === 'frame' ? (
+                <DiffTable
+                  title="Geometrie" rows={CMP_ROWS} aName={activeName} bName={compareBike.name}
+                  aVals={Object.fromEntries(CMP_ROWS.map(([k]) => [k, cmpValue(geo, k)]))}
+                  bVals={Object.fromEntries(CMP_ROWS.map(([k]) => [k, cmpValue(cmp.geo, k)]))}
+                />
+              ) : (
+                <DiffTable
+                  title="Position" rows={COCKPIT_ROWS} aName={activeName} bName={compareBike.name}
+                  aVals={fitMetrics(geo, cockpit)} bVals={fitMetrics(cmp.geo, cmp.cockpit)}
+                />
+              )}
+            </>
           ) : (
             <div className="bf-metrics">
               <Metric label="STR" val={str} />
@@ -553,6 +608,7 @@ export default function BikeFitArchive() {
         .bf-leg i { width: 14px; height: 4px; border-radius: 2px; display: inline-block; }
         .bf-compare { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
         .bf-cmp-lbl { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--ink3); }
+        .bf-view { display: flex; gap: 8px; margin-bottom: 12px; }
         .bf-cmp-hint { margin-bottom: 18px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); font-family: var(--mono); font-size: 12px; line-height: 1.5; color: var(--ink2); }
         .bf-difftable { margin-bottom: 18px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
         .bf-diff-row { display: grid; grid-template-columns: 1fr 1fr 1.5fr; align-items: center; gap: 8px; padding: 9px 12px; font-family: var(--mono); font-size: 13px; color: var(--ink1); border-top: 1px solid var(--line); }

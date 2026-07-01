@@ -5,6 +5,13 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 2,
+    date: '01.07.2026',
+    items: [
+      ['change', 'Bike-Fit: deutlich realistischere Zeichnung – Speichen, Reifen in echter Breite, Kette mit Kettenblatt & Kassette, beide Kurbeln mit Pedalen, realistischer Sattel, Gabel mit echtem Vorlauf, Bremsgriffe; MTB mit Bremsscheiben'],
+    ],
+  },
+  {
     v: 1,
     date: '01.07.2026',
     items: [

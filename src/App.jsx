@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './lib/auth'
 import NavBar from './components/NavBar'
 import InstallHint from './components/InstallHint'
 import ForegroundToast from './components/ForegroundToast'
+import UpdatePrompt from './components/UpdatePrompt'
 
 // Seiten erst bei Bedarf laden → kleinerer Start, flüssigeres Öffnen.
 const Login           = lazy(() => import('./pages/Login'))
@@ -91,6 +92,7 @@ export default function App() {
 
   return (
     <AuthProvider>
+      <UpdatePrompt />
       <Gate />
     </AuthProvider>
   )

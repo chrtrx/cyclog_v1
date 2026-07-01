@@ -377,8 +377,11 @@ export default function BikeFitArchive() {
   const activeName = bikes.find(b => b.id === activeBikeId)?.name || 'Aktiv'
   const compareBike = bikes.find(b => b.id === compareId && b.id !== activeBikeId) || null
   const cmp = compareBike ? fitOf(compareBike) : null
+  // Nur überlagern, wenn das Vergleichsrad überhaupt Geometrie hat – sonst
+  // würde ein irreführendes Standard-Rad gezeichnet.
+  const cmpHasGeo = cmp && ['reach', 'stack', 'wheelbase', 'head_angle'].some(k => cmp.geo[k] !== '' && cmp.geo[k] != null)
   const drawBikes = [{ geo, cockpit, col: COL.acc }]
-  if (cmp) drawBikes.push({ geo: cmp.geo, cockpit: cmp.cockpit, col: COL.b })
+  if (cmp && cmpHasGeo) drawBikes.push({ geo: cmp.geo, cockpit: cmp.cockpit, col: COL.b })
 
   return (
     <Page title="Bike-Fit" subtitle="Geometrie & Sitzposition – live gezeichnet" back="/">
@@ -388,7 +391,7 @@ export default function BikeFitArchive() {
         <>
           <div className="bf-chips">
             {bikes.map(b => (
-              <button key={b.id} className={`bf-chip ${b.id === activeBikeId ? 'on' : ''}`} onClick={() => setActiveBikeId(b.id)}>
+              <button key={b.id} className={`bf-chip ${b.id === activeBikeId ? 'on' : ''}`} onClick={() => { setActiveBikeId(b.id); if (b.id === compareId) setCompareId(null) }}>
                 {b.name}
               </button>
             ))}
@@ -401,7 +404,7 @@ export default function BikeFitArchive() {
 
           <BikeDrawing bikes={drawBikes} showDims={showDims} svgRef={svgRef} />
 
-          {cmp && (
+          {cmp && cmpHasGeo && (
             <div className="bf-legend">
               <span className="bf-leg"><i style={{ background: COL.acc }} />{activeName}</span>
               <span className="bf-leg"><i style={{ background: COL.b }} />{compareBike.name}</span>
@@ -423,7 +426,9 @@ export default function BikeFitArchive() {
             </label>
           )}
 
-          {cmp ? (
+          {cmp && !cmpHasGeo ? (
+            <div className="bf-cmp-hint">„{compareBike.name}" hat noch keine Geometrie gespeichert. Wähle das Rad oben aus und speichere zuerst seine Geometrie.</div>
+          ) : cmp ? (
             <div className="bf-difftable">
               <div className="bf-diff-row bf-diff-head">
                 <span>Geometrie</span>
@@ -502,6 +507,7 @@ export default function BikeFitArchive() {
         .bf-leg i { width: 14px; height: 4px; border-radius: 2px; display: inline-block; }
         .bf-compare { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
         .bf-cmp-lbl { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--ink3); }
+        .bf-cmp-hint { margin-bottom: 18px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); font-family: var(--mono); font-size: 12px; line-height: 1.5; color: var(--ink2); }
         .bf-difftable { margin-bottom: 18px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
         .bf-diff-row { display: grid; grid-template-columns: 1fr 1fr 1.5fr; align-items: center; gap: 8px; padding: 9px 12px; font-family: var(--mono); font-size: 13px; color: var(--ink1); border-top: 1px solid var(--line); }
         .bf-diff-row:first-child { border-top: none; }

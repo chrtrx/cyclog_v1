@@ -64,13 +64,26 @@ const n = (v, d = 0) => { const x = Number(v); return v !== '' && v != null && i
 // Zeichnungs-Palette im bike-stats-Stil: rote Linien auf hellem Raster.
 const COL = { acc: '#e2382e', b: '#2f7bff', ink2: '#7a8598', ink3: '#aeb6c6', grid: '#dbe0ea', bg: '#f4f6fb' }
 
-// Zeilen der Geometrie-Vergleichstabelle.
+// Zeilen der Geometrie-Vergleichstabelle. dec = Nachkommastellen.
 const CMP_ROWS = [
-  ['reach', 'Reach', 'mm'], ['stack', 'Stack', 'mm'], ['head_angle', 'Lenkwinkel', '°'],
-  ['seat_angle', 'Sitzwinkel', '°'], ['top_tube', 'Oberrohr', 'mm'], ['seat_tube', 'Sitzrohr', 'mm'],
-  ['head_tube', 'Steuerrohr', 'mm'], ['chainstay', 'Kettenstrebe', 'mm'], ['bb_drop', 'Tretlager-Abs.', 'mm'],
-  ['wheelbase', 'Radstand', 'mm'], ['standover', 'Überstand', 'mm'],
+  ['reach', 'Reach', 'mm', 0], ['stack', 'Stack', 'mm', 0], ['str', 'STR', '', 2],
+  ['head_angle', 'Lenkwinkel', '°', 1], ['seat_angle', 'Sitzwinkel', '°', 1],
+  ['top_tube', 'Oberrohr', 'mm', 0], ['seat_tube', 'Sitzrohr', 'mm', 0],
+  ['head_tube', 'Steuerrohr', 'mm', 0], ['chainstay', 'Kettenstrebe', 'mm', 1],
+  ['bb_drop', 'Tretlager-Abs.', 'mm', 0], ['wheelbase', 'Radstand', 'mm', 0], ['standover', 'Überstand', 'mm', 0],
 ]
+
+// Wert eines Rades für eine Vergleichszeile (STR wird berechnet, sonst direkt).
+function cmpValue(g, k) {
+  if (k === 'str') {
+    const r = Number(g.reach), s = Number(g.stack)
+    return isFinite(r) && r > 0 && isFinite(s) ? s / r : null
+  }
+  const x = Number(g[k])
+  return g[k] !== '' && g[k] != null && isFinite(x) ? x : null
+}
+const roundDec = (x, dec) => { const f = Math.pow(10, dec); return Math.round(x * f) / f }
+const fmtDelta = (d, u, dec) => `${d > 0 ? '+' : d < 0 ? '−' : '±'}${Math.abs(roundDec(d, dec))}${u === '°' ? '°' : u ? ' ' + u : ''}`
 
 // Liefert Geometrie + Cockpit eines Rades (aus fit-JSON, sonst aus geo_*-Spalten).
 function fitOf(bike) {
@@ -404,18 +417,22 @@ export default function BikeFitArchive() {
                 <span>Geometrie</span>
                 <span style={{ color: COL.acc }}>{activeName}</span>
                 <span style={{ color: COL.b }}>{compareBike.name}</span>
-                <span>Δ</span>
               </div>
-              {CMP_ROWS.map(([k, l, u]) => {
-                const av = geo[k], bvv = cmp.geo[k]
-                const has = (x) => x !== '' && x != null && isFinite(Number(x))
-                const d = has(av) && has(bvv) ? Math.round((Number(av) - Number(bvv)) * 10) / 10 : null
+              {CMP_ROWS.map(([k, l, u, dec]) => {
+                const a = cmpValue(geo, k), b = cmpValue(cmp.geo, k)
+                const unit = (x) => x == null ? 'N/A' : `${roundDec(x, dec)}${u === '°' ? ' °' : u ? ' ' + u : ''}`
+                const d = a != null && b != null ? b - a : null
+                const dr = d == null ? 0 : roundDec(d, dec)
                 return (
                   <div className="bf-diff-row" key={k}>
                     <span className="bf-diff-lbl">{l}</span>
-                    <span>{has(av) ? `${Number(av)}${u === '°' ? '°' : ''}` : '—'}</span>
-                    <span>{has(bvv) ? `${Number(bvv)}${u === '°' ? '°' : ''}` : '—'}</span>
-                    <span className={d == null ? '' : d > 0 ? 'pos' : d < 0 ? 'neg' : ''}>{d == null ? '—' : `${d > 0 ? '+' : ''}${d}`}</span>
+                    <span>{unit(a)}</span>
+                    <span>
+                      {unit(b)}
+                      {d != null && dr !== 0 && (
+                        <em className={dr > 0 ? 'pos' : 'neg'}> ({fmtDelta(d, u, dec)})</em>
+                      )}
+                    </span>
                   </div>
                 )
               })}
@@ -474,13 +491,14 @@ export default function BikeFitArchive() {
         .bf-compare { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
         .bf-cmp-lbl { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--ink3); }
         .bf-difftable { margin-bottom: 18px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-        .bf-diff-row { display: grid; grid-template-columns: 1.3fr 1fr 1fr .8fr; align-items: center; gap: 6px; padding: 9px 12px; font-family: var(--mono); font-size: 13px; color: var(--ink1); border-top: 1px solid var(--line); }
+        .bf-diff-row { display: grid; grid-template-columns: 1fr 1fr 1.5fr; align-items: center; gap: 8px; padding: 9px 12px; font-family: var(--mono); font-size: 13px; color: var(--ink1); border-top: 1px solid var(--line); }
         .bf-diff-row:first-child { border-top: none; }
         .bf-diff-row > span { text-align: right; }
         .bf-diff-lbl { text-align: left !important; color: var(--ink2); font-size: 11px; letter-spacing: .3px; }
         .bf-diff-head { background: var(--panel2); font-size: 11px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--ink3); }
         .bf-diff-head > span { text-align: right; }
         .bf-diff-head > span:first-child { text-align: left; }
+        .bf-diff-row em { font-style: normal; font-size: 12px; font-weight: 700; white-space: nowrap; }
         .bf-diff-row .pos { color: var(--ok); }
         .bf-diff-row .neg { color: var(--crit); }
         .bf-tools { display: flex; gap: 8px; margin-bottom: 14px; }

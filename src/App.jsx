@@ -5,6 +5,7 @@ import NavBar from './components/NavBar'
 import InstallHint from './components/InstallHint'
 import ForegroundToast from './components/ForegroundToast'
 import UpdatePrompt from './components/UpdatePrompt'
+import WhatsNew from './components/WhatsNew'
 
 // Seiten erst bei Bedarf laden → kleinerer Start, flüssigeres Öffnen.
 const Login           = lazy(() => import('./pages/Login'))
@@ -71,6 +72,7 @@ function Gate() {
         <NavBar />
         <InstallHint />
         <ForegroundToast />
+        <WhatsNew />
       </>
     )
   }

@@ -118,12 +118,12 @@ export function Sheet({ title, sub, onClose, children }) {
 }
 
 // ─── Eingabefeld ───────────────────────────────────────────
-export function Field({ label, value, onChange, placeholder, type = 'text' }) {
+export function Field({ label, value, onChange, placeholder, type = 'text', inputMode }) {
   return (
     <div className="field">
       <label className="field-lbl">{label}</label>
       <input
-        className="field-input" type={type} value={value ?? ''}
+        className="field-input" type={type} inputMode={inputMode} value={value ?? ''}
         onChange={(e) => onChange(e.target.value)} placeholder={placeholder || '—'}
       />
       <style>{`

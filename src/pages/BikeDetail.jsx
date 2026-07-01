@@ -506,22 +506,38 @@ function GeoSheet({ bike, onClose, onSaved }) {
   })
   const set = k => v => setVals(p => ({ ...p, [k]: v }))
 
+  const [err, setErr] = useState('')
+
+  // Komma erlauben und leere Felder als null speichern.
+  const parseNum = (v) => {
+    if (v == null || String(v).trim() === '') return null
+    const x = Number(String(v).replace(',', '.').trim())
+    return isFinite(x) ? x : null
+  }
+
   async function save() {
+    setErr('')
     const updates = {}
-    GEO_FIELDS.forEach(g => { updates[g.k] = vals[g.k] !== '' ? Number(vals[g.k]) : null })
-    await updateBike(bike.id, updates)
-    onSaved()
+    GEO_FIELDS.forEach(g => { updates[g.k] = parseNum(vals[g.k]) })
+    try {
+      await updateBike(bike.id, updates)
+      onSaved()
+    } catch (e) {
+      console.error('Geometrie speichern fehlgeschlagen', e)
+      setErr('Speichern fehlgeschlagen. Bitte später erneut versuchen.')
+    }
   }
 
   return (
     <Sheet title="Geometrie" sub="Rahmendaten (mm bzw. °)" onClose={onClose}>
       <div className="geo-form">
         {GEO_FIELDS.map(g => (
-          <Field key={g.k} label={g.l} type="number" value={vals[g.k]} onChange={set(g.k)} />
+          <Field key={g.k} label={g.l} type="text" inputMode="text" value={vals[g.k]} onChange={set(g.k)} />
         ))}
       </div>
+      {err && <div className="geo-err">{err}</div>}
       <BtnGreen onClick={save}>Speichern</BtnGreen>
-      <style>{`.geo-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;}`}</style>
+      <style>{`.geo-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;}.geo-err{font-family:var(--mono);font-size:12px;color:var(--crit);margin:4px 0 8px;}`}</style>
     </Sheet>
   )
 }

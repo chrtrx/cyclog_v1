@@ -109,8 +109,8 @@ function computePoints(g, c) {
 function BikeDrawing({ geo, cockpit, showDims, svgRef }) {
   const p = computePoints(geo, cockpit)
   const hood = { x: p.bar.x + p.barReach, y: p.bar.y + p.barRise }
-  const dropB = { x: hood.x - 30, y: hood.y - p.barDrop }
-  const corners = [p.BB, p.rearAxle, p.frontAxle, p.headTop, p.headBot, p.seatTubeTop, p.saddle, p.stemClamp, p.bar, hood, dropB, p.crankEnd]
+  const dropEnd = { x: hood.x - p.barDrop / 2 - 34, y: hood.y - p.barDrop }
+  const corners = [p.BB, p.rearAxle, p.frontAxle, p.headTop, p.headBot, p.seatTubeTop, p.saddle, p.stemClamp, p.bar, hood, dropEnd, p.crankEnd]
   const minX = Math.min(...corners.map(q => q.x)) - p.R, maxX = Math.max(...corners.map(q => q.x)) + p.R
   const minY = Math.min(...corners.map(q => q.y)) - p.R, maxY = Math.max(...corners.map(q => q.y)) + p.R
   const pad = 40
@@ -123,13 +123,16 @@ function BikeDrawing({ geo, cockpit, showDims, svgRef }) {
   const tw = p.R - p.rimR, tireR = p.rimR + tw / 2
   const fmid = { x: (p.headBot.x + p.frontAxle.x) / 2 + 18, y: (p.headBot.y + p.frontAxle.y) / 2 }
   const forkD = `M ${X(p.headBot)} ${Y(p.headBot)} Q ${X(fmid)} ${Y(fmid)} ${X(p.frontAxle)} ${Y(p.frontAxle)}`
+  // Lenker als echter runder Drop-Bar: gerade Oberseite, dann ein
+  // halbkreisförmiger Bogen (SVG-Arc) nach vorn-unten, kurzes Endstück.
   const clamp = p.bar
-  const topB = { x: clamp.x - 38, y: clamp.y - 4 }
-  const cp1 = { x: clamp.x + p.barReach * 0.7, y: clamp.y + 12 }
-  const dropF = { x: hood.x + 6, y: hood.y - p.barDrop * 0.6 }
-  const dropMid = { x: dropF.x - 4, y: dropF.y - p.barDrop * 0.4 }
-  const cp2 = { x: dropB.x + 18, y: dropB.y }
-  const barD = `M ${X(topB)} ${Y(topB)} L ${X(clamp)} ${Y(clamp)} Q ${X(cp1)} ${Y(cp1)} ${X(hood)} ${Y(hood)} Q ${X(dropF)} ${Y(dropF)} ${X(dropMid)} ${Y(dropMid)} Q ${X(cp2)} ${Y(cp2)} ${X(dropB)} ${Y(dropB)}`
+  const rr = p.barDrop / 2                              // Radius des runden Bogens
+  const topBack = { x: clamp.x - 42, y: clamp.y }       // hinteres Ende der Oberseite
+  const curveTop = { x: hood.x - rr, y: hood.y }        // wo die Oberseite in den Bogen übergeht
+  const curveBot = { x: hood.x - rr, y: hood.y - p.barDrop } // Tiefpunkt des Bogens
+  const barD = `M ${X(topBack)} ${Y(topBack)} L ${X(clamp)} ${Y(clamp)} L ${X(curveTop)} ${Y(curveTop)}`
+    + ` A ${rr} ${rr} 0 0 1 ${X(curveBot)} ${Y(curveBot)}`
+    + ` L ${X(dropEnd)} ${Y(dropEnd)}`
   const sx = X(p.saddle), sy = Y(p.saddle)
   const saddleD = `M ${sx - 78} ${sy + 2} Q ${sx - 80} ${sy - 9} ${sx - 55} ${sy - 9} L ${sx + 18} ${sy - 9} Q ${sx + 40} ${sy - 9} ${sx + 34} ${sy + 2} Q ${sx + 5} ${sy + 6} ${sx - 78} ${sy + 2} Z`
   const corner = { x: p.BB.x, y: p.headTop.y }

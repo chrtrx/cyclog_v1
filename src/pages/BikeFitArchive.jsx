@@ -49,11 +49,6 @@ const outOfRange = (k, v) => {
   const x = Number(v); return isFinite(x) && (x < r[0] || x > r[1])
 }
 
-const EXAMPLE = {
-  geo: { reach: 392, stack: 565, head_angle: 73, seat_angle: 73.5, top_tube: 560, seat_tube: 540, head_tube: 175, chainstay: 415, bb_drop: 72, wheelbase: 1000, fork_offset: 45, standover: 790, wheel: 'road', tire_width: 30 },
-  cockpit: { saddle_height: 745, saddle_offset: 75, stem_length: 110, stem_angle: -7, spacer: 25, bar_reach: 80, bar_drop: 128, bar_width: 420, bar_rise: 0, crank_length: 172.5 },
-}
-
 function prefillGeo(bike) {
   return {
     reach: bike.geo_reach ?? '', stack: bike.geo_stack ?? '',
@@ -259,7 +254,6 @@ export default function BikeFitArchive() {
     } catch (e) { showToast('⚠ Fehler beim Speichern') }
   }
 
-  function loadExample() { setGeo({ ...EXAMPLE.geo }); setCockpit({ ...EXAMPLE.cockpit }); showToast('Beispiel geladen') }
 
   function exportPng() {
     const svg = svgRef.current
@@ -310,7 +304,6 @@ export default function BikeFitArchive() {
           <BikeDrawing geo={geo} cockpit={cockpit} showDims={showDims} svgRef={svgRef} />
           <div className="bf-tools">
             <button className={`bf-tbtn ${showDims ? 'on' : ''}`} onClick={() => setShowDims(s => !s)}>📏 Maße</button>
-            <button className="bf-tbtn" onClick={loadExample}>✨ Beispiel</button>
             <button className="bf-tbtn" onClick={exportPng}>⤓ Als Bild</button>
           </div>
 

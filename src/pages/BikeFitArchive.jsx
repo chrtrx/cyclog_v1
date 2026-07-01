@@ -219,14 +219,40 @@ function BikeFrame({ d, X, Y, col }) {
     )
   }
 
-  // Gabel: Blatt folgt der Steuerachse und schwingt mit echtem Vorlauf zur
-  // Achse (Rennrad). MTB: gerade Federgabel entlang der Achse.
-  const fl = Math.hypot(p.frontAxle.x - p.headBot.x, p.frontAxle.y - p.headBot.y)
-  const fCtrl = { x: p.headBot.x - p.steerUp.x * fl * 0.62, y: p.headBot.y - p.steerUp.y * fl * 0.62 }
-  const fMid = { x: p.headBot.x - p.steerUp.x * fl * 0.45, y: p.headBot.y - p.steerUp.y * fl * 0.45 }
+  // Steuerrohr-Partie: Oberrohr setzt knapp unter der Oberkante an, das
+  // Unterrohr unten am Steuerrohr – dadurch entsteht die echte Rahmenform
+  // (kein einfacher Dreiecks-Spitz). Unter dem Steuerrohr sitzt die
+  // Gabelkrone, darüber Steuersatz, Spacer und Ahead-Kappe.
+  const su = p.steerUp
+  const perp = { x: su.y, y: -su.x }
+  const htLen = Math.hypot(p.headTop.x - p.headBot.x, p.headTop.y - p.headBot.y) || 1
+  const ttAttach = { x: p.headTop.x - su.x * Math.min(22, htLen * 0.2), y: p.headTop.y - su.y * Math.min(22, htLen * 0.2) }
+  const dtAttach = { x: p.headBot.x + su.x * Math.min(32, htLen * 0.28), y: p.headBot.y + su.y * Math.min(32, htLen * 0.28) }
+  const crownEnd = { x: p.headBot.x - su.x * 30, y: p.headBot.y - su.y * 30 }
+
+  // Spacer als Querstriche auf dem Gabelschaft zwischen Steuerrohr und Vorbau.
+  const spacerH = Math.hypot(p.stemClamp.x - p.headTop.x, p.stemClamp.y - p.headTop.y)
+  const spacerTicks = []
+  for (let s = 10; s < spacerH - 4; s += 11) {
+    const cx = p.headTop.x + su.x * s, cy = p.headTop.y + su.y * s
+    spacerTicks.push(
+      <line key={s}
+        x1={X({ x: cx - perp.x * 9, y: cy - perp.y * 9 })} y1={Y({ x: cx - perp.x * 9, y: cy - perp.y * 9 })}
+        x2={X({ x: cx + perp.x * 9, y: cy + perp.y * 9 })} y2={Y({ x: cx + perp.x * 9, y: cy + perp.y * 9 })}
+        stroke={col} strokeWidth="3" opacity="0.7" />
+    )
+  }
+  const capA = { x: p.stemClamp.x - perp.x * 11, y: p.stemClamp.y - perp.y * 11 }
+  const capB = { x: p.stemClamp.x + perp.x * 11, y: p.stemClamp.y + perp.y * 11 }
+
+  // Gabel: Blatt startet an der Krone, folgt der Steuerachse und schwingt
+  // mit echtem Vorlauf zur Achse (Rennrad). MTB: gerade Federgabel.
+  const fl = Math.hypot(p.frontAxle.x - crownEnd.x, p.frontAxle.y - crownEnd.y)
+  const fCtrl = { x: crownEnd.x - su.x * fl * 0.55, y: crownEnd.y - su.y * fl * 0.55 }
+  const fMid = { x: crownEnd.x - su.x * fl * 0.42, y: crownEnd.y - su.y * fl * 0.42 }
   const forkD = mtb
-    ? `M ${X(p.headBot)} ${Y(p.headBot)} L ${X(fMid)} ${Y(fMid)} L ${X(p.frontAxle)} ${Y(p.frontAxle)}`
-    : `M ${X(p.headBot)} ${Y(p.headBot)} Q ${X(fCtrl)} ${Y(fCtrl)} ${X(p.frontAxle)} ${Y(p.frontAxle)}`
+    ? `M ${X(crownEnd)} ${Y(crownEnd)} L ${X(fMid)} ${Y(fMid)} L ${X(p.frontAxle)} ${Y(p.frontAxle)}`
+    : `M ${X(crownEnd)} ${Y(crownEnd)} Q ${X(fCtrl)} ${Y(fCtrl)} ${X(p.frontAxle)} ${Y(p.frontAxle)}`
 
   // Antrieb in realen Größen: Kettenblatt (Rennrad ≈ 52 Z, MTB ≈ 32 Z),
   // Kassette, Kette oben/unten, beide Kurbeln + Pedale.
@@ -245,7 +271,10 @@ function BikeFrame({ d, X, Y, col }) {
   const curveBot = { x: hood.x - rr, y: hood.y - p.barDrop }
   const dropD = `M ${X(p.bar)} ${Y(p.bar)} L ${X(curveTop)} ${Y(curveTop)}`
     + ` A ${rr} ${rr} 0 0 1 ${X(curveBot)} ${Y(curveBot)} L ${X(dropEnd)} ${Y(dropEnd)}`
-  const lever = { x: hood.x + 28, y: hood.y - 52 }
+  // Bremsgriff sitzt vorn-oben AUF der Lenkerkurve (nicht am rechnerischen
+  // Hood-Punkt, der über dem Bogen liegt), Hebel zeigt nach vorn-unten.
+  const hoodPt = { x: hood.x - rr * 0.43, y: hood.y - rr * 0.18 }
+  const lever = { x: hoodPt.x + 26, y: hoodPt.y - 60 }
   const mtbLever = { x: gripEnd.x + 42, y: gripEnd.y - 16 }
 
   // Sitzstreben setzen etwas unterhalb der Sitzrohr-Oberkante an.
@@ -274,9 +303,11 @@ function BikeFrame({ d, X, Y, col }) {
       {line(p.BB, p.rearAxle, 13)}
       {line(p.rearAxle, stayTop, 12)}
       {line(p.BB, p.seatTubeTop, 16)}
-      {line(p.seatTubeTop, p.headTop, 16)}
-      {line(p.BB, p.headTop, 18)}
-      {line(p.headTop, p.headBot, 20)}
+      {line(p.seatTubeTop, ttAttach, 16)}
+      {line(p.BB, dtAttach, 18)}
+      {line(p.headTop, p.headBot, 21)}
+      {/* Gabelkrone + Gabel */}
+      {line(p.headBot, crownEnd, mtb ? 28 : 24)}
       <path d={forkD} fill="none" stroke={col} strokeWidth={mtb ? 16 : 13} strokeLinecap="round" />
 
       {/* Kassette, Kette, Kettenblatt */}
@@ -295,9 +326,12 @@ function BikeFrame({ d, X, Y, col }) {
       {line(p.seatTubeTop, p.saddle, 9)}
       <path d={saddleD} fill={col} />
 
-      {/* Vorbau + Lenker + Bremsgriff */}
-      {line(p.headTop, p.stemClamp, 14)}
+      {/* Gabelschaft + Spacer + Ahead-Kappe, dann Vorbau + Lenker + Bremsgriff */}
+      {line(p.headTop, p.stemClamp, 10)}
+      {spacerTicks}
+      {line(capA, capB, 5)}
       {line(p.stemClamp, p.bar, 13)}
+      <circle cx={X(p.bar)} cy={Y(p.bar)} r="9" fill={col} />
       {mtb ? (
         <>
           {line(riserTop, gripEnd, 13)}
@@ -307,7 +341,7 @@ function BikeFrame({ d, X, Y, col }) {
       ) : (
         <>
           <path d={dropD} fill="none" stroke={col} strokeWidth="13" strokeLinecap="round" />
-          {line(hood, lever, 8)}
+          {line(hoodPt, lever, 8)}
         </>
       )}
       <circle cx={X(p.BB)} cy={Y(p.BB)} r="7" fill={col} />

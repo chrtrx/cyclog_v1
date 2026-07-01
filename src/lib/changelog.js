@@ -5,6 +5,13 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 3,
+    date: '01.07.2026',
+    items: [
+      ['change', 'Bike-Fit: Steuerrohr-Partie überarbeitet – Unterrohr setzt unten am Steuerrohr an (echte Rahmenform), Gabelkrone, Spacer & Ahead-Kappe sichtbar, Bremsgriff sitzt auf der Lenkerkurve'],
+    ],
+  },
+  {
     v: 2,
     date: '01.07.2026',
     items: [

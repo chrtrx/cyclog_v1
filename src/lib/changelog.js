@@ -5,6 +5,14 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 4,
+    date: '02.07.2026',
+    items: [
+      ['new', 'Bike-Fit: Fahrer-Silhouette einblendbar (🚴) – zeigt die Sitzposition direkt auf dem Rad, 1:1 aus deiner Geometrie berechnet'],
+      ['new', 'Bike-Fit: Sitzhöhen-Empfehlung aus der Innenbeinlänge (LeMond-Formel) mit Abgleich zu deinem Wert'],
+    ],
+  },
+  {
     v: 3,
     date: '01.07.2026',
     items: [

@@ -5,6 +5,14 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 5,
+    date: '02.07.2026',
+    items: [
+      ['new', 'Bike-Fit: Körpermaße eintragen (Größe, Innenbeinlänge, Rumpf, Arm) – die Fahrer-Silhouette nutzt deine echten Maße'],
+      ['new', 'Bike-Fit: Sitzwinkel live – Rumpf-, Hüft-, Knie- (Kurbel unten) und Schulterwinkel mit Ideal-Hinweisen'],
+    ],
+  },
+  {
     v: 4,
     date: '02.07.2026',
     items: [

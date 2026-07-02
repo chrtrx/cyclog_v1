@@ -31,6 +31,7 @@ const COCKPIT_FIELDS = [
   ['bar_width',    'Lenker-Breite', 'mm', '420'],
   ['bar_rise',     'Lenker-Rise',   'mm', '0',   true],
   ['crank_length', 'Kurbel-Länge',  'mm', '172.5'],
+  ['inseam',       'Innenbeinlänge','mm', '820'],
 ]
 
 // Laufradgrößen (Zoll) → Felgen-Innendurchmesser (ETRTO) in mm.
@@ -44,6 +45,7 @@ const RANGES = {
   bb_drop: [40, 95], wheelbase: [900, 1120], fork_offset: [30, 60], standover: [600, 920], tire_width: [18, 70],
   saddle_height: [600, 900], saddle_offset: [0, 130], stem_length: [50, 170], stem_angle: [-30, 30],
   spacer: [0, 140], bar_reach: [60, 120], bar_drop: [90, 170], bar_width: [340, 500], bar_rise: [-30, 80], crank_length: [150, 185],
+  inseam: [650, 950],
 }
 const outOfRange = (k, v) => {
   const r = RANGES[k]; if (!r || v === '' || v == null) return false
@@ -186,6 +188,57 @@ function deriveDraw(geo, cockpit) {
   const axisLen = p.barDrop + 150
   const axisTop = { x: p.headTop.x + p.steerUp.x * axisLen, y: p.headTop.y + p.steerUp.y * axisLen }
   return { p, mtb, hood, dropEnd, riserTop, gripEnd, barTip, axisTop }
+}
+
+// Gelenkpunkt (Knie/Ellbogen/Schulter) als Schnittpunkt zweier Kreise um A
+// und B mit Radien r1/r2; side wählt die Seite der Verbindungslinie.
+function circleJoint(A, B, r1, r2, side) {
+  const dx = B.x - A.x, dy = B.y - A.y
+  const d = Math.hypot(dx, dy) || 1
+  const dd = Math.min(d, r1 + r2 - 2)   // unerreichbar → fast gestreckt
+  const a = (r1 * r1 - r2 * r2 + dd * dd) / (2 * dd)
+  const h = Math.sqrt(Math.max(0, r1 * r1 - a * a))
+  const ux = dx / d, uy = dy / d
+  return { x: A.x + a * ux - side * uy * h, y: A.y + a * uy + side * ux * h }
+}
+
+// Fahrer-Silhouette in Fahrposition: Hüfte auf dem Sattel, Hände an
+// Bremsgriff (Rennrad) bzw. Griff (MTB), Fuß auf dem Pedal. Knie/Ellbogen
+// werden per Zweigelenk-Kette bestimmt, die Schulter so gesetzt, dass
+// Rumpf- und Armlänge zusammenpassen – die Sitzposition ergibt sich damit
+// 1:1 aus der eingetragenen Geometrie.
+function riderPoints(d) {
+  const { p, mtb, hood, gripEnd } = d
+  const rr = p.barDrop / 2
+  const hand = mtb ? { x: gripEnd.x + 12, y: gripEnd.y + 6 } : { x: hood.x - rr * 0.43, y: hood.y - rr * 0.1 }
+  const hip = { x: p.saddle.x - 12, y: p.saddle.y + 78 }
+  const pedal = p.crankEnd
+  const legSeg = Math.hypot(pedal.x - hip.x, pedal.y - hip.y) * 0.55
+  const knee = circleJoint(hip, pedal, legSeg, legSeg, 1)
+  const torso = 565, arm = 590
+  const shoulder = circleJoint(hip, hand, torso, arm, 1)
+  const armSeg = arm * 0.53
+  const elbow = circleJoint(shoulder, hand, armSeg, armSeg, -1)
+  const tl = Math.hypot(shoulder.x - hip.x, shoulder.y - hip.y) || 1
+  const head = { x: shoulder.x + ((shoulder.x - hip.x) / tl) * 145, y: shoulder.y + ((shoulder.y - hip.y) / tl) * 145 }
+  return { hip, knee, pedal, shoulder, elbow, hand, head, headR: 88 }
+}
+
+// Zeichnet die Fahrer-Silhouette (nur für das aktive Rad).
+function Rider({ d, X, Y }) {
+  const r = riderPoints(d)
+  const col = '#4a5b78'
+  const L = (a, b, w) => <line x1={X(a)} y1={Y(a)} x2={X(b)} y2={Y(b)} stroke={col} strokeWidth={w} strokeLinecap="round" />
+  const J = (q) => <circle cx={X(q)} cy={Y(q)} r="11" fill={col} />
+  return (
+    <g opacity="0.88">
+      {L(r.hip, r.knee, 17)}{L(r.knee, r.pedal, 15)}
+      {L(r.hip, r.shoulder, 19)}
+      {L(r.shoulder, r.elbow, 14)}{L(r.elbow, r.hand, 13)}
+      {J(r.hip)}{J(r.knee)}{J(r.shoulder)}{J(r.elbow)}
+      <circle cx={X(r.head)} cy={Y(r.head)} r={r.headR} fill="none" stroke={col} strokeWidth="12" />
+    </g>
+  )
 }
 
 // Zeichnet ein einzelnes Rad in gemeinsamen Koordinaten – so realitätsnah wie
@@ -349,7 +402,7 @@ function BikeFrame({ d, X, Y, col }) {
   )
 }
 
-function BikeDrawing({ bikes, showDims, svgRef, alignH = 'bb', alignV = 'bb', big = false, onExpand }) {
+function BikeDrawing({ bikes, showDims, showRider, svgRef, alignH = 'bb', alignV = 'bb', big = false, onExpand }) {
   const ds = bikes.map(b => ({ ...deriveDraw(b.geo, b.cockpit), col: b.col, geo: b.geo }))
   // Ausrichtung: Räder so verschieben, dass ihr Referenzpunkt auf dem des
   // aktiven Rades liegt (horizontal: Tretlager/Hinter-/Vorderrad, vertikal:
@@ -366,6 +419,10 @@ function BikeDrawing({ bikes, showDims, svgRef, alignH = 'bb', alignV = 'bb', bi
 
   const maxR = Math.max(...ds.map(d => d.p.R))
   const all = ds.flatMap(d => cornersOf(d).map(sh(d)))
+  if (showRider) {
+    const r = riderPoints(ds[0])
+    all.push(r.hip, r.knee, r.shoulder, r.elbow, { x: r.head.x, y: r.head.y + r.headR }, { x: r.head.x + r.headR, y: r.head.y })
+  }
   const minX = Math.min(...all.map(q => q.x)) - maxR, maxX = Math.max(...all.map(q => q.x)) + maxR
   const minY = Math.min(...all.map(q => q.y)) - maxR, maxY = Math.max(...all.map(q => q.y)) + maxR
   const pad = 46
@@ -391,11 +448,12 @@ function BikeDrawing({ bikes, showDims, svgRef, alignH = 'bb', alignV = 'bb', bi
         {/* Steuerachse des ersten Rades (gepunktet) */}
         <line x1={X(p.headBot)} y1={Y(p.headBot)} x2={X(primary.axisTop)} y2={Y(primary.axisTop)} stroke={COL.ink3} strokeWidth="2" strokeDasharray="3 9" />
 
-        {/* Vergleichsrad zuerst (liegt hinten), dann das aktive Rad */}
+        {/* Vergleichsrad zuerst (liegt hinten), dann Fahrer, dann das aktive Rad */}
         {ds.slice(1).map((d, i) => {
           const Xo = (q) => X(sh(d)(q)), Yo = (q) => Y(sh(d)(q))
           return <BikeFrame key={i} d={d} X={Xo} Y={Yo} col={d.col} />
         })}
+        {showRider && <Rider d={primary} X={X} Y={Y} />}
         <BikeFrame d={primary} X={X} Y={Y} col={primary.col} />
 
         {/* Maßstab 100 mm */}
@@ -464,6 +522,7 @@ export default function BikeFitArchive() {
   const [alignH, setAlignH] = useState('bb')
   const [alignV, setAlignV] = useState('bb')
   const [zoomed, setZoomed] = useState(false)
+  const [showRider, setShowRider] = useState(false)
   const svgRef = useRef(null)
 
   useEffect(() => { load() }, [])
@@ -569,11 +628,11 @@ export default function BikeFitArchive() {
             <button className={`bf-tbtn ${geo.frame_type === 'mtb' ? 'on' : ''}`} onClick={() => setG('frame_type')('mtb')}>⛰️ MTB</button>
           </div>
 
-          <BikeDrawing bikes={drawBikes} showDims={showDims} svgRef={svgRef} alignH={alignH} alignV={alignV} onExpand={() => setZoomed(true)} />
+          <BikeDrawing bikes={drawBikes} showDims={showDims} showRider={showRider} svgRef={svgRef} alignH={alignH} alignV={alignV} onExpand={() => setZoomed(true)} />
 
           {zoomed && (
             <ZoomView onClose={() => setZoomed(false)}>
-              <BikeDrawing bikes={drawBikes} showDims={showDims} alignH={alignH} alignV={alignV} big />
+              <BikeDrawing bikes={drawBikes} showDims={showDims} showRider={showRider} alignH={alignH} alignV={alignV} big />
             </ZoomView>
           )}
 
@@ -605,6 +664,7 @@ export default function BikeFitArchive() {
 
           <div className="bf-tools">
             <button className={`bf-tbtn ${showDims ? 'on' : ''}`} onClick={() => setShowDims(s => !s)}>📏 Maße</button>
+            <button className={`bf-tbtn ${showRider ? 'on' : ''}`} onClick={() => setShowRider(s => !s)}>🚴 Fahrer</button>
             <button className="bf-tbtn" onClick={exportPng}>⤓ Als Bild</button>
           </div>
 
@@ -656,11 +716,29 @@ export default function BikeFitArchive() {
             <span>Cockpit / Sitzposition</span><span className="bf-caret">{openCockpit ? '▾' : '▸'}</span>
           </button>
           {openCockpit && (
-            <div className="bf-grid">
-              {COCKPIT_FIELDS.map(([k, l, u, ph, s]) => (
-                <NumField key={k} label={l} unit={u} value={cockpit[k]} placeholder={ph} signed={s} invalid={outOfRange(k, cockpit[k])} onChange={setC(k)} />
-              ))}
-            </div>
+            <>
+              <div className="bf-grid">
+                {COCKPIT_FIELDS.map(([k, l, u, ph, s]) => (
+                  <NumField key={k} label={l} unit={u} value={cockpit[k]} placeholder={ph} signed={s} invalid={outOfRange(k, cockpit[k])} onChange={setC(k)} />
+                ))}
+              </div>
+              {n(cockpit.inseam) > 0 && (() => {
+                const rec = Math.round(n(cockpit.inseam) * 0.883)
+                const sh = n(cockpit.saddle_height)
+                const diff = sh > 0 ? Math.round(sh - rec) : null
+                const fits = diff != null && Math.abs(diff) <= 5
+                return (
+                  <div className="bf-lemond">
+                    💡 Empfohlene Sitzhöhe (LeMond, 0,883 × Schrittlänge): <b>{rec} mm</b>
+                    {diff != null && (
+                      <span className={fits ? 'ok' : 'warn'}>
+                        {' '}— deine {Math.round(sh)} mm ({diff > 0 ? '+' : ''}{diff} mm{fits ? ' ✓' : ''})
+                      </span>
+                    )}
+                  </div>
+                )
+              })()}
+            </>
           )}
 
           <BtnGreen onClick={save}>Speichern</BtnGreen>
@@ -682,6 +760,10 @@ export default function BikeFitArchive() {
         .bf-leg i { width: 14px; height: 4px; border-radius: 2px; display: inline-block; }
         .bf-compare { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
         .bf-cmp-lbl { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--ink3); }
+        .bf-lemond { margin: -6px 0 16px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); font-family: var(--mono); font-size: 12px; line-height: 1.5; color: var(--ink2); }
+        .bf-lemond b { color: var(--ink1); }
+        .bf-lemond .ok { color: var(--ok); }
+        .bf-lemond .warn { color: var(--warn); }
         .bf-cmp-hint { margin-bottom: 18px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); font-family: var(--mono); font-size: 12px; line-height: 1.5; color: var(--ink2); }
         .bf-difftable { margin-bottom: 18px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
         .bf-diff-row { display: grid; grid-template-columns: 1fr 1fr 1.5fr; align-items: center; gap: 8px; padding: 9px 12px; font-family: var(--mono); font-size: 13px; color: var(--ink1); border-top: 1px solid var(--line); }

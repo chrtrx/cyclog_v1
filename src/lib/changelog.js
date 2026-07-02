@@ -5,6 +5,13 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 6,
+    date: '02.07.2026',
+    items: [
+      ['change', 'Bike-Fit: MTB-Zeichnung näher an der Realität – Federgabel mit Standrohren & Casting, Dropper-Sattelstütze, Riser-Lenker mit Griff, Sitzrohr-Überstand'],
+    ],
+  },
+  {
     v: 5,
     date: '02.07.2026',
     items: [

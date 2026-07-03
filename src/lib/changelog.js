@@ -5,6 +5,17 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 7,
+    date: '02.07.2026',
+    items: [
+      ['new', 'Bike-Fit hat jetzt einen eigenen Tab „Fit" in der unteren Navigation'],
+      ['new', 'Bike-Fit speichert automatisch – kein Speichern-Button mehr nötig'],
+      ['new', 'Bike-Fit: kompakte Live-Vorschau bleibt beim Scrollen oben sichtbar'],
+      ['change', 'Geometrie wird nur noch im Bike-Fit bearbeitet – die Rad-Details zeigen sie an und verlinken dorthin'],
+      ['change', '„Mehr" ist in Werkzeuge und Einstellungen gegliedert; Bike-Fit startet aufgeräumt (nur Rahmen-Geometrie offen)'],
+    ],
+  },
+  {
     v: 6,
     date: '02.07.2026',
     items: [

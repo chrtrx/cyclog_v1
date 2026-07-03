@@ -28,9 +28,20 @@ const IconMore = () => (
   </svg>
 )
 
+const IconFit = () => (
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 20 L4 8"/>
+    <path d="M4 20 L18 20"/>
+    <path d="M4 8 L18 20"/>
+    <path d="M4 12.5 L7 12.5"/>
+    <path d="M9 20 L9 17"/>
+  </svg>
+)
+
 const TABS = [
   { path: '/',      Icon: IconDashboard, label: 'Start'  },
   { path: '/bikes', Icon: IconBike,      label: 'Räder'  },
+  { path: '/fit',   Icon: IconFit,       label: 'Fit'    },
   { path: '/more',  Icon: IconMore,      label: 'Mehr'   },
 ]
 
@@ -43,7 +54,7 @@ export default function NavBar() {
   const isActive = (path) => {
     if (path === '/') return loc.pathname === '/'
     if (path === '/more') {
-      return ['/more', '/setups', '/races', '/pressure', '/fit'].some(p => loc.pathname.startsWith(p))
+      return ['/more', '/setups', '/races', '/pressure'].some(p => loc.pathname.startsWith(p))
     }
     return loc.pathname.startsWith(path)
   }

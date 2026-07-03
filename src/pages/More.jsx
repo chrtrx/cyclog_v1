@@ -66,11 +66,11 @@ export default function More() {
     { path:'/setups',   icon:'🔧', label:'Setups',        sub:'Konfigurationen speichern & vergleichen' },
     { path:'/races',    icon:'🏁', label:'Rennen',        sub:'Setup & Ergebnis dokumentieren' },
     { path:'/pressure', icon:'🔵', label:'Reifendruck',   sub:'Deine Druck-Erfahrungsdatenbank' },
-    { path:'/fit',      icon:'📐', label:'Bike-Fit',      sub:'Sitzpositionen archivieren' },
   ]
 
   return (
-    <Page title="Mehr" subtitle="Weitere Bereiche">
+    <Page title="Mehr" subtitle="Werkzeuge & Einstellungen">
+      <div className="more-group">Werkzeuge</div>
       {items.map(it => (
         <button key={it.path} className="more-row" onClick={() => nav(it.path)}>
           <div className="mr-icon">{it.icon}</div>
@@ -82,6 +82,7 @@ export default function More() {
         </button>
       ))}
 
+      <div className="more-group">Einstellungen</div>
       <button className="more-row" onClick={togglePush} disabled={push === 'busy'}>
         <div className="mr-icon">🔔</div>
         <div className="mr-body">
@@ -130,6 +131,8 @@ export default function More() {
       </button>
 
       <style>{`
+        .more-group { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--ink3); margin:18px 2px 9px; }
+        .more-group:first-of-type { margin-top:2px; }
         .more-row { display:flex; align-items:center; gap:14px; width:100%; background:linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.015)); border:1px solid var(--line); padding:15px; margin-bottom:10px; cursor:pointer; transition:background .12s; }
         .more-row:active { background:rgba(255,255,255,.02); }
         .mr-icon { width:44px; height:44px; background:var(--panel2); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:21px; flex-shrink:0; }

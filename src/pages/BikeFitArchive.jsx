@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { getBikes, updateBike } from '../lib/data'
-import { Page, BtnGreen, Empty } from '../components/ui'
+import { Page, Empty } from '../components/ui'
 import ZoomView from '../components/ZoomView'
 
 // key, Label, Einheit, Platzhalter, signed?
@@ -463,7 +464,7 @@ function BikeFrame({ d, X, Y, col }) {
   )
 }
 
-function BikeDrawing({ bikes, showDims, showRider, body, svgRef, alignH = 'bb', alignV = 'bb', big = false, onExpand }) {
+function BikeDrawing({ bikes, showDims, showRider, body, svgRef, alignH = 'bb', alignV = 'bb', big = false, mini = false, onExpand }) {
   const ds = bikes.map(b => ({ ...deriveDraw(b.geo, b.cockpit), col: b.col, geo: b.geo }))
   // Ausrichtung: Räder so verschieben, dass ihr Referenzpunkt auf dem des
   // aktiven Rades liegt (horizontal: Tretlager/Hinter-/Vorderrad, vertikal:
@@ -495,8 +496,8 @@ function BikeDrawing({ bikes, showDims, showRider, body, svgRef, alignH = 'bb', 
   const scaleY = pad + 6, scaleX2 = W - pad, scaleX1 = scaleX2 - 100
 
   return (
-    <div className={`bd-draw ${big ? 'big' : ''} ${onExpand ? 'clickable' : ''}`} onClick={onExpand}>
-      {onExpand && <span className="bd-zoom-hint">🔍 Tippen zum Vergrößern</span>}
+    <div className={`bd-draw ${big ? 'big' : ''} ${mini ? 'mini' : ''} ${onExpand ? 'clickable' : ''}`} onClick={onExpand}>
+      {onExpand && !mini && <span className="bd-zoom-hint">🔍 Tippen zum Vergrößern</span>}
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
         <defs>
           <pattern id="bgrid" width="40" height="40" patternUnits="userSpaceOnUse">
@@ -541,6 +542,8 @@ function BikeDrawing({ bikes, showDims, showRider, body, svgRef, alignH = 'bb', 
         .bd-zoom-hint { position: absolute; top: 8px; left: 10px; z-index: 1; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .3px; color: ${COL.ink2}; background: rgba(244,246,251,.85); padding: 3px 7px; border-radius: 6px; pointer-events: none; }
         .bd-draw.big { border: none; border-radius: 0; padding: 0; margin: 0; background: ${COL.bg}; }
         .bd-draw.big svg { height: 82vh; }
+        .bd-draw.mini { padding: 6px; margin: 0; border-radius: 10px; }
+        .bd-draw.mini svg { height: 92px; }
       `}</style>
     </div>
   )
@@ -579,23 +582,36 @@ export default function BikeFitArchive() {
   const [toast, setToast] = useState('')
   const [showDims, setShowDims] = useState(false)
   const [openGeo, setOpenGeo] = useState(true)
-  const [openCockpit, setOpenCockpit] = useState(true)
+  const [openCockpit, setOpenCockpit] = useState(false)
   const [openBody, setOpenBody] = useState(false)
   const [compareId, setCompareId] = useState(null)
   const [alignH, setAlignH] = useState('bb')
   const [alignV, setAlignV] = useState('bb')
   const [zoomed, setZoomed] = useState(false)
   const [showRider, setShowRider] = useState(false)
+  const [saveState, setSaveState] = useState('idle')   // idle|saving|saved|error
+  const [stickyOn, setStickyOn] = useState(false)
   const svgRef = useRef(null)
+  const drawAnchorRef = useRef(null)
+  const [searchParams] = useSearchParams()
+  const lastLoadedIdRef = useRef(null)   // Rad nur bei echtem Wechsel neu laden
+  const skipSaveRef = useRef(true)       // erstes Setzen der States löst kein Speichern aus
+  const saveTimerRef = useRef(null)
+  const pendingSaveRef = useRef(null)
 
   useEffect(() => { load() }, [])
   useEffect(() => {
     const b = bikes.find(x => x.id === activeBikeId)
     if (!b) return
+    if (lastLoadedIdRef.current === b.id) return   // eigenes Speichern löst kein Neu-Laden aus
+    flushPendingSave()                             // offene Änderungen des vorherigen Rades sichern
+    lastLoadedIdRef.current = b.id
+    skipSaveRef.current = true
     const { geo, cockpit, body } = loadGeo(b)
     setGeo(geo)
     setCockpit(cockpit)
     setBody(body)
+    setSaveState('idle')
   }, [activeBikeId, bikes])
 
   async function load() {
@@ -603,33 +619,64 @@ export default function BikeFitArchive() {
     try {
       const b = (await getBikes(user.id)).filter(x => !x.archived)
       setBikes(b)
-      if (b.length && !activeBikeId) setActiveBikeId(b[0].id)
+      // Vorauswahl über /fit?bike=… (z. B. aus der Rad-Detailansicht).
+      const wanted = searchParams.get('bike')
+      if (b.length && !activeBikeId) setActiveBikeId(wanted && b.some(x => x.id === wanted) ? wanted : b[0].id)
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }
+
+  // ── (5) Auto-Speichern: 1,2 s nach der letzten Änderung ───
+  useEffect(() => {
+    if (skipSaveRef.current) { skipSaveRef.current = false; return }
+    if (!activeBikeId) return
+    clearTimeout(saveTimerRef.current)
+    const doSave = () => { pendingSaveRef.current = null; autoSave(activeBikeId, geo, cockpit, body) }
+    pendingSaveRef.current = doSave
+    saveTimerRef.current = setTimeout(doSave, 1200)
+    return () => clearTimeout(saveTimerRef.current)
+  }, [geo, cockpit, body])
+
+  function flushPendingSave() {
+    if (pendingSaveRef.current) { clearTimeout(saveTimerRef.current); pendingSaveRef.current() }
+  }
+  // Beim Verlassen der Seite offene Änderungen sichern.
+  useEffect(() => () => { if (pendingSaveRef.current) { clearTimeout(saveTimerRef.current); pendingSaveRef.current() } }, [])
+
+  // ── (4) Sticky-Vorschau: erscheint, sobald die Zeichnung aus dem Bild scrollt ──
+  useEffect(() => {
+    const el = drawAnchorRef.current
+    if (!el || !('IntersectionObserver' in window)) return
+    const obs = new IntersectionObserver(([e]) => {
+      setStickyOn(!e.isIntersecting && e.boundingClientRect.top < 0)
+    }, { threshold: 0 })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [loading, bikes.length])
 
   function showToast(m) { setToast(m); setTimeout(() => setToast(''), 2200) }
   const setG = (k) => (v) => setGeo(p => ({ ...p, [k]: v }))
   const setC = (k) => (v) => setCockpit(p => ({ ...p, [k]: v }))
   const setB = (k) => (v) => setBody(p => ({ ...p, [k]: v }))
 
-  async function save() {
+  async function autoSave(id, g, c, bd) {
     try {
+      setSaveState('saving')
       // Bike-Fit-Geometrie zusätzlich in die geo_*-Spalten des Rades schreiben,
       // damit sie überall (Geometrie-Tab, Tracker) gleich mitgespeichert ist.
       const num = (v) => { const x = Number(typeof v === 'string' ? v.replace(',', '.') : v); return (v !== '' && v != null && isFinite(x) ? x : null) }
       const updates = {
-        fit: { geo, cockpit, body },
-        geo_reach: num(geo.reach), geo_stack: num(geo.stack),
-        geo_head_angle: num(geo.head_angle), geo_seat_angle: num(geo.seat_angle),
-        geo_top_tube: num(geo.top_tube), geo_seat_tube: num(geo.seat_tube),
-        geo_head_tube: num(geo.head_tube), geo_chainstay: num(geo.chainstay),
-        geo_bb_drop: num(geo.bb_drop), geo_wheelbase: num(geo.wheelbase),
-        geo_standover: num(geo.standover),
+        fit: { geo: g, cockpit: c, body: bd },
+        geo_reach: num(g.reach), geo_stack: num(g.stack),
+        geo_head_angle: num(g.head_angle), geo_seat_angle: num(g.seat_angle),
+        geo_top_tube: num(g.top_tube), geo_seat_tube: num(g.seat_tube),
+        geo_head_tube: num(g.head_tube), geo_chainstay: num(g.chainstay),
+        geo_bb_drop: num(g.bb_drop), geo_wheelbase: num(g.wheelbase),
+        geo_standover: num(g.standover),
       }
-      await updateBike(activeBikeId, updates)
-      setBikes(prev => prev.map(b => b.id === activeBikeId ? { ...b, ...updates } : b))
-      showToast('✓ Gespeichert')
-    } catch (e) { showToast('⚠ Fehler beim Speichern') }
+      await updateBike(id, updates)
+      setBikes(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b))
+      setSaveState('saved')
+    } catch (e) { setSaveState('error'); showToast('⚠ Speichern fehlgeschlagen') }
   }
 
 
@@ -694,7 +741,15 @@ export default function BikeFitArchive() {
             <button className={`bf-tbtn ${geo.frame_type === 'mtb' ? 'on' : ''}`} onClick={() => setG('frame_type')('mtb')}>⛰️ MTB</button>
           </div>
 
-          <BikeDrawing bikes={drawBikes} showDims={showDims} showRider={showRider} body={body} svgRef={svgRef} alignH={alignH} alignV={alignV} onExpand={() => setZoomed(true)} />
+          <div ref={drawAnchorRef}>
+            <BikeDrawing bikes={drawBikes} showDims={showDims} showRider={showRider} body={body} svgRef={svgRef} alignH={alignH} alignV={alignV} onExpand={() => setZoomed(true)} />
+          </div>
+
+          {stickyOn && !zoomed && (
+            <div className="bf-sticky" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+              <BikeDrawing bikes={drawBikes} showRider={showRider} body={body} alignH={alignH} alignV={alignV} mini />
+            </div>
+          )}
 
           {zoomed && (
             <ZoomView onClose={() => setZoomed(false)}>
@@ -832,7 +887,12 @@ export default function BikeFitArchive() {
             </>
           )}
 
-          <BtnGreen onClick={save}>Speichern</BtnGreen>
+          <div className={`bf-autosave ${saveState}`}>
+            {saveState === 'saving' ? 'Speichert…'
+              : saveState === 'saved' ? '✓ Automatisch gespeichert'
+              : saveState === 'error' ? '⚠ Speichern fehlgeschlagen – Verbindung prüfen'
+              : 'Änderungen werden automatisch gespeichert'}
+          </div>
         </>
       )}
 
@@ -885,6 +945,11 @@ export default function BikeFitArchive() {
         .nf-in.bad { border-color: var(--crit); color: var(--crit); }
         .nf-in::-webkit-outer-spin-button, .nf-in::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         select.nf-in { -webkit-appearance: none; appearance: none; }
+        .bf-sticky { position: fixed; top: calc(env(safe-area-inset-top) + 8px); left: 50%; transform: translateX(-50%); width: min(520px, calc(100vw - 24px)); z-index: 140; border-radius: 10px; box-shadow: 0 12px 32px rgba(0,0,0,.45); cursor: pointer; animation: stickyDrop .22s cubic-bezier(0.32,0.72,0,1); }
+        @keyframes stickyDrop { from { transform: translate(-50%, -110%); } to { transform: translate(-50%, 0); } }
+        .bf-autosave { margin: 4px 0 10px; font-family: var(--mono); font-size: 11px; letter-spacing: .3px; text-align: center; color: var(--ink3); }
+        .bf-autosave.saved { color: var(--ok); }
+        .bf-autosave.error { color: var(--crit); }
         .bf-toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--acc); color: var(--ink1); padding: 11px 22px; font-family: var(--mono); font-size: 13px; z-index: 500; }
       `}</style>
     </Page>

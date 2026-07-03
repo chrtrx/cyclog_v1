@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import {
   getBike, updateBike, archiveBike,
@@ -26,6 +26,7 @@ const GEO_FIELDS = [
 
 export default function BikeDetail() {
   const { bikeId } = useParams()
+  const nav = useNavigate()
   const { user } = useAuth()
 
   const [bike, setBike] = useState(null)
@@ -34,7 +35,6 @@ export default function BikeDetail() {
   const [tab, setTab] = useState('parts')
   const [partSheet, setPartSheet] = useState(null)     // null | { cat, part }
   const [upgradeSheet, setUpgradeSheet] = useState(undefined) // undefined=closed, null=new, obj=edit
-  const [editGeo, setEditGeo] = useState(false)
   const [typeSheet, setTypeSheet] = useState(false)
   const [notes, setNotes] = useState('')
   const [notesDirty, setNotesDirty] = useState(false)
@@ -221,8 +221,8 @@ export default function BikeDetail() {
       {tab === 'geo' && (
         <div className="tab-body">
           <div className="geo-bar">
-            <button className="geo-edit-btn" onClick={() => setEditGeo(true)}>
-              {GEO_FIELDS.some(g => bike[g.k] != null) ? 'Bearbeiten' : '+ Geometrie eintragen'}
+            <button className="geo-edit-btn" onClick={() => nav(`/fit?bike=${bike.id}`)}>
+              {GEO_FIELDS.some(g => bike[g.k] != null) ? '📐 Im Bike-Fit bearbeiten' : '📐 Im Bike-Fit eintragen'}
             </button>
           </div>
           {GEO_FIELDS.some(g => bike[g.k] != null) ? (
@@ -254,9 +254,6 @@ export default function BikeDetail() {
           onClose={() => setUpgradeSheet(undefined)}
           onSaved={() => { setUpgradeSheet(undefined); load(); showToast(upgradeSheet?.id ? '✓ Gespeichert' : '✓ Hinzugefügt') }}
         />
-      )}
-      {editGeo && (
-        <GeoSheet bike={bike} onClose={() => setEditGeo(false)} onSaved={() => { setEditGeo(false); load() }} />
       )}
       {typeSheet && (
         <BikeTypeSheet bike={bike} onClose={() => setTypeSheet(false)} onSaved={() => { setTypeSheet(false); load(); showToast('✓ Typ geändert') }} />
@@ -497,47 +494,4 @@ function BikeTypeSheet({ bike, onClose, onSaved }) {
   )
 }
 
-// ─── Geometrie bearbeiten ─────────────────────────────────
-function GeoSheet({ bike, onClose, onSaved }) {
-  const [vals, setVals] = useState(() => {
-    const o = {}
-    GEO_FIELDS.forEach(g => { o[g.k] = bike[g.k] ?? '' })
-    return o
-  })
-  const set = k => v => setVals(p => ({ ...p, [k]: v }))
 
-  const [err, setErr] = useState('')
-
-  // Komma erlauben und leere Felder als null speichern.
-  const parseNum = (v) => {
-    if (v == null || String(v).trim() === '') return null
-    const x = Number(String(v).replace(',', '.').trim())
-    return isFinite(x) ? x : null
-  }
-
-  async function save() {
-    setErr('')
-    const updates = {}
-    GEO_FIELDS.forEach(g => { updates[g.k] = parseNum(vals[g.k]) })
-    try {
-      await updateBike(bike.id, updates)
-      onSaved()
-    } catch (e) {
-      console.error('Geometrie speichern fehlgeschlagen', e)
-      setErr('Speichern fehlgeschlagen. Bitte später erneut versuchen.')
-    }
-  }
-
-  return (
-    <Sheet title="Geometrie" sub="Rahmendaten (mm bzw. °)" onClose={onClose}>
-      <div className="geo-form">
-        {GEO_FIELDS.map(g => (
-          <Field key={g.k} label={g.l} type="text" inputMode="text" value={vals[g.k]} onChange={set(g.k)} />
-        ))}
-      </div>
-      {err && <div className="geo-err">{err}</div>}
-      <BtnGreen onClick={save}>Speichern</BtnGreen>
-      <style>{`.geo-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;}.geo-err{font-family:var(--mono);font-size:12px;color:var(--crit);margin:4px 0 8px;}`}</style>
-    </Sheet>
-  )
-}

@@ -7,6 +7,34 @@ import {
   getBikeHours, getUnreadCount, SERVICE_TYPES, BIKE_TYPES,
   getCustomServiceTypes, addCustomServiceType, deleteCustomServiceType,
 } from '../lib/data'
+
+// Lernt aus der Wartungs-Historie (service_logs) realistische Intervalle je
+// Tracker-Typ: Median der tatsächlichen Abstände zwischen den letzten
+// Durchläufen desselben Typs am selben Rad. Ab 3 Durchläufen (= 2 Abständen)
+// wird ein Vorschlag berechnet – vorher ist die Datenbasis zu dünn.
+function computeIntervalSuggestions(logs) {
+  const median = (arr) => { const s = [...arr].sort((a, b) => a - b); const m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2 }
+  const byType = {}
+  for (const l of logs) (byType[l.service_type] ||= []).push(l)
+  const out = {}
+  for (const [typeId, entries] of Object.entries(byType)) {
+    if (entries.length < 3) continue
+    const sorted = [...entries].sort((a, b) => new Date(a.service_date) - new Date(b.service_date))
+    const kmDiffs = [], dayDiffs = []
+    for (let i = 1; i < sorted.length; i++) {
+      const dKm = (sorted[i].km_at_service ?? 0) - (sorted[i - 1].km_at_service ?? 0)
+      if (dKm > 0) kmDiffs.push(dKm)
+      const dDays = (new Date(sorted[i].service_date) - new Date(sorted[i - 1].service_date)) / 86400000
+      if (dDays > 0) dayDiffs.push(dDays)
+    }
+    out[typeId] = {
+      km: kmDiffs.length ? Math.round(median(kmDiffs)) : null,
+      months: dayDiffs.length ? Math.round(median(dayDiffs) / 30.44 * 10) / 10 : null,
+      count: sorted.length,
+    }
+  }
+  return out
+}
 import { BIKE_ICONS, fmtKm, fmtH, kmSince, hoursSince, pct, statusOf } from '../lib/helpers'
 import { Sheet, Field, BtnGreen, BtnDelete, Empty } from '../components/ui'
 import TrackerCard from '../components/TrackerCard'
@@ -458,9 +486,36 @@ export default function Dashboard() {
 // ─── LOG SHEET ─────────────────────────────────────────────
 function LogSheet({ bike, customTypes = [], onAdd, onCreateCustom, onDeleteCustom, onClose }) {
   const [creating, setCreating] = useState(false)
+  const [suggestions, setSuggestions] = useState({})
   const cats = [...new Set(SERVICE_TYPES.map(s => s.cat))]
   const unit = (t) => t === 'h' ? 'h' : t === 'date' ? 'Monate' : 'km'
   const asSvc = (c) => ({ typeId: c.type_id, title: c.title, icon: c.icon, interval: Number(c.interval), intervalType: c.interval_type, cat: c.cat })
+
+  useEffect(() => {
+    getServiceLogs(bike.id).then(logs => setSuggestions(computeIntervalSuggestions(logs))).catch(() => {})
+  }, [bike.id])
+
+  // Vorschlag nur zeigen, wenn genug Historie da ist und er sich spürbar
+  // (>15%) vom Standard-/aktuellen Intervall unterscheidet.
+  function suggestionFor(typeId, intervalType, currentInterval) {
+    const s = suggestions[typeId]
+    if (!s) return null
+    const learned = intervalType === 'date' ? s.months : intervalType === 'h' ? null : s.km
+    if (!learned || !currentInterval) return null
+    if (Math.abs(learned - currentInterval) / currentInterval < 0.15) return null
+    return learned
+  }
+
+  function SuggestChip({ svc }) {
+    const learned = suggestionFor(svc.typeId, svc.intervalType, svc.interval)
+    if (!learned) return null
+    const u = svc.intervalType === 'date' ? (learned === 1 ? 'Monat' : 'Monate') : 'km'
+    return (
+      <button className="svc-chip" onClick={(e) => { e.stopPropagation(); onAdd({ ...svc, interval: learned }) }}>
+        📊 Du brauchst meist ~{learned.toLocaleString('de')} {u} – übernehmen?
+      </button>
+    )
+  }
 
   if (creating) {
     return <CustomTypeSheet onSave={async (t) => { const r = await onCreateCustom(t); if (r) setCreating(false) }} onClose={() => setCreating(false)} />
@@ -471,16 +526,22 @@ function LogSheet({ bike, customTypes = [], onAdd, onCreateCustom, onDeleteCusto
       {/* Eigene Tracker */}
       <div className="svc-sec">
         <div className="svc-sec-lbl">Eigene</div>
-        {customTypes.map(c => (
-          <div className="svc-row" key={c.id} onClick={() => onAdd(asSvc(c))}>
-            <div className="svc-ico">{c.icon}</div>
-            <div style={{ flex: 1, textAlign: 'left' }}>
-              <div className="svc-nm">{c.title}</div>
-              <div className="svc-int">Standard: {Number(c.interval).toLocaleString('de')} {unit(c.interval_type)}</div>
+        {customTypes.map(c => {
+          const svc = asSvc(c)
+          return (
+            <div className="svc-row-wrap" key={c.id}>
+              <div className="svc-row" onClick={() => onAdd(svc)}>
+                <div className="svc-ico">{c.icon}</div>
+                <div style={{ flex: 1, textAlign: 'left' }}>
+                  <div className="svc-nm">{c.title}</div>
+                  <div className="svc-int">Standard: {Number(c.interval).toLocaleString('de')} {unit(c.interval_type)}</div>
+                </div>
+                <button className="svc-del" onClick={(e) => { e.stopPropagation(); if (confirm(`„${c.title}" löschen?`)) onDeleteCustom(c.id) }} aria-label="Löschen">✕</button>
+              </div>
+              <SuggestChip svc={svc} />
             </div>
-            <button className="svc-del" onClick={(e) => { e.stopPropagation(); if (confirm(`„${c.title}" löschen?`)) onDeleteCustom(c.id) }} aria-label="Löschen">✕</button>
-          </div>
-        ))}
+          )
+        })}
         <button className="svc-create" onClick={() => setCreating(true)}>＋ Eigenen Tracker erstellen</button>
       </div>
 
@@ -488,19 +549,25 @@ function LogSheet({ bike, customTypes = [], onAdd, onCreateCustom, onDeleteCusto
         <div className="svc-sec" key={cat}>
           <div className="svc-sec-lbl">{cat}</div>
           {SERVICE_TYPES.filter(s => s.cat === cat).map(s => (
-            <button className="svc-row" key={s.typeId} onClick={() => onAdd(s)}>
-              <div className="svc-ico">{s.icon}</div>
-              <div style={{ flex: 1, textAlign: 'left' }}>
-                <div className="svc-nm">{s.title}</div>
-                <div className="svc-int">Standard: {s.interval.toLocaleString('de')} {s.intervalType === 'h' ? 'h' : s.intervalType === 'date' ? (s.interval === 1 ? 'Monat' : 'Monate') : 'km'}</div>
-              </div>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" strokeWidth="2.5"><path d="M9 18l6-6-6-6" /></svg>
-            </button>
+            <div className="svc-row-wrap" key={s.typeId}>
+              <button className="svc-row" onClick={() => onAdd(s)}>
+                <div className="svc-ico">{s.icon}</div>
+                <div style={{ flex: 1, textAlign: 'left' }}>
+                  <div className="svc-nm">{s.title}</div>
+                  <div className="svc-int">Standard: {s.interval.toLocaleString('de')} {s.intervalType === 'h' ? 'h' : s.intervalType === 'date' ? (s.interval === 1 ? 'Monat' : 'Monate') : 'km'}</div>
+                </div>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" strokeWidth="2.5"><path d="M9 18l6-6-6-6" /></svg>
+              </button>
+              <SuggestChip svc={s} />
+            </div>
           ))}
         </div>
       ))}
       <style>{`
         .svc-del { flex-shrink: 0; background: none; border: none; color: var(--ink3); font-size: 14px; padding: 4px 6px; }
+        .svc-row-wrap { margin-bottom: 6px; }
+        .svc-row-wrap .svc-row { margin-bottom: 0; }
+        .svc-chip { display: block; width: 100%; text-align: left; padding: 8px 13px; background: rgba(47,123,255,.08); border: 1px solid rgba(47,123,255,.3); border-top: none; color: var(--acc); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .2px; }
         .svc-create { width: 100%; padding: 12px; background: var(--panel); border: 1px dashed var(--line); color: var(--acc); font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; margin-top: 2px; }
         .svc-sec { margin-bottom: 12px; }
         .svc-sec-lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; padding: 0 2px; }

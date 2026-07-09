@@ -5,6 +5,13 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 10,
+    date: '09.07.2026',
+    items: [
+      ['new', 'Neuer Tab „Historie" bei jedem Rad: zeigt Wartungen und Bike-Fit-Änderungen chronologisch in einer gemeinsamen Zeitleiste'],
+    ],
+  },
+  {
     v: 9,
     date: '09.07.2026',
     items: [

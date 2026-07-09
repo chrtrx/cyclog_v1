@@ -5,6 +5,13 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 8,
+    date: '03.07.2026',
+    items: [
+      ['new', 'Eigene Tracker: Über „＋ Eigenen Tracker erstellen" kannst du jetzt eigene Wartungen mit Symbol, Name und Intervall anlegen'],
+    ],
+  },
+  {
     v: 7,
     date: '02.07.2026',
     items: [

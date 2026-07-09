@@ -5,6 +5,13 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 9,
+    date: '09.07.2026',
+    items: [
+      ['new', 'Wettkampf-Erkennung: markierst du eine Strava-Aktivität als Wettkampf, schlägt Cyclog dir im Renntagebuch (Mehr → Rennen) ein vorausgefülltes Formular vor'],
+    ],
+  },
+  {
     v: 8,
     date: '03.07.2026',
     items: [

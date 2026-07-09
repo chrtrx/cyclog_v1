@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../lib/auth'
 import {
   getRaces, addRace, getBikes,
+  getRaceCandidates, dismissRaceCandidate,
   getPackItems, addPackItem, updatePackItem, deletePackItem, resetPackList,
 } from '../lib/data'
 import { Page, AddButton, Sheet, Field, BtnGreen, BtnDelete, Empty } from '../components/ui'
@@ -70,6 +71,8 @@ export default function RaceArchive() {
   const [loading, setLoading] = useState(true)
   const [packLoading, setPackLoading] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
+  const [candidates, setCandidates] = useState([])
+  const [candidatePrefill, setCandidatePrefill] = useState(null)
   const [addItemSheet, setAddItemSheet] = useState(false)
   const [editItem, setEditItem] = useState(null)
   const [resetting, setResetting] = useState(false)
@@ -84,8 +87,8 @@ export default function RaceArchive() {
   async function load() {
     setLoading(true)
     try {
-      const [r, b] = await Promise.all([getRaces(user.id), getBikes(user.id)])
-      setRaces(r); setBikes(b)
+      const [r, b, c] = await Promise.all([getRaces(user.id), getBikes(user.id), getRaceCandidates(user.id).catch(() => [])])
+      setRaces(r); setBikes(b); setCandidates(c)
     } catch {}
     setLoading(false)
     // pack_items loaded separately — table may not exist yet
@@ -139,6 +142,15 @@ export default function RaceArchive() {
     setTemplateSheet(false)
   }
 
+  function useCandidate(c) {
+    setCandidatePrefill(c)
+    setShowAdd(true)
+  }
+  async function discardCandidate(c) {
+    setCandidates(cs => cs.filter(x => x.id !== c.id))
+    try { await dismissRaceCandidate(c.id) } catch {}
+  }
+
   const checked = packItems.filter(p => p.checked).length
   const total = packItems.length
   const critUnchecked = packItems.filter(p => p.critical && !p.checked).length
@@ -171,6 +183,24 @@ export default function RaceArchive() {
           )}
         </button>
       </div>
+
+      {/* ── WETTKAMPF ERKANNT ── */}
+      {tab === 'races' && candidates.map(c => (
+        <div className="race-cand" key={c.id}>
+          <div className="race-cand-top">
+            <span className="race-cand-tag">🏁 Wettkampf erkannt</span>
+          </div>
+          <div className="race-cand-name">{c.event_name || 'Aktivität ohne Namen'}</div>
+          <div className="race-cand-meta">
+            {c.race_date && <span>📅 {new Date(c.race_date).toLocaleDateString('de-DE')}</span>}
+            {c.distance_km && <span>{c.distance_km} km</span>}
+          </div>
+          <div className="race-cand-actions">
+            <button className="race-cand-fill" onClick={() => useCandidate(c)}>Renntagebuch ausfüllen</button>
+            <button className="race-cand-dismiss" onClick={() => discardCandidate(c)}>Verwerfen</button>
+          </div>
+        </div>
+      ))}
 
       {/* ── RENNEN ── */}
       {tab === 'races' && !loading && (
@@ -283,9 +313,12 @@ export default function RaceArchive() {
 
       {/* Sheets */}
       {showAdd && (
-        <AddRaceSheet user={user} bikes={bikes}
-          onClose={() => setShowAdd(false)}
-          onSaved={() => { setShowAdd(false); load() }} />
+        <AddRaceSheet user={user} bikes={bikes} prefill={candidatePrefill}
+          onClose={() => { setShowAdd(false); setCandidatePrefill(null) }}
+          onSaved={async () => {
+            if (candidatePrefill) await discardCandidate(candidatePrefill)
+            setShowAdd(false); setCandidatePrefill(null); load()
+          }} />
       )}
       {(addItemSheet || editItem !== null) && (
         <PackItemSheet
@@ -305,6 +338,15 @@ export default function RaceArchive() {
         .rtab.on { background:rgba(47,123,255,.1); color:var(--acc); }
         .rtab:active { background:var(--panel2); }
         .rtab-badge { background:var(--crit); color:white; border-radius:50%; width:16px; height:16px; font-size:9px; display:flex; align-items:center; justify-content:center; font-weight:900; flex-shrink:0; }
+
+        .race-cand { border:1px solid rgba(47,123,255,.4); background:rgba(47,123,255,.06); padding:14px; margin-bottom:12px; }
+        .race-cand-top { margin-bottom:6px; }
+        .race-cand-tag { font-family:var(--mono); font-size:10.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--acc); }
+        .race-cand-name { font-family:var(--sans); font-size:15px; font-weight:800; color:var(--ink1); letter-spacing:.3px; margin-bottom:4px; }
+        .race-cand-meta { display:flex; gap:12px; font-family:var(--mono); font-size:11px; color:var(--ink3); margin-bottom:10px; }
+        .race-cand-actions { display:flex; gap:8px; }
+        .race-cand-fill { flex:1; padding:11px; background:var(--acc); color:#fff; font-family:var(--sans); font-size:12px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; }
+        .race-cand-dismiss { padding:11px 14px; background:none; border:1px solid var(--line); color:var(--ink3); font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; }
 
         .race-card { border:1px solid var(--line); padding:14px; margin-bottom:10px; }
         .race-top { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
@@ -456,10 +498,12 @@ function PackItemSheet({ user, item, onClose, onSaved }) {
 }
 
 // ─── Rennen hinzufügen ────────────────────────────────────
-function AddRaceSheet({ user, bikes, onClose, onSaved }) {
+function AddRaceSheet({ user, bikes, prefill, onClose, onSaved }) {
   const [f, setF] = useState({
-    event_name:'', race_date:'', bike_id:bikes[0]?.id||'', placement:'',
-    distance_km:'', elevation_m:'', avg_power:'', avg_speed:'',
+    event_name: prefill?.event_name || '', race_date: prefill?.race_date || '',
+    bike_id: prefill?.bike_id || bikes[0]?.id || '', placement: '',
+    distance_km: prefill?.distance_km ?? '', elevation_m: prefill?.elevation_m ?? '',
+    avg_power: prefill?.avg_power ?? '', avg_speed: prefill?.avg_speed ?? '',
     tyres:'', pressure_front:'', pressure_rear:'', gearing:'', conditions:'',
   })
   const set = (k) => (v) => setF(p => ({ ...p, [k]: v }))
@@ -485,7 +529,7 @@ function AddRaceSheet({ user, bikes, onClose, onSaved }) {
   }
 
   return (
-    <Sheet title="Neues Rennen" sub="Setup und Ergebnis festhalten" onClose={onClose}>
+    <Sheet title="Neues Rennen" sub={prefill ? 'Aus Strava-Aktivität vorausgefüllt – bitte ergänzen' : 'Setup und Ergebnis festhalten'} onClose={onClose}>
       <Field label="Veranstaltung" value={f.event_name} onChange={set('event_name')} placeholder="z.B. Arber Radmarathon" />
       <Field label="Datum" type="date" value={f.race_date} onChange={set('race_date')} />
       <div className="ar-field">

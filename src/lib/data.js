@@ -228,6 +228,18 @@ export async function deleteRace(raceId) {
   if (error) throw error
 }
 
+// ── Wettkampf-Erkennung: Renntagebuch-Vorschläge aus Strava ──
+export async function getRaceCandidates(userId) {
+  const { data, error } = await supabase
+    .from('race_candidates').select('*').eq('user_id', userId).eq('dismissed', false).order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+export async function dismissRaceCandidate(id) {
+  const { error } = await supabase.from('race_candidates').update({ dismissed: true }).eq('id', id)
+  if (error) throw error
+}
+
 // ═══════════════════════════════════════════════════════════
 // REIFENDRUCK-DATENBANK
 // ═══════════════════════════════════════════════════════════

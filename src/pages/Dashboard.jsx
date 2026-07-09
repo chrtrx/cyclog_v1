@@ -5,6 +5,7 @@ import {
   getBikes, addBike, getTrackers, addTracker, updateTracker, deleteTracker,
   getServiceLogs, addServiceLog, syncStrava, getStravaStatus, getProfile,
   getBikeHours, getUnreadCount, SERVICE_TYPES, BIKE_TYPES,
+  getCustomServiceTypes, addCustomServiceType, deleteCustomServiceType,
 } from '../lib/data'
 import { BIKE_ICONS, fmtKm, fmtH, kmSince, hoursSince, pct, statusOf } from '../lib/helpers'
 import { Sheet, Field, BtnGreen, BtnDelete, Empty } from '../components/ui'
@@ -52,8 +53,10 @@ export default function Dashboard() {
   const [toast, setToast] = useState('')
   const [lastDeleted, setLastDeleted] = useState(null)  // für Rückgängig
   const [unread, setUnread] = useState(cached?.unread || 0)
+  const [customTypes, setCustomTypes] = useState([])
 
   useEffect(() => { load().then(m => { if (m) showToast(m) }) }, [])
+  useEffect(() => { getCustomServiceTypes(user.id).then(setCustomTypes).catch(() => {}) }, [])
   useEffect(() => {
     if (!activeBikeId) return
     getBikeHours(activeBikeId).then(setActiveBikeHours).catch(() => setActiveBikeHours(0))
@@ -174,6 +177,21 @@ export default function Dashboard() {
     } catch (e) {
       showToast('⚠ Fehler: ' + (e?.message || 'Tracker konnte nicht erstellt werden'))
     }
+  }
+
+  async function createCustomType(t) {
+    try {
+      const row = await addCustomServiceType(user.id, t)
+      setCustomTypes(prev => [...prev, row])
+      showToast('✓ Eigener Tracker gespeichert')
+      return row
+    } catch (e) { showToast('⚠ Konnte nicht speichern'); return null }
+  }
+  async function removeCustomType(id) {
+    try {
+      await deleteCustomServiceType(id)
+      setCustomTypes(prev => prev.filter(c => c.id !== id))
+    } catch (e) { showToast('⚠ Konnte nicht löschen') }
   }
 
   // Gelöschten Tracker wiederherstellen
@@ -364,7 +382,7 @@ export default function Dashboard() {
           `}</style>
         </Sheet>
       )}
-      {sheet === 'log' && <LogSheet bike={activeBike} onAdd={handleAddTracker} onClose={() => setSheet(null)} />}
+      {sheet === 'log' && <LogSheet bike={activeBike} customTypes={customTypes} onAdd={handleAddTracker} onCreateCustom={createCustomType} onDeleteCustom={removeCustomType} onClose={() => setSheet(null)} />}
       {sheet === 'addBike' && <AddBikeSheet user={user} onClose={() => setSheet(null)} onSaved={(id) => { setSheet(null); setActiveBikeId(id); load() }} />}
       {dueTracker && (
         <Sheet title={dueTracker.title} sub="Wartung fällig" onClose={() => setDueTracker(null)}>
@@ -438,10 +456,34 @@ export default function Dashboard() {
 }
 
 // ─── LOG SHEET ─────────────────────────────────────────────
-function LogSheet({ bike, onAdd, onClose }) {
+function LogSheet({ bike, customTypes = [], onAdd, onCreateCustom, onDeleteCustom, onClose }) {
+  const [creating, setCreating] = useState(false)
   const cats = [...new Set(SERVICE_TYPES.map(s => s.cat))]
+  const unit = (t) => t === 'h' ? 'h' : t === 'date' ? 'Monate' : 'km'
+  const asSvc = (c) => ({ typeId: c.type_id, title: c.title, icon: c.icon, interval: Number(c.interval), intervalType: c.interval_type, cat: c.cat })
+
+  if (creating) {
+    return <CustomTypeSheet onSave={async (t) => { const r = await onCreateCustom(t); if (r) setCreating(false) }} onClose={() => setCreating(false)} />
+  }
+
   return (
     <Sheet title="Was hast du gemacht?" sub={`Tracker startet bei ${fmtKm(bike.km)} km (${bike.name})`} onClose={onClose}>
+      {/* Eigene Tracker */}
+      <div className="svc-sec">
+        <div className="svc-sec-lbl">Eigene</div>
+        {customTypes.map(c => (
+          <div className="svc-row" key={c.id} onClick={() => onAdd(asSvc(c))}>
+            <div className="svc-ico">{c.icon}</div>
+            <div style={{ flex: 1, textAlign: 'left' }}>
+              <div className="svc-nm">{c.title}</div>
+              <div className="svc-int">Standard: {Number(c.interval).toLocaleString('de')} {unit(c.interval_type)}</div>
+            </div>
+            <button className="svc-del" onClick={(e) => { e.stopPropagation(); if (confirm(`„${c.title}" löschen?`)) onDeleteCustom(c.id) }} aria-label="Löschen">✕</button>
+          </div>
+        ))}
+        <button className="svc-create" onClick={() => setCreating(true)}>＋ Eigenen Tracker erstellen</button>
+      </div>
+
       {cats.map(cat => (
         <div className="svc-sec" key={cat}>
           <div className="svc-sec-lbl">{cat}</div>
@@ -458,6 +500,8 @@ function LogSheet({ bike, onAdd, onClose }) {
         </div>
       ))}
       <style>{`
+        .svc-del { flex-shrink: 0; background: none; border: none; color: var(--ink3); font-size: 14px; padding: 4px 6px; }
+        .svc-create { width: 100%; padding: 12px; background: var(--panel); border: 1px dashed var(--line); color: var(--acc); font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; margin-top: 2px; }
         .svc-sec { margin-bottom: 12px; }
         .svc-sec-lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; padding: 0 2px; }
         .svc-row { display: flex; align-items: center; gap: 11px; padding: 12px 13px; background: var(--panel2); border: 1px solid var(--line); margin-bottom: 6px; width: 100%; cursor: pointer; transition: border-color .12s; }
@@ -465,6 +509,50 @@ function LogSheet({ bike, onAdd, onClose }) {
         .svc-ico { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; background: var(--panel); border: 1px solid var(--line); flex-shrink: 0; }
         .svc-nm { font-family: var(--sans); font-size: 14px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--ink1); }
         .svc-int { font-family: var(--mono); font-size: 11px; color: var(--ink3); letter-spacing: .5px; text-transform: uppercase; margin-top: 2px; }
+      `}</style>
+    </Sheet>
+  )
+}
+
+// ─── EIGENER TRACKER ANLEGEN ───────────────────────────────
+const EMOJI_CHOICES = ['🔧', '⚙️', '🔗', '⛓️', '🛑', '💿', '🔵', '🔴', '🥛', '🔘', '🧭', '🎯', '🔱', '🏗️', '📉', '🔩', '🪄', '🔍', '🔋', '💧', '🧴', '🧽', '⚡', '🛞', '🚿', '📅']
+
+function CustomTypeSheet({ onSave, onClose }) {
+  const [title, setTitle] = useState('')
+  const [icon, setIcon] = useState('🔧')
+  const [interval, setInterval] = useState('1000')
+  const [type, setType] = useState('km')
+  const [saving, setSaving] = useState(false)
+
+  async function save() {
+    if (!title.trim() || saving) return
+    setSaving(true)
+    await onSave({ title: title.trim(), icon, interval: Number(String(interval).replace(',', '.')) || 1000, interval_type: type })
+    setSaving(false)
+  }
+
+  return (
+    <Sheet title="Eigener Tracker" sub="Symbol, Name & Standard-Intervall" onClose={onClose}>
+      <div className="ct-icons">
+        {EMOJI_CHOICES.map(e => (
+          <button key={e} className={`ct-emoji ${icon === e ? 'on' : ''}`} onClick={() => setIcon(e)}>{e}</button>
+        ))}
+      </div>
+      <Field label="Name" value={title} onChange={setTitle} placeholder="z.B. Sattel-Fett, Gabel putzen…" />
+      <div className="ct-type">
+        {[['km', 'Kilometer'], ['h', 'Stunden'], ['date', 'Monate']].map(([v, l]) => (
+          <button key={v} className={`ct-type-opt ${type === v ? 'on' : ''}`} onClick={() => setType(v)}>{l}</button>
+        ))}
+      </div>
+      <Field label={`Intervall (${type === 'h' ? 'Stunden' : type === 'date' ? 'Monate' : 'km'})`} type="number" value={interval} onChange={setInterval} placeholder="1000" />
+      <BtnGreen onClick={save}>{saving ? 'Speichert…' : 'Tracker speichern'}</BtnGreen>
+      <style>{`
+        .ct-icons { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-bottom: 16px; }
+        .ct-emoji { aspect-ratio: 1; font-size: 20px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        .ct-emoji.on { border-color: var(--acc); background: rgba(47,123,255,.12); }
+        .ct-type { display: flex; gap: 6px; margin-bottom: 14px; }
+        .ct-type-opt { flex: 1; padding: 11px 6px; background: var(--panel2); border: 1px solid var(--line); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--ink2); }
+        .ct-type-opt.on { background: var(--acc); border-color: var(--acc); color: #fff; }
       `}</style>
     </Sheet>
   )

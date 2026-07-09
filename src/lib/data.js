@@ -136,6 +136,26 @@ export async function deleteTracker(trackerId) {
   if (error) throw error
 }
 
+// ── Eigene Tracker-Typen (Symbol + Name) ──────────────────────
+export async function getCustomServiceTypes(userId) {
+  const { data, error } = await supabase
+    .from('custom_service_types').select('*').eq('user_id', userId).order('created_at')
+  if (error) throw error
+  return data
+}
+export async function addCustomServiceType(userId, t) {
+  const { data, error } = await supabase
+    .from('custom_service_types')
+    .insert({ ...t, user_id: userId, type_id: t.type_id || `custom-${Date.now()}` })
+    .select().single()
+  if (error) throw error
+  return data
+}
+export async function deleteCustomServiceType(id) {
+  const { error } = await supabase.from('custom_service_types').delete().eq('id', id)
+  if (error) throw error
+}
+
 // ═══════════════════════════════════════════════════════════
 // SERVICE LOG
 // ═══════════════════════════════════════════════════════════

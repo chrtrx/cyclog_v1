@@ -5,6 +5,13 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 11,
+    date: '09.07.2026',
+    items: [
+      ['new', 'Cyclog lernt aus deiner Wartungs-Historie: Beim Anlegen eines Trackers schlägt er dir dein tatsächliches Intervall vor, wenn es deutlich vom Standard abweicht'],
+    ],
+  },
+  {
     v: 10,
     date: '09.07.2026',
     items: [

@@ -172,6 +172,43 @@ export async function addServiceLog(userId, log) {
   return data
 }
 
+// ── Bike-Fit-Historie ──────────────────────────────────────
+export async function getFitHistory(bikeId) {
+  const { data, error } = await supabase
+    .from('fit_history').select('*').eq('bike_id', bikeId).order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+function fmtFitChange(c) {
+  const u = c.unit === '°' ? '°' : c.unit ? ' ' + c.unit : ''
+  return c.from == null || c.from === '' ? `${c.label} ${c.to}${u}` : `${c.label} ${c.from}→${c.to}${u}`
+}
+// Legt eine Änderung ab. Änderungen innerhalb von 30 Minuten (Tuning-Session)
+// werden zu einem Eintrag zusammengefasst statt bei jedem Auto-Save einen
+// neuen Verlaufseintrag anzulegen; je Feld gilt der ursprüngliche "from"-Wert
+// der Session und der jeweils neueste "to"-Wert.
+export async function logFitChange(userId, bikeId, fit, diffEntries) {
+  if (!diffEntries || !diffEntries.length) return
+  const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+  const { data: recent } = await supabase
+    .from('fit_history').select('id,changes').eq('bike_id', bikeId).gte('created_at', cutoff)
+    .order('created_at', { ascending: false }).limit(1).maybeSingle()
+  if (recent) {
+    const byKey = {}
+    for (const c of recent.changes || []) byKey[c.key] = c
+    for (const c of diffEntries) byKey[c.key] = { ...c, from: byKey[c.key]?.from ?? c.from }
+    const merged = Object.values(byKey)
+    const { error } = await supabase.from('fit_history')
+      .update({ fit, changes: merged, summary: merged.map(fmtFitChange).join(' · '), created_at: new Date().toISOString() })
+      .eq('id', recent.id)
+    if (error) throw error
+    return
+  }
+  const { error } = await supabase.from('fit_history')
+    .insert({ user_id: userId, bike_id: bikeId, fit, changes: diffEntries, summary: diffEntries.map(fmtFitChange).join(' · ') })
+  if (error) throw error
+}
+
 // ═══════════════════════════════════════════════════════════
 // SETUPS
 // ═══════════════════════════════════════════════════════════

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
-import { getBikes, updateBike } from '../lib/data'
+import { getBikes, updateBike, logFitChange } from '../lib/data'
 import { Page, Empty } from '../components/ui'
 import ZoomView from '../components/ZoomView'
 
@@ -41,6 +41,22 @@ const BODY_FIELDS = [
   ['torso',  'Rumpflänge',     'mm', 'auto'],
   ['arm',    'Armlänge',       'mm', 'auto'],
 ]
+
+// Ermittelt geänderte Felder für die Bike-Fit-Historie (Reach 390→400mm, …).
+function buildFitDiff(oldFit, newGeo, newCockpit, newBody) {
+  const old = oldFit || {}
+  const groups = [['geo', GEO_FIELDS, old.geo || {}, newGeo], ['cockpit', COCKPIT_FIELDS, old.cockpit || {}, newCockpit], ['body', BODY_FIELDS, old.body || {}, newBody]]
+  const changes = []
+  for (const [grp, fields, oldObj, newObj] of groups) {
+    for (const [k, l, u] of fields) {
+      const ov = oldObj[k], nv = newObj[k]
+      const oStr = ov === '' || ov == null ? null : String(ov)
+      const nStr = nv === '' || nv == null ? null : String(nv)
+      if (oStr !== nStr && nStr != null) changes.push({ key: `${grp}.${k}`, label: l, from: oStr, to: nStr, unit: u })
+    }
+  }
+  return changes
+}
 
 // Laufradgrößen (Zoll) → Felgen-Innendurchmesser (ETRTO) in mm.
 const WHEELS = [['road', '700c / 28″', 622], ['29', '29″ MTB', 622], ['275', '27,5″', 584], ['26', '26″', 559]]
@@ -673,9 +689,12 @@ export default function BikeFitArchive() {
         geo_bb_drop: num(g.bb_drop), geo_wheelbase: num(g.wheelbase),
         geo_standover: num(g.standover),
       }
+      const prevFit = bikes.find(b => b.id === id)?.fit
       await updateBike(id, updates)
       setBikes(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b))
       setSaveState('saved')
+      const diff = buildFitDiff(prevFit, g, c, bd)
+      if (diff.length) logFitChange(user.id, id, updates.fit, diff).catch(() => {})
     } catch (e) { setSaveState('error'); showToast('⚠ Speichern fehlgeschlagen') }
   }
 

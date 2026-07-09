@@ -5,6 +5,7 @@ import {
   getBike, updateBike, archiveBike,
   getComponents, upsertComponent, deleteComponent,
   getUpgrades, addUpgrade, updateUpgrade, deleteUpgrade,
+  getServiceLogs, getFitHistory,
   PART_CATEGORIES, BIKE_TYPES,
 } from '../lib/data'
 import { Page, Sheet, Field, BtnGreen, BtnDelete } from '../components/ui'
@@ -32,6 +33,7 @@ export default function BikeDetail() {
   const [bike, setBike] = useState(null)
   const [components, setComponents] = useState([])
   const [upgrades, setUpgrades] = useState([])
+  const [history, setHistory] = useState(null)  // lazy: erst beim Öffnen des Tabs geladen
   const [tab, setTab] = useState('parts')
   const [partSheet, setPartSheet] = useState(null)     // null | { cat, part }
   const [upgradeSheet, setUpgradeSheet] = useState(undefined) // undefined=closed, null=new, obj=edit
@@ -41,7 +43,19 @@ export default function BikeDetail() {
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState('')
 
-  useEffect(() => { load() }, [bikeId])
+  useEffect(() => { setHistory(null); load() }, [bikeId])
+  useEffect(() => {
+    if (tab !== 'history' || history !== null) return
+    Promise.all([getServiceLogs(bikeId).catch(() => []), getFitHistory(bikeId).catch(() => [])])
+      .then(([logs, fits]) => {
+        const items = [
+          ...logs.map(l => ({ id: `s-${l.id}`, kind: 'service', date: l.service_date, icon: l.icon || '🔧', title: l.title, sub: null })),
+          ...fits.map(f => ({ id: `f-${f.id}`, kind: 'fit', date: f.created_at, icon: '📐', title: 'Bike-Fit geändert', sub: f.summary })),
+        ].sort((a, b) => new Date(b.date) - new Date(a.date))
+        setHistory(items)
+      })
+      .catch(() => setHistory([]))
+  }, [tab, history, bikeId])
 
   async function load() {
     setLoading(true)
@@ -89,6 +103,7 @@ export default function BikeDetail() {
     { id: 'notes',    label: 'Notizen' },
     { id: 'upgrades', label: 'Upgrades' },
     { id: 'geo',      label: 'Geometrie' },
+    { id: 'history',  label: 'Historie' },
   ]
 
   return (
@@ -240,6 +255,30 @@ export default function BikeDetail() {
         </div>
       )}
 
+      {/* ── HISTORIE ── */}
+      {tab === 'history' && (
+        <div className="tab-body">
+          {history === null ? (
+            <div className="hist-empty">Lädt…</div>
+          ) : history.length === 0 ? (
+            <div className="hist-empty">Noch nichts protokolliert. Wartungen und Bike-Fit-Änderungen erscheinen hier automatisch.</div>
+          ) : (
+            <div className="hist-list">
+              {history.map(h => (
+                <div className="hist-row" key={h.id}>
+                  <div className={`hist-ico ${h.kind}`}>{h.icon}</div>
+                  <div className="hist-body">
+                    <div className="hist-title">{h.title}</div>
+                    {h.sub && <div className="hist-sub">{h.sub}</div>}
+                    <div className="hist-date">{new Date(h.date).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Sheets */}
       {partSheet && (
         <PartSheet
@@ -330,6 +369,17 @@ export default function BikeDetail() {
         .geo-num { font-family:var(--sans); font-size:17px; font-weight:900; color:var(--ink1); }
         .geo-lbl { font-family:var(--mono); font-size:8.5px; color:var(--ink3); text-transform:uppercase; letter-spacing:.5px; margin-top:3px; }
         .geo-empty { padding:24px; text-align:center; font-family:var(--mono); font-size:12px; color:var(--ink3); border:1px dashed var(--line); }
+
+        .hist-empty { padding:24px; text-align:center; font-family:var(--mono); font-size:12px; color:var(--ink3); border:1px dashed var(--line); }
+        .hist-list { display:flex; flex-direction:column; gap:2px; }
+        .hist-row { display:flex; align-items:flex-start; gap:12px; padding:12px 4px; border-bottom:1px solid var(--line); }
+        .hist-row:last-child { border-bottom:none; }
+        .hist-ico { width:34px; height:34px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:16px; background:var(--panel2); border:1px solid var(--line); }
+        .hist-ico.fit { background:rgba(47,123,255,.1); border-color:rgba(47,123,255,.3); }
+        .hist-body { flex:1; min-width:0; }
+        .hist-title { font-family:var(--sans); font-size:14px; font-weight:800; color:var(--ink1); letter-spacing:.3px; }
+        .hist-sub { font-family:var(--mono); font-size:11px; color:var(--ink2); margin-top:3px; line-height:1.5; }
+        .hist-date { font-family:var(--mono); font-size:10.5px; color:var(--ink3); margin-top:4px; letter-spacing:.3px; }
 
         .bd-toast { position:fixed; bottom:110px; left:50%; transform:translateX(-50%); background:var(--panel); border:1px solid var(--acc); color:var(--ink1); padding:10px 20px; font-family:var(--mono); font-size:13px; font-weight:700; z-index:1000; white-space:nowrap; }
       `}</style>

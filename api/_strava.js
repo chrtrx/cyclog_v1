@@ -28,6 +28,24 @@ export async function getAccessToken(admin, row) {
   return fresh.access_token
 }
 
+// Details einer einzelnen Aktivität holen (für Wettkampf-Erkennung).
+export async function fetchActivityDetail(admin, tok, activityId) {
+  const accessToken = await getAccessToken(admin, tok)
+  const res = await fetch(`https://www.strava.com/api/v3/activities/${activityId}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!res.ok) return null
+  return res.json()
+}
+
+// Radsport-Aktivitätstypen, die Strava für Renn-Erkennung berücksichtigt.
+const RIDE_TYPES = new Set(['Ride', 'VirtualRide', 'GravelRide', 'MountainBikeRide', 'EBikeRide', 'EMountainBikeRide'])
+
+// Strava markiert einen Wettkampf über workout_type=1 (nur bei Ride-Typen gültig).
+export function isRaceActivity(activity) {
+  return !!activity && RIDE_TYPES.has(activity.type) && Number(activity.workout_type) === 1
+}
+
 // Für alle Verbindungen ohne athlete_id diese über /athlete nachtragen.
 export async function backfillAthleteIds(admin) {
   const { data: toks } = await admin.from('strava_tokens').select('*').is('athlete_id', null)

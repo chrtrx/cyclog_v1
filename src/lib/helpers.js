@@ -138,6 +138,23 @@ export function predictDue(tracker, bikeKm, bikeHours = 0) {
   return { dueDateStr, weeks, timePct }
 }
 
+// Km-gewichtete Verschleiß-Auswertung: wie viel Prozent der gefahrenen km
+// seit `sinceDate` unter welchem Wetter/welcher Intensität waren.
+// rows: [{ km_delta, weather, intensity, ride_date }] aus ride_conditions.
+export function summarizeConditions(rows, sinceDate) {
+  if (!rows || !rows.length) return null
+  const since = sinceDate ? new Date(sinceDate).getTime() : 0
+  const relevant = rows.filter(r => new Date(r.ride_date).getTime() >= since)
+  const totalKm = relevant.reduce((s, r) => s + (Number(r.km_delta) || 0), 0)
+  if (!totalKm) return null
+  const share = (pred) => Math.round(relevant.filter(pred).reduce((s, r) => s + (Number(r.km_delta) || 0), 0) / totalKm * 100)
+  return {
+    totalKm: Math.round(totalKm),
+    weather: { dry: share(r => r.weather === 'dry'), wet: share(r => r.weather === 'wet'), rain: share(r => r.weather === 'rain') },
+    intensity: { easy: share(r => r.intensity === 'easy'), mixed: share(r => r.intensity === 'mixed'), hard: share(r => r.intensity === 'hard') },
+  }
+}
+
 // Icons für ALLE Rad-Typen – inkl. der Strava-Schreibweisen (MTB, Rennrad …)
 export const BIKE_ICONS = {
   MTB: '🏔️',

@@ -1,7 +1,19 @@
 import { useState, useEffect, useRef } from 'react'
 import { kmSince, hoursSince, daysSince, dueDateOf, daysUntilDue, pct, statusOf, fmtKm, fmtH, fmtDate, predictDue } from '../lib/helpers'
 
-export default function TrackerCard({ tracker, bikeKm, bikeHours = 0, onClick, onPin }) {
+// Zeigt die km-gewichtete Verschleiß-Auswertung eines Trackers ("22% Regen · 38% Hart").
+// Nur Bedingungen mit spürbarem Anteil (≥15%) werden genannt, um die Zeile kurz zu halten.
+function ConditionTag({ conditions }) {
+  if (!conditions) return null
+  const parts = []
+  if (conditions.weather.rain >= 15) parts.push(`🌧️ ${conditions.weather.rain}% Regen`)
+  if (conditions.weather.wet >= 15) parts.push(`💧 ${conditions.weather.wet}% Nass`)
+  if (conditions.intensity.hard >= 15) parts.push(`🔴 ${conditions.intensity.hard}% Hart`)
+  if (!parts.length) return null
+  return <div className="tc-cond">{parts.join(' · ')}</div>
+}
+
+export default function TrackerCard({ tracker, bikeKm, bikeHours = 0, conditions, onClick, onPin }) {
   const isH    = tracker.interval_type === 'h'
   const isDate = tracker.interval_type === 'date'
   const p      = pct(tracker, bikeKm, bikeHours)
@@ -86,6 +98,7 @@ export default function TrackerCard({ tracker, bikeKm, bikeHours = 0, onClick, o
             <div className="tc-meta">
               seit {fmtDate(tracker.start_date)} · Start {fmtKm(tracker.km_at_start)} km
             </div>
+            <ConditionTag conditions={conditions} />
             {pred && (
               <div className="tc-pred">
                 <div className="tc-pred-hdr">
@@ -123,6 +136,7 @@ export default function TrackerCard({ tracker, bikeKm, bikeHours = 0, onClick, o
         .tc-stats { display:flex;align-items:center;gap:8px;padding-top:11px;margin-bottom:3px;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--ink1); }
         .tc-dot { color:var(--ink3); }
         .tc-meta { font-family:var(--mono);font-size:10.5px;color:var(--ink3);margin-bottom:10px; }
+        .tc-cond { font-family:var(--mono);font-size:10.5px;color:var(--ink2);margin:-6px 0 10px; }
         .tc-note { font-family:var(--mono);font-size:11px;color:var(--ink2);margin-bottom:10px; }
         .tc-pred { margin-bottom:10px; }
         .tc-pred-hdr { display:flex;justify-content:space-between;align-items:center;margin-bottom:5px; }

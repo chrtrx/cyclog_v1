@@ -209,6 +209,18 @@ export async function logFitChange(userId, bikeId, fit, diffEntries) {
   if (error) throw error
 }
 
+// ── Fahrbedingungen je Ausfahrt (Verschleiß-Kontext) ───────
+export async function getRideConditions(bikeId) {
+  const { data, error } = await supabase
+    .from('ride_conditions').select('*').eq('bike_id', bikeId).order('ride_date', { ascending: true })
+  if (error) throw error
+  return data
+}
+export async function addRideCondition(userId, entry) {
+  const { error } = await supabase.from('ride_conditions').insert({ ...entry, user_id: userId })
+  if (error) throw error
+}
+
 // ═══════════════════════════════════════════════════════════
 // SETUPS
 // ═══════════════════════════════════════════════════════════

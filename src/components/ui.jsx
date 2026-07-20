@@ -142,10 +142,10 @@ export function Field({ label, value, onChange, placeholder, type = 'text', inpu
 }
 
 // ─── Buttons ───────────────────────────────────────────────
-export function BtnGreen({ onClick, children }) {
+export function BtnGreen({ onClick, children, disabled }) {
   return (
-    <button className="bg-btn" onClick={onClick}>{children}
-      <style>{`.bg-btn{display:block;width:100%;margin:8px 0;background:var(--acc);color:white;border:none;padding:15px;font-family:var(--sans);font-size:14px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;transition:background .12s;}.bg-btn:active{background:var(--acc-d);}`}</style>
+    <button className="bg-btn" onClick={onClick} disabled={disabled}>{children}
+      <style>{`.bg-btn{display:block;width:100%;margin:8px 0;background:var(--acc);color:white;border:none;padding:15px;font-family:var(--sans);font-size:14px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;transition:background .12s;}.bg-btn:active{background:var(--acc-d);}.bg-btn:disabled{opacity:.4;}`}</style>
     </button>
   )
 }

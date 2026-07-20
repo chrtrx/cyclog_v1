@@ -5,6 +5,14 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 12,
+    date: '09.07.2026',
+    items: [
+      ['new', 'Neue Frage „Wie war die Fahrt?" nach erkannten Ausfahrten: Wetter (Trocken/Nass/Regen) und Intensität (Locker/Gemischt/Hart) eintragen'],
+      ['new', 'Tracker zeigen jetzt eine Verschleiß-Auswertung an, z.B. „🌧️ 22% Regen · 🔴 38% Hart", inkl. Fazit beim Abschließen'],
+    ],
+  },
+  {
     v: 11,
     date: '09.07.2026',
     items: [

@@ -2,10 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import {
-  getBikes, addBike, getTrackers, addTracker, updateTracker, deleteTracker,
+  getBikes, addBike, updateBike, getTrackers, addTracker, updateTracker, deleteTracker,
   getServiceLogs, addServiceLog, syncStrava, getStravaStatus, getProfile,
   getBikeHours, getUnreadCount, SERVICE_TYPES, BIKE_TYPES,
   getCustomServiceTypes, addCustomServiceType, deleteCustomServiceType,
+  getRideConditions, addRideCondition,
 } from '../lib/data'
 
 // Lernt aus der Wartungs-Historie (service_logs) realistische Intervalle je
@@ -35,7 +36,7 @@ function computeIntervalSuggestions(logs) {
   }
   return out
 }
-import { BIKE_ICONS, fmtKm, fmtH, kmSince, hoursSince, pct, statusOf } from '../lib/helpers'
+import { BIKE_ICONS, fmtKm, fmtH, kmSince, hoursSince, pct, statusOf, summarizeConditions } from '../lib/helpers'
 import { Sheet, Field, BtnGreen, BtnDelete, Empty } from '../components/ui'
 import TrackerCard from '../components/TrackerCard'
 
@@ -82,12 +83,15 @@ export default function Dashboard() {
   const [lastDeleted, setLastDeleted] = useState(null)  // für Rückgängig
   const [unread, setUnread] = useState(cached?.unread || 0)
   const [customTypes, setCustomTypes] = useState([])
+  const [rideQueue, setRideQueue] = useState([])  // [{bikeId, name, delta}] – noch abzufragende Ausfahrten
+  const [conditionRows, setConditionRows] = useState([])  // ride_conditions des aktiven Rads
 
   useEffect(() => { load().then(m => { if (m) showToast(m) }) }, [])
   useEffect(() => { getCustomServiceTypes(user.id).then(setCustomTypes).catch(() => {}) }, [])
   useEffect(() => {
     if (!activeBikeId) return
     getBikeHours(activeBikeId).then(setActiveBikeHours).catch(() => setActiveBikeHours(0))
+    getRideConditions(activeBikeId).then(setConditionRows).catch(() => setConditionRows([]))
   }, [activeBikeId])
   // Auto-Sync beim Öffnen: einmal pro Session, höchstens alle 30 Min,
   // nur wenn Strava verbunden ist – läuft still im Hintergrund.
@@ -121,9 +125,44 @@ export default function Dashboard() {
       }
       if (nextActive !== activeBikeId) setActiveBikeId(nextActive)
       dashCache = { userId: user.id, bikes: activeB, trackers: t, stravaStatus: s, profile: p, unread: u, activeBikeId: nextActive }
+      await detectRideChanges(activeB)
     } catch (e) { showToast('Fehler beim Laden') }
     setLoading(false)
     return changeMsg
+  }
+
+  // Erkennt km-Zuwächse seit der zuletzt abgefragten Basislinie je Rad
+  // (server-persistiert, überlebt App-Neustarts) und reiht sie für das
+  // "Wie war die Fahrt?"-Sheet ein. Läuft eine Abfrage bereits, wird die
+  // Warteschlange nicht angetastet, um sie nicht mittendrin zu verwerfen.
+  async function detectRideChanges(activeB) {
+    setRideQueue(q => {
+      if (q.length) return q
+      const pending = []
+      for (const b of activeB) {
+        if (b.conditions_km_baseline == null) {
+          updateBike(b.id, { conditions_km_baseline: b.km || 0 }).catch(() => {})
+          continue
+        }
+        const delta = Math.round((b.km || 0) - b.conditions_km_baseline)
+        if (delta >= 3) pending.push({ bikeId: b.id, name: b.name, delta })
+      }
+      return pending
+    })
+  }
+
+  async function resolveRide(entry, choice) {
+    setRideQueue(q => q.slice(1))
+    try {
+      if (choice) {
+        await addRideCondition(user.id, { bike_id: entry.bikeId, km_delta: entry.delta, weather: choice.weather, intensity: choice.intensity })
+        if (entry.bikeId === activeBikeId) getRideConditions(activeBikeId).then(setConditionRows).catch(() => {})
+      }
+      const bike = bikes.find(b => b.id === entry.bikeId)
+      const newBaseline = (bike?.km ?? 0)
+      await updateBike(entry.bikeId, { conditions_km_baseline: newBaseline })
+      setBikes(prev => prev.map(b => b.id === entry.bikeId ? { ...b, conditions_km_baseline: newBaseline } : b))
+    } catch (e) { /* nächster Ladevorgang versucht es erneut */ }
   }
 
   function showToast(m) { setToast(m); setTimeout(() => setToast(''), 2400) }
@@ -385,6 +424,7 @@ export default function Dashboard() {
             ) : (
               sortedBikeTrackers.map(t => (
                 <TrackerCard key={t.id} tracker={t} bikeKm={activeBike.km} bikeHours={activeBikeHours}
+                  conditions={summarizeConditions(conditionRows, t.start_date)}
                   onClick={() => pct(t, activeBike.km, activeBikeHours) >= 1 ? setDueTracker(t) : setEditTracker(t)}
                   onPin={() => togglePin(t)}
                 />
@@ -421,6 +461,15 @@ export default function Dashboard() {
                 ? `Dieser Tracker hat sein Intervall erreicht (${dueTracker.interval_hours} h). Was möchtest du tun?`
                 : `Dieser Tracker hat sein Intervall erreicht (${fmtKm(dueTracker.interval_km)} km). Was möchtest du tun?`}
           </div>
+          {(() => {
+            const c = summarizeConditions(conditionRows, dueTracker.start_date)
+            if (!c) return null
+            return (
+              <div className="due-fazit">
+                📊 Fazit: {fmtKm(c.totalKm)} km · {c.weather.rain}% Regen / {c.weather.wet}% Nass / {c.weather.dry}% Trocken · {c.intensity.hard}% Hart / {c.intensity.mixed}% Gemischt / {c.intensity.easy}% Locker
+              </div>
+            )
+          })()}
           <button className="due-opt due-done" onClick={() => handleServiceDone(dueTracker)}>
             <span className="due-ico">✓</span>
             <span className="due-txt">
@@ -444,6 +493,7 @@ export default function Dashboard() {
           </button>
           <style>{`
             .due-msg { font-family:var(--mono); font-size:13px; color:var(--ink2); line-height:1.6; margin-bottom:16px; padding:0 2px; }
+            .due-fazit { font-family:var(--mono); font-size:11.5px; color:var(--ink2); line-height:1.6; background:var(--panel2); border:1px solid var(--line); padding:11px 13px; margin:-6px 0 16px; }
             .due-opt { display:flex; align-items:center; gap:13px; width:100%; background:var(--panel2); border:1px solid var(--line); padding:14px; margin-bottom:8px; text-align:left; transition:border-color .12s; }
             .due-opt:active { border-color:var(--acc); }
             .due-ico { width:34px; height:34px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:16px; border:1px solid var(--line); }
@@ -455,6 +505,13 @@ export default function Dashboard() {
             .due-txt small { font-family:var(--mono); font-size:11px; color:var(--ink3); letter-spacing:.3px; }
           `}</style>
         </Sheet>
+      )}
+      {!dueTracker && rideQueue.length > 0 && (
+        <RideConditionSheet
+          entry={rideQueue[0]}
+          onSave={(choice) => resolveRide(rideQueue[0], choice)}
+          onSkip={() => resolveRide(rideQueue[0], null)}
+        />
       )}
       {editTracker && (
         <EditTrackerSheet tracker={editTracker} bikeKm={activeBike.km} bikeHours={activeBikeHours}
@@ -620,6 +677,45 @@ function CustomTypeSheet({ onSave, onClose }) {
         .ct-type { display: flex; gap: 6px; margin-bottom: 14px; }
         .ct-type-opt { flex: 1; padding: 11px 6px; background: var(--panel2); border: 1px solid var(--line); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--ink2); }
         .ct-type-opt.on { background: var(--acc); border-color: var(--acc); color: #fff; }
+      `}</style>
+    </Sheet>
+  )
+}
+
+// ─── WIE WAR DIE FAHRT? ────────────────────────────────────
+const RC_WEATHER = [['dry', '☀️', 'Trocken'], ['wet', '💧', 'Nass'], ['rain', '🌧️', 'Regen']]
+const RC_INTENSITY = [['easy', '🟢', 'Locker'], ['mixed', '🟡', 'Gemischt'], ['hard', '🔴', 'Hart']]
+
+function RideConditionSheet({ entry, onSave, onSkip }) {
+  const [weather, setWeather] = useState(null)
+  const [intensity, setIntensity] = useState(null)
+  return (
+    <Sheet title="Wie war die Fahrt?" sub={`${entry.name} · +${entry.delta} km`} onClose={onSkip}>
+      <div className="rc-group">
+        <div className="rc-lbl">Bedingungen</div>
+        <div className="rc-opts">
+          {RC_WEATHER.map(([k, ico, l]) => (
+            <button key={k} className={`rc-opt ${weather === k ? 'on' : ''}`} onClick={() => setWeather(k)}>{ico} {l}</button>
+          ))}
+        </div>
+      </div>
+      <div className="rc-group">
+        <div className="rc-lbl">Intensität</div>
+        <div className="rc-opts">
+          {RC_INTENSITY.map(([k, ico, l]) => (
+            <button key={k} className={`rc-opt ${intensity === k ? 'on' : ''}`} onClick={() => setIntensity(k)}>{ico} {l}</button>
+          ))}
+        </div>
+      </div>
+      <BtnGreen onClick={() => onSave({ weather, intensity })} disabled={!weather || !intensity}>Speichern</BtnGreen>
+      <button className="rc-skip" onClick={onSkip}>Überspringen</button>
+      <style>{`
+        .rc-group { margin-bottom: 16px; }
+        .rc-lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink3); margin-bottom: 8px; }
+        .rc-opts { display: flex; gap: 6px; }
+        .rc-opt { flex: 1; padding: 12px 6px; background: var(--panel2); border: 1px solid var(--line); font-family: var(--sans); font-size: 12.5px; font-weight: 700; color: var(--ink2); }
+        .rc-opt.on { background: rgba(47,123,255,.12); border-color: var(--acc); color: var(--acc); }
+        .rc-skip { width: 100%; padding: 12px; background: none; border: none; color: var(--ink3); font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
       `}</style>
     </Sheet>
   )

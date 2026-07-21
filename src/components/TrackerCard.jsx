@@ -1,16 +1,45 @@
 import { useState, useEffect, useRef } from 'react'
 import { kmSince, hoursSince, daysSince, dueDateOf, daysUntilDue, pct, statusOf, fmtKm, fmtH, fmtDate, predictDue } from '../lib/helpers'
 
-// Zeigt die km-gewichtete Verschleiß-Auswertung eines Trackers ("22% Regen · 38% Hart").
-// Nur Bedingungen mit spürbarem Anteil (≥15%) werden genannt, um die Zeile kurz zu halten.
-function ConditionTag({ conditions }) {
+// Anschauliche km-gewichtete Verschleiß-Statistik eines Trackers:
+// zwei gestapelte Balken (Wetter + Intensität) mit Prozent-Legende.
+export function CondStats({ conditions, compact = false }) {
   if (!conditions) return null
-  const parts = []
-  if (conditions.weather.rain >= 15) parts.push(`🌧️ ${conditions.weather.rain}% Regen`)
-  if (conditions.weather.wet >= 15) parts.push(`💧 ${conditions.weather.wet}% Nass`)
-  if (conditions.intensity.hard >= 15) parts.push(`🔴 ${conditions.intensity.hard}% Hart`)
-  if (!parts.length) return null
-  return <div className="tc-cond">{parts.join(' · ')}</div>
+  const weather = [
+    ['☀️', conditions.weather.dry, 'var(--warn)'],
+    ['💧', conditions.weather.wet, 'var(--acc-soft)'],
+    ['🌧️', conditions.weather.rain, 'var(--acc)'],
+  ]
+  const intensity = [
+    ['🟢', conditions.intensity.easy, 'var(--ok)'],
+    ['🟡', conditions.intensity.mixed, 'var(--warn)'],
+    ['🔴', conditions.intensity.hard, 'var(--crit)'],
+  ]
+  const Row = ({ items }) => (
+    <div className="cs-row">
+      <div className="cs-bar">
+        {items.filter(([, p]) => p > 0).map(([ico, p, col]) => (
+          <div key={ico} style={{ width: `${p}%`, background: col }} />
+        ))}
+      </div>
+      <div className="cs-leg">{items.filter(([, p]) => p > 0).map(([ico, p]) => `${ico} ${p}%`).join(' · ')}</div>
+    </div>
+  )
+  return (
+    <div className="cs">
+      {!compact && <div className="cs-hdr">📊 Bedingungen · {conditions.totalKm.toLocaleString('de')} km erfasst</div>}
+      <Row items={weather} />
+      <Row items={intensity} />
+      <style>{`
+        .cs { margin-bottom: 10px; }
+        .cs-hdr { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--ink3); margin-bottom: 6px; }
+        .cs-row { margin-bottom: 6px; }
+        .cs-bar { display: flex; height: 6px; background: var(--panel2); border: 1px solid var(--line); overflow: hidden; margin-bottom: 3px; }
+        .cs-bar div { height: 100%; }
+        .cs-leg { font-family: var(--mono); font-size: 10.5px; color: var(--ink2); letter-spacing: .3px; }
+      `}</style>
+    </div>
+  )
 }
 
 export default function TrackerCard({ tracker, bikeKm, bikeHours = 0, conditions, onClick, onPin }) {
@@ -98,7 +127,7 @@ export default function TrackerCard({ tracker, bikeKm, bikeHours = 0, conditions
             <div className="tc-meta">
               seit {fmtDate(tracker.start_date)} · Start {fmtKm(tracker.km_at_start)} km
             </div>
-            <ConditionTag conditions={conditions} />
+            <CondStats conditions={conditions} />
             {pred && (
               <div className="tc-pred">
                 <div className="tc-pred-hdr">
@@ -136,7 +165,6 @@ export default function TrackerCard({ tracker, bikeKm, bikeHours = 0, conditions
         .tc-stats { display:flex;align-items:center;gap:8px;padding-top:11px;margin-bottom:3px;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--ink1); }
         .tc-dot { color:var(--ink3); }
         .tc-meta { font-family:var(--mono);font-size:10.5px;color:var(--ink3);margin-bottom:10px; }
-        .tc-cond { font-family:var(--mono);font-size:10.5px;color:var(--ink2);margin:-6px 0 10px; }
         .tc-note { font-family:var(--mono);font-size:11px;color:var(--ink2);margin-bottom:10px; }
         .tc-pred { margin-bottom:10px; }
         .tc-pred-hdr { display:flex;justify-content:space-between;align-items:center;margin-bottom:5px; }

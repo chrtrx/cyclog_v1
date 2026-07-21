@@ -10,6 +10,7 @@ import {
 } from '../lib/data'
 import { Page, Sheet, Field, BtnGreen, BtnDelete } from '../components/ui'
 import { BIKE_ICONS } from '../lib/helpers'
+import { CondStats } from '../components/TrackerCard'
 
 const GEO_FIELDS = [
   { k: 'geo_stack',       l: 'Stack' },
@@ -25,6 +26,46 @@ const GEO_FIELDS = [
   { k: 'geo_standover',   l: 'Standover' },
 ]
 
+// Kurzzeile "1.240 km · ☀️65% …" für einen abgeschlossenen Durchlauf.
+function svcStatLine(l) {
+  if (l.km_ridden == null) return null
+  const parts = [`${Math.round(l.km_ridden).toLocaleString('de')} km Laufzeit`]
+  const c = l.conditions
+  if (c?.weather) parts.push(`☀️${c.weather.dry}% 💧${c.weather.wet}% 🌧️${c.weather.rain}%`)
+  if (c?.intensity) parts.push(`🟢${c.intensity.easy}% 🟡${c.intensity.mixed}% 🔴${c.intensity.hard}%`)
+  return parts.join(' · ')
+}
+
+// Gesamt-Statistik je Tracker-Typ: Durchläufe, km, km-gewichtete Bedingungen.
+function aggregateServiceStats(logs) {
+  const byType = {}
+  for (const l of logs) {
+    if (l.km_ridden == null) continue
+    const g = (byType[l.service_type] ||= {
+      type: l.service_type, title: l.title, icon: l.icon || '🔧',
+      runs: 0, km: 0, ckm: 0,
+      w: { dry: 0, wet: 0, rain: 0 }, i: { easy: 0, mixed: 0, hard: 0 },
+    })
+    const km = Number(l.km_ridden) || 0
+    g.runs++; g.km += km
+    const c = l.conditions
+    if (c?.weather && km > 0) {
+      g.ckm += km
+      for (const k of ['dry', 'wet', 'rain']) g.w[k] += (c.weather[k] || 0) / 100 * km
+      for (const k of ['easy', 'mixed', 'hard']) g.i[k] += (c.intensity?.[k] || 0) / 100 * km
+    }
+  }
+  return Object.values(byType).map(g => ({
+    ...g,
+    avgKm: g.runs ? Math.round(g.km / g.runs) : 0,
+    conditions: g.ckm > 0 ? {
+      totalKm: Math.round(g.ckm),
+      weather: { dry: Math.round(g.w.dry / g.ckm * 100), wet: Math.round(g.w.wet / g.ckm * 100), rain: Math.round(g.w.rain / g.ckm * 100) },
+      intensity: { easy: Math.round(g.i.easy / g.ckm * 100), mixed: Math.round(g.i.mixed / g.ckm * 100), hard: Math.round(g.i.hard / g.ckm * 100) },
+    } : null,
+  })).sort((a, b) => b.km - a.km)
+}
+
 export default function BikeDetail() {
   const { bikeId } = useParams()
   const nav = useNavigate()
@@ -34,6 +75,7 @@ export default function BikeDetail() {
   const [components, setComponents] = useState([])
   const [upgrades, setUpgrades] = useState([])
   const [history, setHistory] = useState(null)  // lazy: erst beim Öffnen des Tabs geladen
+  const [svcStats, setSvcStats] = useState([])
   const [tab, setTab] = useState('parts')
   const [partSheet, setPartSheet] = useState(null)     // null | { cat, part }
   const [upgradeSheet, setUpgradeSheet] = useState(undefined) // undefined=closed, null=new, obj=edit
@@ -49,10 +91,11 @@ export default function BikeDetail() {
     Promise.all([getServiceLogs(bikeId).catch(() => []), getFitHistory(bikeId).catch(() => [])])
       .then(([logs, fits]) => {
         const items = [
-          ...logs.map(l => ({ id: `s-${l.id}`, kind: 'service', date: l.service_date, icon: l.icon || '🔧', title: l.title, sub: null })),
+          ...logs.map(l => ({ id: `s-${l.id}`, kind: 'service', date: l.service_date, icon: l.icon || '🔧', title: l.title, sub: svcStatLine(l) })),
           ...fits.map(f => ({ id: `f-${f.id}`, kind: 'fit', date: f.created_at, icon: '📐', title: 'Bike-Fit geändert', sub: f.summary })),
         ].sort((a, b) => new Date(b.date) - new Date(a.date))
         setHistory(items)
+        setSvcStats(aggregateServiceStats(logs))
       })
       .catch(() => setHistory([]))
   }, [tab, history, bikeId])
@@ -258,6 +301,21 @@ export default function BikeDetail() {
       {/* ── HISTORIE ── */}
       {tab === 'history' && (
         <div className="tab-body">
+          {svcStats.length > 0 && (
+            <div className="agg">
+              <div className="agg-hdr">📊 Gesamt-Statistik</div>
+              {svcStats.map(g => (
+                <div className="agg-card" key={g.type}>
+                  <div className="agg-top">
+                    <span className="agg-ico">{g.icon}</span>
+                    <span className="agg-title">{g.title}</span>
+                    <span className="agg-meta">{g.runs}× · Ø {g.avgKm.toLocaleString('de')} km</span>
+                  </div>
+                  {g.conditions && <CondStats conditions={g.conditions} compact />}
+                </div>
+              ))}
+            </div>
+          )}
           {history === null ? (
             <div className="hist-empty">Lädt…</div>
           ) : history.length === 0 ? (
@@ -369,6 +427,14 @@ export default function BikeDetail() {
         .geo-num { font-family:var(--sans); font-size:17px; font-weight:900; color:var(--ink1); }
         .geo-lbl { font-family:var(--mono); font-size:8.5px; color:var(--ink3); text-transform:uppercase; letter-spacing:.5px; margin-top:3px; }
         .geo-empty { padding:24px; text-align:center; font-family:var(--mono); font-size:12px; color:var(--ink3); border:1px dashed var(--line); }
+
+        .agg { margin-bottom:18px; }
+        .agg-hdr { font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink3); margin-bottom:8px; }
+        .agg-card { border:1px solid var(--line); background:var(--panel2); padding:11px 13px 5px; margin-bottom:8px; }
+        .agg-top { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+        .agg-ico { font-size:15px; }
+        .agg-title { flex:1; font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--ink1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .agg-meta { font-family:var(--mono); font-size:11px; font-weight:700; color:var(--acc); white-space:nowrap; }
 
         .hist-empty { padding:24px; text-align:center; font-family:var(--mono); font-size:12px; color:var(--ink3); border:1px dashed var(--line); }
         .hist-list { display:flex; flex-direction:column; gap:2px; }

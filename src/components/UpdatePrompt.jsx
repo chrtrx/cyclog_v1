@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 
 // Zeigt oben einen Banner, sobald eine neue App-Version bereitsteht. Ein Tippen
@@ -15,6 +16,14 @@ export default function UpdatePrompt() {
       document.addEventListener('visibilitychange', check)
     },
   })
+
+  // Solange der Banner sichtbar ist, rücken andere Top-Banner (z. B. der
+  // Mitteilungs-Toast) per CSS-Variable darunter, statt Text-auf-Text zu liegen.
+  useEffect(() => {
+    if (!needRefresh) return
+    document.documentElement.style.setProperty('--top-banner', '62px')
+    return () => document.documentElement.style.removeProperty('--top-banner')
+  }, [needRefresh])
 
   if (!needRefresh) return null
 

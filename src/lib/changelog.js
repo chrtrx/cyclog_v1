@@ -5,6 +5,17 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 13,
+    date: '20.07.2026',
+    items: [
+      ['new', 'Tracker jederzeit zurücksetzen: „✓ Erledigt – Zähler neu starten" im Bearbeiten-Fenster (z. B. Schrauben nachgezogen)'],
+      ['new', 'Statistik je Tracker-Durchlauf: Laufleistung + Bedingungen werden beim Abschließen gespeichert – sichtbar in der Historie und als Gesamt-Statistik je Rad'],
+      ['new', 'Wettkampf-Fenster: Nach der „Wie war die Fahrt?"-Abfrage öffnet sich bei erkannten Rennen direkt der Renntagebuch-Dialog'],
+      ['new', 'Renntagebuch-Vorlage erweitert: Zeit, Gefühl/Tagesform und Learnings'],
+      ['fix', 'Überlappende Banner behoben: Mitteilungs-Toast rückt unter den „Neue Version"-Banner statt darüber zu liegen'],
+    ],
+  },
+  {
     v: 12,
     date: '09.07.2026',
     items: [

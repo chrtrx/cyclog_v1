@@ -7,6 +7,7 @@ import {
   getBikeHours, getUnreadCount, SERVICE_TYPES, BIKE_TYPES,
   getCustomServiceTypes, addCustomServiceType, deleteCustomServiceType,
   getRideConditions, addRideCondition,
+  getRaceCandidates, dismissRaceCandidate,
 } from '../lib/data'
 
 // Lernt aus der Wartungs-Historie (service_logs) realistische Intervalle je
@@ -44,6 +45,8 @@ import TrackerCard from '../components/TrackerCard'
 // Seitenwechsel hinweg, damit „Start" beim Zurückkehren sofort erscheint
 // (kein Lade-Flackern) und nur still im Hintergrund aktualisiert.
 let dashCache = null
+// "Später" gedrückte Wettkampf-Fenster – nur für die laufende Sitzung stumm.
+const snoozedRaceCands = new Set()
 
 // Baut aus den km-Ständen vorher/nachher einen kurzen Hinweis (Toast),
 // damit man auch in der App mitbekommt, welches Rad sich geändert hat.
@@ -84,6 +87,7 @@ export default function Dashboard() {
   const [unread, setUnread] = useState(cached?.unread || 0)
   const [customTypes, setCustomTypes] = useState([])
   const [rideQueue, setRideQueue] = useState([])  // [{bikeId, name, delta}] – noch abzufragende Ausfahrten
+  const [raceCands, setRaceCands] = useState([])  // offene Wettkampf-Vorschläge
   const [conditionRows, setConditionRows] = useState([])  // ride_conditions des aktiven Rads
 
   useEffect(() => { load().then(m => { if (m) showToast(m) }) }, [])
@@ -126,6 +130,7 @@ export default function Dashboard() {
       if (nextActive !== activeBikeId) setActiveBikeId(nextActive)
       dashCache = { userId: user.id, bikes: activeB, trackers: t, stravaStatus: s, profile: p, unread: u, activeBikeId: nextActive }
       await detectRideChanges(activeB)
+      getRaceCandidates(user.id).then(setRaceCands).catch(() => {})
     } catch (e) { showToast('Fehler beim Laden') }
     setLoading(false)
     return changeMsg
@@ -274,8 +279,18 @@ export default function Dashboard() {
     showToast('✓ Wiederhergestellt')
   }
 
-  // Fällig-Dialog: "Gewechselt" → Zähler startet neu beim aktuellen km-Stand
+  // "Gewechselt/erledigt" → abgeschlossenen Durchlauf protokollieren und
+  // Zähler neu starten. Der Log-Eintrag hält Laufleistung + Bedingungs-Fazit
+  // fest (Historie, Gesamt-Statistik, Intervall-Lernen).
   async function handleServiceDone(t) {
+    try {
+      await addServiceLog(user.id, {
+        bike_id: activeBike.id, service_type: t.type_id, title: t.title, icon: t.icon,
+        km_at_service: activeBike.km, service_date: new Date().toISOString(),
+        km_ridden: Math.max(0, kmSince(t, activeBike.km)),
+        conditions: summarizeConditions(conditionRows, t.start_date),
+      })
+    } catch (e) { /* Statistik optional – Reset trotzdem durchführen */ }
     // Zähler neu starten + Benachrichtigungs-Marker leeren (neuer Zyklus)
     const updates = {
       km_at_start: activeBike.km, start_date: new Date().toISOString(),
@@ -285,7 +300,7 @@ export default function Dashboard() {
       try { updates.hours_at_start = await getBikeHours(activeBike.id) } catch {}
     }
     await updateTracker(t.id, updates)
-    setDueTracker(null); await load()
+    setDueTracker(null); setEditTracker(null); await load()
     showToast(`✓ ${t.title}: Zähler neu gestartet`)
   }
 
@@ -513,8 +528,35 @@ export default function Dashboard() {
           onSkip={() => resolveRide(rideQueue[0], null)}
         />
       )}
+      {!dueTracker && rideQueue.length === 0 && (() => {
+        const cand = raceCands.find(c => !snoozedRaceCands.has(c.id))
+        if (!cand) return null
+        return (
+          <Sheet title="🏁 Wettkampf erkannt" sub="Strava-Aktivität war als Rennen markiert" onClose={() => { snoozedRaceCands.add(cand.id); setRaceCands(cs => [...cs]) }}>
+            <div className="rp-name">{cand.event_name || 'Aktivität ohne Namen'}</div>
+            <div className="rp-meta">
+              {cand.race_date && <span>📅 {new Date(cand.race_date).toLocaleDateString('de-DE')}</span>}
+              {cand.distance_km && <span>{cand.distance_km} km</span>}
+              {cand.avg_power && <span>{cand.avg_power} W</span>}
+            </div>
+            <BtnGreen onClick={() => nav(`/races?candidate=${cand.id}`)}>Renntagebuch ausfüllen</BtnGreen>
+            <div className="rp-row">
+              <button className="rp-later" onClick={() => { snoozedRaceCands.add(cand.id); setRaceCands(cs => [...cs]) }}>Später</button>
+              <button className="rp-discard" onClick={async () => { setRaceCands(cs => cs.filter(x => x.id !== cand.id)); try { await dismissRaceCandidate(cand.id) } catch {} }}>Verwerfen</button>
+            </div>
+            <style>{`
+              .rp-name { font-family:var(--sans); font-size:16px; font-weight:800; color:var(--ink1); letter-spacing:.3px; margin-bottom:6px; }
+              .rp-meta { display:flex; gap:12px; font-family:var(--mono); font-size:12px; color:var(--ink3); margin-bottom:16px; }
+              .rp-row { display:flex; gap:8px; }
+              .rp-later { flex:1; padding:12px; background:var(--panel2); border:1px solid var(--line); color:var(--ink2); font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; }
+              .rp-discard { flex:1; padding:12px; background:none; border:1px solid var(--line); color:var(--ink3); font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; }
+            `}</style>
+          </Sheet>
+        )
+      })()}
       {editTracker && (
         <EditTrackerSheet tracker={editTracker} bikeKm={activeBike.km} bikeHours={activeBikeHours}
+          onDone={() => handleServiceDone(editTracker)}
           onSave={async (u) => { await updateTracker(editTracker.id, { ...u, last_notified_at: null, warn_notified_at: null }); setEditTracker(null); await load() }}
           onDelete={async () => {
             const removed = editTracker
@@ -765,7 +807,7 @@ function AddBikeSheet({ user, onClose, onSaved }) {
 }
 
 // ─── EDIT TRACKER SHEET ────────────────────────────────────
-function EditTrackerSheet({ tracker, bikeKm, bikeHours, onSave, onDelete, onClose }) {
+function EditTrackerSheet({ tracker, bikeKm, bikeHours, onDone, onSave, onDelete, onClose }) {
   const initMode = tracker.interval_type === 'h' ? 'h' : tracker.interval_type === 'date' ? 'date' : 'km'
   const [mode, setMode]         = useState(initMode)
   const [intervalKm, setIKm]    = useState(tracker.interval_type === 'date' ? (tracker.interval_km || 3) : (tracker.interval_km || 2000))
@@ -786,6 +828,12 @@ function EditTrackerSheet({ tracker, bikeKm, bikeHours, onSave, onDelete, onClos
 
   return (
     <Sheet title={tracker.title} onClose={onClose}>
+      {onDone && (
+        <button className="et-done" onClick={onDone}>
+          ✓ Erledigt – Zähler neu starten
+          <small>Durchlauf wird mit Statistik in der Historie gespeichert</small>
+        </button>
+      )}
       <div className="ib">
         <div className="ib-lbl">Intervall-Typ</div>
         <div className="mode-row">
@@ -846,6 +894,8 @@ function EditTrackerSheet({ tracker, bikeKm, bikeHours, onSave, onDelete, onClos
       <BtnDelete armed={armed} onClick={() => armed ? onDelete() : (setArmed(true), setTimeout(() => setArmed(false), 3000))} />
       <style>{`
         .ib { margin-bottom: 11px; background: var(--panel2); border: 1px solid var(--line); padding: 15px; }
+        .et-done { display:flex; flex-direction:column; align-items:flex-start; gap:3px; width:100%; text-align:left; background:rgba(52,199,154,.08); border:1px solid rgba(52,199,154,.4); color:var(--ok); padding:13px 14px; margin-bottom:16px; font-family:var(--sans); font-size:14px; font-weight:800; letter-spacing:.5px; }
+        .et-done small { font-family:var(--mono); font-size:10.5px; font-weight:400; color:var(--ink3); letter-spacing:.3px; }
         .ib-lbl { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 9px; }
         .mode-row { display: flex; gap: 6px; }
         .mode-btn { flex: 1; padding: 9px; font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: var(--panel); border: 1px solid var(--line); color: var(--ink2); }

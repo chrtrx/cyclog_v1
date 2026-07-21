@@ -36,7 +36,7 @@ export default function ForegroundToast() {
       <button className="fg-close" onClick={(e) => { e.stopPropagation(); setMsg(null) }} aria-label="Schließen">✕</button>
       <style>{`
         .fg-toast {
-          position: fixed; top: calc(env(safe-area-inset-top) + 10px); left: 50%; transform: translateX(-50%);
+          position: fixed; top: calc(env(safe-area-inset-top) + 10px + var(--top-banner, 0px)); left: 50%; transform: translateX(-50%);
           width: min(440px, calc(100vw - 20px)); z-index: 1200;
           display: flex; align-items: flex-start; gap: 11px;
           background: var(--panel2); border: 1px solid var(--acc);

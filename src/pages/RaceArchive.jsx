@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import {
   getRaces, addRace, getBikes,
@@ -79,6 +80,7 @@ export default function RaceArchive() {
   const [templateSheet, setTemplateSheet] = useState(false)
   const [tplLoading, setTplLoading] = useState(false)
   const [toast, setToast] = useState('')
+  const [searchParams] = useSearchParams()
 
   function showToast(m) { setToast(m); setTimeout(() => setToast(''), 3000) }
 
@@ -89,6 +91,10 @@ export default function RaceArchive() {
     try {
       const [r, b, c] = await Promise.all([getRaces(user.id), getBikes(user.id), getRaceCandidates(user.id).catch(() => [])])
       setRaces(r); setBikes(b); setCandidates(c)
+      // Direkteinstieg aus dem "Wettkampf erkannt"-Fenster (/races?candidate=…)
+      const wanted = searchParams.get('candidate')
+      const cand = wanted && c.find(x => x.id === wanted)
+      if (cand) { setCandidatePrefill(cand); setShowAdd(true) }
     } catch {}
     setLoading(false)
     // pack_items loaded separately — table may not exist yet
@@ -221,10 +227,12 @@ export default function RaceArchive() {
                   {bike && <span>🚲 {bike.name}</span>}
                 </div>
                 <div className="race-stats">
+                  {r.duration && <span className="rstat">⏱ {r.duration}</span>}
                   {r.distance_km && <span className="rstat">{r.distance_km} km</span>}
                   {r.elevation_m && <span className="rstat">{r.elevation_m} hm</span>}
                   {r.avg_power && <span className="rstat">{r.avg_power} W</span>}
                   {r.avg_speed && <span className="rstat">{r.avg_speed} km/h</span>}
+                  {r.feeling && <span className="rstat">{r.feeling}</span>}
                 </div>
                 {(r.tyres || r.pressure_front) && (
                   <div className="race-setup">
@@ -234,6 +242,7 @@ export default function RaceArchive() {
                   </div>
                 )}
                 {r.conditions && <div className="race-cond">🌦️ {r.conditions}</div>}
+                {r.learnings && <div className="race-learn">💡 {r.learnings}</div>}
               </div>
             )
           })
@@ -356,6 +365,7 @@ export default function RaceArchive() {
         .race-stats { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
         .rstat { background:rgba(47,123,255,.08); color:var(--acc); border:1px solid rgba(47,123,255,.25); padding:4px 10px; font-family:var(--mono); font-size:11px; font-weight:700; }
         .race-setup { font-family:var(--mono); font-size:11px; color:var(--ink2); padding-top:8px; border-top:1px solid var(--line); }
+        .race-learn { font-family:var(--mono); font-size:11px; color:var(--ink2); margin-top:6px; line-height:1.5; }
         .race-cond { font-family:var(--mono); font-size:11px; color:var(--ink3); margin-top:4px; }
 
         .pack-empty-state { display:flex; flex-direction:column; align-items:center; padding:40px 20px; text-align:center; }
@@ -504,6 +514,7 @@ function AddRaceSheet({ user, bikes, prefill, onClose, onSaved }) {
     bike_id: prefill?.bike_id || bikes[0]?.id || '', placement: '',
     distance_km: prefill?.distance_km ?? '', elevation_m: prefill?.elevation_m ?? '',
     avg_power: prefill?.avg_power ?? '', avg_speed: prefill?.avg_speed ?? '',
+    duration:'', feeling:'', learnings:'',
     tyres:'', pressure_front:'', pressure_rear:'', gearing:'', conditions:'',
   })
   const set = (k) => (v) => setF(p => ({ ...p, [k]: v }))
@@ -519,6 +530,9 @@ function AddRaceSheet({ user, bikes, prefill, onClose, onSaved }) {
       elevation_m: f.elevation_m ? Number(f.elevation_m) : null,
       avg_power: f.avg_power ? Number(f.avg_power) : null,
       avg_speed: f.avg_speed ? Number(f.avg_speed) : null,
+      duration: f.duration || null,
+      feeling: f.feeling || null,
+      learnings: f.learnings || null,
       tyres: f.tyres || null,
       pressure_front: f.pressure_front ? Number(f.pressure_front) : null,
       pressure_rear: f.pressure_rear ? Number(f.pressure_rear) : null,
@@ -539,12 +553,29 @@ function AddRaceSheet({ user, bikes, prefill, onClose, onSaved }) {
           {bikes.filter(b => !b.archived).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
       </div>
-      <Field label="Platzierung" value={f.placement} onChange={set('placement')} placeholder="z.B. P5" />
       <div className="ar-g2">
+        <Field label="Platzierung" value={f.placement} onChange={set('placement')} placeholder="z.B. P5" />
+        <Field label="Zeit" value={f.duration} onChange={set('duration')} placeholder="z.B. 3:42:10" />
         <Field label="Distanz (km)" type="number" value={f.distance_km} onChange={set('distance_km')} />
         <Field label="Höhenmeter" type="number" value={f.elevation_m} onChange={set('elevation_m')} />
         <Field label="Ø Leistung (W)" type="number" value={f.avg_power} onChange={set('avg_power')} />
         <Field label="Ø Speed (km/h)" type="number" value={f.avg_speed} onChange={set('avg_speed')} />
+      </div>
+      <div className="ar-field">
+        <label className="ar-lbl">Gefühl / Tagesform</label>
+        <div className="ar-feel">
+          {[['🚀','Stark'],['🙂','Gut'],['😐','Mittel'],['😣','Zäh']].map(([ico, l]) => (
+            <button key={l} className={`ar-feel-opt ${f.feeling === `${ico} ${l}` ? 'on' : ''}`}
+              onClick={() => set('feeling')(f.feeling === `${ico} ${l}` ? '' : `${ico} ${l}`)}>
+              {ico} {l}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="ar-field">
+        <label className="ar-lbl">Learnings</label>
+        <textarea className="ar-area" value={f.learnings} onChange={e => set('learnings')(e.target.value)}
+          placeholder="Was lief gut, was machst du nächstes Mal anders? Pacing, Verpflegung, Material…" />
       </div>
       <Field label="Reifen" value={f.tyres} onChange={set('tyres')} placeholder="z.B. GP5000 28mm" />
       <div className="ar-g2">
@@ -559,6 +590,10 @@ function AddRaceSheet({ user, bikes, prefill, onClose, onSaved }) {
         .ar-lbl { display:block; font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--ink3); margin-bottom:6px; }
         .ar-sel { width:100%; background:var(--panel2); border:1px solid var(--line); padding:12px 14px; font-family:var(--mono); font-size:13px; font-weight:700; color:var(--ink1); outline:none; }
         .ar-g2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .ar-feel { display:flex; gap:6px; }
+        .ar-feel-opt { flex:1; padding:11px 4px; background:var(--panel2); border:1px solid var(--line); font-family:var(--sans); font-size:12px; font-weight:700; color:var(--ink2); }
+        .ar-feel-opt.on { background:rgba(47,123,255,.12); border-color:var(--acc); color:var(--acc); }
+        .ar-area { width:100%; min-height:84px; background:var(--panel2); border:1px solid var(--line); padding:12px 14px; font-family:var(--mono); font-size:13px; color:var(--ink1); outline:none; resize:vertical; }
       `}</style>
     </Sheet>
   )

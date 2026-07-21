@@ -76,12 +76,12 @@ export default function Inbox() {
   }
 
   return (
-    <Page title="Benachrichtigungen" subtitle={items.length ? `${items.length} Nachrichten` : null} back="/"
+    <Page title="Mitteilungen" subtitle={items.length ? (items.length === 1 ? '1 Nachricht' : `${items.length} Nachrichten`) : null} back="/"
       action={items.length > 0 && (
         <button className="nx-clear" onClick={clearAll}>Alle löschen</button>
       )}>
       {loading ? null : items.length === 0 ? (
-        <Empty emoji="🔔" title="Keine Benachrichtigungen"
+        <Empty emoji="🔔" title="Keine Mitteilungen"
           sub="Hier landen Erinnerungen zu fälligen Trackern und km-Updates nach deinen Fahrten." />
       ) : (
         <>

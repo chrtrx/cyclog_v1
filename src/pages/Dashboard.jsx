@@ -6,7 +6,7 @@ import {
   getServiceLogs, addServiceLog, syncStrava, getStravaStatus, getProfile,
   getBikeHours, getUnreadCount, SERVICE_TYPES, BIKE_TYPES,
   getCustomServiceTypes, addCustomServiceType, deleteCustomServiceType,
-  getRideConditions, addRideCondition,
+  getRideConditions, addRideCondition, updateRideCondition,
   getRaceCandidates, dismissRaceCandidate,
 } from '../lib/data'
 
@@ -140,20 +140,47 @@ export default function Dashboard() {
   // (server-persistiert, überlebt App-Neustarts) und reiht sie für das
   // "Wie war die Fahrt?"-Sheet ein. Läuft eine Abfrage bereits, wird die
   // Warteschlange nicht angetastet, um sie nicht mittendrin zu verwerfen.
+  // Sinkt der km-Stand eines Rads unter die Basislinie (Aktivität auf Strava
+  // nachträglich einem anderen Rad zugeordnet), wird die Basislinie abgesenkt
+  // und eine bereits beantwortete Bedingungs-Abfrage wandert mit aufs Ziel-Rad –
+  // andernfalls kommt die Frage erneut, dann für das richtige Rad.
   async function detectRideChanges(activeB) {
-    setRideQueue(q => {
-      if (q.length) return q
-      const pending = []
-      for (const b of activeB) {
-        if (b.conditions_km_baseline == null) {
-          updateBike(b.id, { conditions_km_baseline: b.km || 0 }).catch(() => {})
-          continue
-        }
-        const delta = Math.round((b.km || 0) - b.conditions_km_baseline)
-        if (delta >= 3) pending.push({ bikeId: b.id, name: b.name, delta })
+    const pending = []
+    const losses = []
+    for (const b of activeB) {
+      if (b.conditions_km_baseline == null) {
+        updateBike(b.id, { conditions_km_baseline: b.km || 0 }).catch(() => {})
+        continue
       }
-      return pending
-    })
+      const delta = Math.round((b.km || 0) - b.conditions_km_baseline)
+      if (delta >= 3) pending.push({ bikeId: b.id, name: b.name, delta })
+      else if (delta <= -3) losses.push({ bike: b, loss: -delta })
+    }
+
+    for (const { bike, loss } of losses) {
+      const newBaseline = bike.km || 0
+      updateBike(bike.id, { conditions_km_baseline: newBaseline }).catch(() => {})
+      setBikes(prev => prev.map(x => x.id === bike.id ? { ...x, conditions_km_baseline: newBaseline } : x))
+      const gain = pending.find(p => Math.abs(p.delta - loss) <= 2)
+      if (!gain) continue
+      try {
+        const rows = await getRideConditions(bike.id)
+        const last = rows[rows.length - 1]
+        const fresh = last && (Date.now() - new Date(last.ride_date).getTime()) < 72 * 3600 * 1000
+        if (fresh && Math.abs(last.km_delta - loss) <= 2) {
+          await updateRideCondition(last.id, { bike_id: gain.bikeId })
+          const gainBase = activeB.find(x => x.id === gain.bikeId)?.km || 0
+          await updateBike(gain.bikeId, { conditions_km_baseline: gainBase })
+          setBikes(prev => prev.map(x => x.id === gain.bikeId ? { ...x, conditions_km_baseline: gainBase } : x))
+          pending.splice(pending.indexOf(gain), 1)
+          if (bike.id === activeBikeId || gain.bikeId === activeBikeId) {
+            getRideConditions(activeBikeId).then(setConditionRows).catch(() => {})
+          }
+        }
+      } catch (e) { /* nächster Ladevorgang versucht es erneut */ }
+    }
+
+    setRideQueue(q => q.length ? q : pending)
   }
 
   async function resolveRide(entry, choice) {

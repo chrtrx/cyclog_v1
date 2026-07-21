@@ -220,6 +220,10 @@ export async function addRideCondition(userId, entry) {
   const { error } = await supabase.from('ride_conditions').insert({ ...entry, user_id: userId })
   if (error) throw error
 }
+export async function updateRideCondition(id, patch) {
+  const { error } = await supabase.from('ride_conditions').update(patch).eq('id', id)
+  if (error) throw error
+}
 
 // ═══════════════════════════════════════════════════════════
 // SETUPS

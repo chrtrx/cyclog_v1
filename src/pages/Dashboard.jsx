@@ -7,6 +7,7 @@ import {
   getBikeHours, getUnreadCount, SERVICE_TYPES, BIKE_TYPES,
   getCustomServiceTypes, addCustomServiceType, deleteCustomServiceType,
   getRideConditions, addRideCondition, updateRideCondition,
+  getRideMetrics, markRideMetricsConsumed,
   getRaceCandidates, dismissRaceCandidate,
 } from '../lib/data'
 
@@ -37,7 +38,7 @@ function computeIntervalSuggestions(logs) {
   }
   return out
 }
-import { BIKE_ICONS, fmtKm, fmtH, kmSince, hoursSince, pct, statusOf, summarizeConditions } from '../lib/helpers'
+import { BIKE_ICONS, fmtKm, fmtH, kmSince, hoursSince, pct, statusOf, summarizeConditions, suggestIntensity } from '../lib/helpers'
 import { Sheet, Field, BtnGreen, BtnDelete, Empty } from '../components/ui'
 import TrackerCard from '../components/TrackerCard'
 
@@ -183,12 +184,22 @@ export default function Dashboard() {
     setRideQueue(q => q.length ? q : pending)
   }
 
-  async function resolveRide(entry, choice) {
+  async function resolveRide(entry, choice, skipIds = []) {
     setRideQueue(q => q.slice(1))
     try {
       if (choice) {
-        await addRideCondition(user.id, { bike_id: entry.bikeId, km_delta: entry.delta, weather: choice.weather, intensity: choice.intensity })
+        await addRideCondition(user.id, {
+          bike_id: entry.bikeId, km_delta: entry.delta,
+          weather: choice.weather, intensity: choice.intensity,
+          avg_watts: choice.avgWatts || null,
+          watts_source: choice.avgWatts ? choice.wattsSource : null,
+        })
+        markRideMetricsConsumed(choice.ids).catch(() => {})
         if (entry.bikeId === activeBikeId) getRideConditions(activeBikeId).then(setConditionRows).catch(() => {})
+      } else {
+        // Auch beim Überspringen als verarbeitet markieren, sonst würden die
+        // Metriken die nächste Einstufung verfälschen.
+        markRideMetricsConsumed(skipIds).catch(() => {})
       }
       const bike = bikes.find(b => b.id === entry.bikeId)
       const newBaseline = (bike?.km ?? 0)
@@ -508,7 +519,7 @@ export default function Dashboard() {
             if (!c) return null
             return (
               <div className="due-fazit">
-                📊 Fazit: {fmtKm(c.totalKm)} km · {c.weather.rain}% Regen / {c.weather.wet}% Nass / {c.weather.dry}% Trocken · {c.intensity.hard}% Hart / {c.intensity.mixed}% Gemischt / {c.intensity.easy}% Locker
+                📊 Fazit: {fmtKm(c.totalKm)} km · {c.weather.rain}% Regen / {c.weather.wet}% Nass / {c.weather.dry}% Trocken · {c.intensity.hard}% Hart / {c.intensity.mixed}% Mittel / {c.intensity.easy}% Locker
               </div>
             )
           })()}
@@ -552,7 +563,7 @@ export default function Dashboard() {
         <RideConditionSheet
           entry={rideQueue[0]}
           onSave={(choice) => resolveRide(rideQueue[0], choice)}
-          onSkip={() => resolveRide(rideQueue[0], null)}
+          onSkip={(ids) => resolveRide(rideQueue[0], null, ids)}
         />
       )}
       {!dueTracker && rideQueue.length === 0 && (() => {
@@ -753,21 +764,65 @@ function CustomTypeSheet({ onSave, onClose }) {
 
 // ─── WIE WAR DIE FAHRT? ────────────────────────────────────
 const RC_WEATHER = [['dry', '☀️', 'Trocken'], ['wet', '💧', 'Nass'], ['rain', '🌧️', 'Regen']]
-const RC_INTENSITY = [['easy', '🟢', 'Locker'], ['mixed', '🟡', 'Gemischt'], ['hard', '🔴', 'Hart']]
+const RC_INTENSITY = [['easy', '🟢', 'Locker'], ['mixed', '🟡', 'Mittel'], ['hard', '🔴', 'Hart']]
+
+// Etikett der automatischen Einstufung: "Ø 245 W – 18 % über deinem
+// 90-Tage-Schnitt (208 W)". Fällt je nach Datenlage auf Puls/Tempo zurück.
+function fmtSuggestDetail(s) {
+  const fmtVal = (v) => s.unit === 'km/h' ? v.toLocaleString('de-DE') : Math.round(v)
+  const dir = s.relPct >= 0 ? 'über' : 'unter'
+  return `Ø ${fmtVal(s.value)} ${s.unit} – ${Math.abs(s.relPct)} % ${dir} deinem 90-Tage-Schnitt (${fmtVal(s.base)} ${s.unit})`
+}
 
 function RideConditionSheet({ entry, onSave, onSkip }) {
   const [weather, setWeather] = useState(null)
   const [intensity, setIntensity] = useState(null)
+  const [sug, setSug] = useState(null)
+  const metricsRef = useRef({ ids: [], avgWatts: null, wattsSource: null })
+
+  // Strava-Metriken der offenen Fahrt(en) laden und die Intensität relativ
+  // zum persönlichen 90-Tage-Schnitt vorschlagen – der Nutzer bestätigt nur.
+  useEffect(() => {
+    let alive = true
+    const since = new Date(Date.now() - 90 * 86400e3).toISOString()
+    getRideMetrics(entry.bikeId, since).then(rows => {
+      if (!alive) return
+      const pending = rows.filter(r => !r.consumed)
+      metricsRef.current.ids = pending.map(r => r.id)
+      const withW = pending.filter(r => Number(r.avg_watts) > 0)
+      const wKm = withW.reduce((s, r) => s + (Number(r.distance_km) || 0), 0)
+      if (wKm > 0) {
+        metricsRef.current.avgWatts = Math.round(withW.reduce((s, r) => s + Number(r.avg_watts) * (Number(r.distance_km) || 0), 0) / wKm)
+        metricsRef.current.wattsSource = withW.every(r => r.device_watts) ? 'power' : 'estimated'
+      }
+      const s = suggestIntensity(pending, rows)
+      if (s) { setSug(s); setIntensity(i => i || s.intensity) }
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [entry.bikeId])
+
+  const sugMeta = sug && {
+    easy:  ['🟢', 'Locker erkannt', 'var(--ok)',   'rgba(52,199,154,.45)',  'rgba(52,199,154,.07)'],
+    mixed: ['🟡', 'Mittel erkannt', 'var(--warn)', 'rgba(224,168,77,.45)',  'rgba(224,168,77,.07)'],
+    hard:  ['🔴', 'Hart erkannt',   'var(--crit)', 'rgba(224,86,110,.45)',  'rgba(224,86,110,.07)'],
+  }[sug.intensity]
+
+  const confirmMode = sug && intensity === sug.intensity
+  const finish = (choice) => choice
+    ? onSave({ ...choice, ...metricsRef.current })
+    : onSkip(metricsRef.current.ids)
+
   return (
-    <Sheet title="Wie war die Fahrt?" sub={`${entry.name} · +${entry.delta} km`} onClose={onSkip}>
-      <div className="rc-group">
-        <div className="rc-lbl">Bedingungen</div>
-        <div className="rc-opts">
-          {RC_WEATHER.map(([k, ico, l]) => (
-            <button key={k} className={`rc-opt ${weather === k ? 'on' : ''}`} onClick={() => setWeather(k)}>{ico} {l}</button>
-          ))}
+    <Sheet title="Wie war die Fahrt?" sub={`${entry.name} · +${entry.delta} km`} onClose={() => finish(null)}>
+      {sug && (
+        <div className="rc-auto" style={{ borderColor: sugMeta[3], background: sugMeta[4] }}>
+          <span className="rc-auto-ico">{sugMeta[0]}</span>
+          <div className="rc-auto-tx">
+            <b>{sugMeta[1]}</b>
+            {fmtSuggestDetail(sug)}
+          </div>
         </div>
-      </div>
+      )}
       <div className="rc-group">
         <div className="rc-lbl">Intensität</div>
         <div className="rc-opts">
@@ -776,9 +831,23 @@ function RideConditionSheet({ entry, onSave, onSkip }) {
           ))}
         </div>
       </div>
-      <BtnGreen onClick={() => onSave({ weather, intensity })} disabled={!weather || !intensity}>Speichern</BtnGreen>
-      <button className="rc-skip" onClick={onSkip}>Überspringen</button>
+      <div className="rc-group">
+        <div className="rc-lbl">Bedingungen</div>
+        <div className="rc-opts">
+          {RC_WEATHER.map(([k, ico, l]) => (
+            <button key={k} className={`rc-opt ${weather === k ? 'on' : ''}`} onClick={() => setWeather(k)}>{ico} {l}</button>
+          ))}
+        </div>
+      </div>
+      <BtnGreen onClick={() => finish({ weather, intensity })} disabled={!weather || !intensity}>
+        {confirmMode ? 'Passt – speichern' : 'Speichern'}
+      </BtnGreen>
+      <button className="rc-skip" onClick={() => finish(null)}>Überspringen</button>
       <style>{`
+        .rc-auto { display: flex; align-items: center; gap: 10px; border: 1px solid; padding: 11px 12px; margin-bottom: 14px; }
+        .rc-auto-ico { font-size: 17px; flex-shrink: 0; }
+        .rc-auto-tx { font-family: var(--mono); font-size: 10.5px; color: var(--ink2); line-height: 1.5; }
+        .rc-auto-tx b { display: block; font-family: var(--sans); font-size: 13px; font-weight: 800; color: var(--ink1); letter-spacing: .3px; }
         .rc-group { margin-bottom: 16px; }
         .rc-lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink3); margin-bottom: 8px; }
         .rc-opts { display: flex; gap: 6px; }

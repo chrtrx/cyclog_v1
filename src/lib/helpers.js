@@ -147,12 +147,80 @@ export function summarizeConditions(rows, sinceDate) {
   const relevant = rows.filter(r => new Date(r.ride_date).getTime() >= since)
   const totalKm = relevant.reduce((s, r) => s + (Number(r.km_delta) || 0), 0)
   if (!totalKm) return null
-  const share = (pred) => Math.round(relevant.filter(pred).reduce((s, r) => s + (Number(r.km_delta) || 0), 0) / totalKm * 100)
+  const km = (list) => list.reduce((s, r) => s + (Number(r.km_delta) || 0), 0)
+  const share = (pred) => Math.round(km(relevant.filter(pred)) / totalKm * 100)
+  // km-gewichteter Watt-Schnitt über die Fahrten, für die Watt vorliegen
+  const watts = (list) => {
+    const withW = list.filter(r => Number(r.avg_watts) > 0)
+    const wKm = km(withW)
+    return wKm ? Math.round(withW.reduce((s, r) => s + Number(r.avg_watts) * (Number(r.km_delta) || 0), 0) / wKm) : null
+  }
+  // Tiefen-Info je Intensitäts-Stufe: km, Watt und Wetter-Anteile der Stufe
+  const byIntensity = {}
+  for (const lvl of ['easy', 'mixed', 'hard']) {
+    const list = relevant.filter(r => r.intensity === lvl)
+    const lvlKm = km(list)
+    if (!lvlKm) continue
+    byIntensity[lvl] = {
+      km: Math.round(lvlKm),
+      avgWatts: watts(list),
+      weather: {
+        dry: Math.round(km(list.filter(r => r.weather === 'dry')) / lvlKm * 100),
+        wet: Math.round(km(list.filter(r => r.weather === 'wet')) / lvlKm * 100),
+        rain: Math.round(km(list.filter(r => r.weather === 'rain')) / lvlKm * 100),
+      },
+    }
+  }
   return {
     totalKm: Math.round(totalKm),
+    avgWatts: watts(relevant),
     weather: { dry: share(r => r.weather === 'dry'), wet: share(r => r.weather === 'wet'), rain: share(r => r.weather === 'rain') },
     intensity: { easy: share(r => r.intensity === 'easy'), mixed: share(r => r.intensity === 'mixed'), hard: share(r => r.intensity === 'hard') },
+    byIntensity,
   }
+}
+
+// Stuft die Intensität der noch unbeantworteten Fahrt(en) relativ zum
+// persönlichen Schnitt ein. Prioritäts-Kette: Watt → Puls → Tempo.
+// Absolute Werte taugen nicht als Maßstab (200 W sind je nach Fahrer locker
+// oder hart), daher wird gegen den Median der letzten 90 Tage verglichen –
+// erst ab 5 vergleichbaren Fahrten, damit die Basis belastbar ist.
+export function suggestIntensity(pending, history) {
+  if (!pending || !pending.length) return null
+  const chains = [
+    ['avg_watts', 0.12, 'W'],
+    ['avg_hr', 0.06, 'bpm'],
+    ['avg_speed_kmh', 0.08, 'km/h'],
+  ]
+  const median = (arr) => {
+    const s = [...arr].sort((a, b) => a - b)
+    const m = Math.floor(s.length / 2)
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2
+  }
+  for (const [key, tol, unit] of chains) {
+    const hist = history.filter(r => Number(r[key]) > 0)
+    const pend = pending.filter(r => Number(r[key]) > 0)
+    if (hist.length < 5 || !pend.length) continue
+    const pendKm = pend.reduce((s, r) => s + (Number(r.distance_km) || 0), 0)
+    const value = pendKm
+      ? pend.reduce((s, r) => s + Number(r[key]) * (Number(r.distance_km) || 0), 0) / pendKm
+      : Number(pend[pend.length - 1][key])
+    const base = median(hist.map(r => Number(r[key])))
+    if (!base) continue
+    const rel = value / base
+    const intensity = rel > 1 + tol ? 'hard' : rel < 1 - tol ? 'easy' : 'mixed'
+    return {
+      intensity,
+      value: Math.round(value * 10) / 10,
+      base: Math.round(base * 10) / 10,
+      relPct: Math.round((rel - 1) * 100),
+      unit,
+      source: key === 'avg_watts'
+        ? (pend.every(r => r.device_watts) ? 'power' : 'estimated')
+        : key === 'avg_hr' ? 'hr' : 'speed',
+    }
+  }
+  return null
 }
 
 // Icons für ALLE Rad-Typen – inkl. der Strava-Schreibweisen (MTB, Rennrad …)

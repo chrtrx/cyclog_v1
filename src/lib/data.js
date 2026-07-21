@@ -225,6 +225,21 @@ export async function updateRideCondition(id, patch) {
   if (error) throw error
 }
 
+// ── Fahrt-Metriken aus Strava (Intensitäts-Erkennung) ──────
+export async function getRideMetrics(bikeId, sinceIso) {
+  const { data, error } = await supabase
+    .from('ride_metrics').select('*')
+    .eq('bike_id', bikeId).gte('ride_date', sinceIso)
+    .order('ride_date', { ascending: true })
+  if (error) throw error
+  return data
+}
+export async function markRideMetricsConsumed(ids) {
+  if (!ids || !ids.length) return
+  const { error } = await supabase.from('ride_metrics').update({ consumed: true }).in('id', ids)
+  if (error) throw error
+}
+
 // ═══════════════════════════════════════════════════════════
 // SETUPS
 // ═══════════════════════════════════════════════════════════

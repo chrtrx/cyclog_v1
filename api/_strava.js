@@ -46,6 +46,10 @@ export function isRaceActivity(activity) {
   return !!activity && RIDE_TYPES.has(activity.type) && Number(activity.workout_type) === 1
 }
 
+export function isRideType(activity) {
+  return !!activity && RIDE_TYPES.has(activity.type)
+}
+
 // Für alle Verbindungen ohne athlete_id diese über /athlete nachtragen.
 export async function backfillAthleteIds(admin) {
   const { data: toks } = await admin.from('strava_tokens').select('*').is('athlete_id', null)

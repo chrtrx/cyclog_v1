@@ -5,27 +5,54 @@ import {
   getAdmin, configureWebPush, pct, sendToSubscriptions,
   evaluateBucket, buildKmChanges, composePush, hoursByBike, syncStravaUser, updateNotifiedKm, logNotification,
 } from './_due.js'
-import { fetchActivityDetail, isRaceActivity } from './_strava.js'
+import { fetchActivityDetail, isRaceActivity, isRideType } from './_strava.js'
+
+// Rad zur Strava-Ausrüstung der Aktivität finden.
+async function bikeIdForActivity(admin, userId, activity) {
+  if (!activity?.gear_id) return null
+  const { data: bike } = await admin.from('bikes').select('id').eq('user_id', userId).eq('strava_gear_id', activity.gear_id).maybeSingle()
+  return bike?.id || null
+}
+
+// Leistungsdaten der Fahrt ablegen (Watt/Puls/Tempo) – Grundlage für die
+// Intensitäts-Erkennung der "Wie war die Fahrt?"-Abfrage und die Ø-Watt-
+// Statistik. Upsert je Aktivität: Ein Update-Event (z. B. Rad nachträglich
+// gewechselt) schreibt bike_id & Werte einfach neu.
+async function recordRideMetrics(admin, userId, activity) {
+  try {
+    if (!isRideType(activity)) return
+    const bikeId = await bikeIdForActivity(admin, userId, activity)
+    await admin.from('ride_metrics').upsert({
+      user_id: userId,
+      strava_activity_id: activity.id,
+      bike_id: bikeId,
+      distance_km: activity.distance ? Math.round(activity.distance / 100) / 10 : null,
+      moving_time_s: activity.moving_time || null,
+      elevation_m: activity.total_elevation_gain ? Math.round(activity.total_elevation_gain) : null,
+      avg_watts: activity.average_watts ? Math.round(activity.average_watts) : null,
+      device_watts: !!activity.device_watts,
+      avg_hr: activity.average_heartrate ? Math.round(activity.average_heartrate) : null,
+      avg_speed_kmh: activity.average_speed ? Math.round(activity.average_speed * 3.6 * 10) / 10 : null,
+      ride_date: activity.start_date || new Date().toISOString(),
+    }, { onConflict: 'strava_activity_id' })
+  } catch (e) {
+    console.error('recordRideMetrics error:', e?.message)
+  }
+}
 
 // Prüft eine neu erstellte Aktivität auf das Renn-Flag und legt bei Treffer
 // einen Renntagebuch-Vorschlag an (Anzeige/Bestätigung passiert in der App).
-async function checkRaceCandidate(admin, userId, activityId) {
+async function checkRaceCandidate(admin, userId, activity) {
   try {
+    if (!isRaceActivity(activity)) return null
+    const activityId = activity.id
+
     // Schon bekannt (z. B. Strava-Retry des Webhooks)? → kein erneuter Push.
     const { data: existing } = await admin.from('race_candidates')
       .select('id').eq('user_id', userId).eq('strava_activity_id', activityId).maybeSingle()
     if (existing) return null
 
-    const { data: tok } = await admin.from('strava_tokens').select('*').eq('user_id', userId).maybeSingle()
-    if (!tok) return null
-    const activity = await fetchActivityDetail(admin, tok, activityId)
-    if (!isRaceActivity(activity)) return null
-
-    let bikeId = null
-    if (activity.gear_id) {
-      const { data: bike } = await admin.from('bikes').select('id').eq('user_id', userId).eq('strava_gear_id', activity.gear_id).maybeSingle()
-      bikeId = bike?.id || null
-    }
+    const bikeId = await bikeIdForActivity(admin, userId, activity)
     const { data: row, error } = await admin.from('race_candidates')
       .insert({
         user_id: userId,
@@ -68,18 +95,23 @@ export default async function handler(req, res) {
 
     const admin = getAdmin()
     const { data: tok } = await admin
-      .from('strava_tokens').select('user_id').eq('athlete_id', event.owner_id).maybeSingle()
+      .from('strava_tokens').select('*').eq('athlete_id', event.owner_id).maybeSingle()
     if (!tok) return res.status(200).json({ ok: true, unmapped: true })
     const userId = tok.user_id
 
     // km sofort auffrischen
     await syncStravaUser(userId)
 
-    // Neue Aktivität mit gesetztem Renn-Flag? → Renntagebuch-Vorschlag anlegen
-    // (unabhängig von Push-Subscriptions, die App zeigt ihn im Renntagebuch an).
+    // Aktivitätsdetails einmal holen und daraus Fahrt-Metriken (Watt/Puls/
+    // Tempo für die Intensitäts-Erkennung) sowie den Renntagebuch-Vorschlag
+    // ableiten. Update-Events aktualisieren die Metriken (z. B. Rad-Wechsel).
     let raceCandidate = null
-    if (event.aspect_type === 'create') {
-      raceCandidate = await checkRaceCandidate(admin, userId, event.object_id)
+    const activity = await fetchActivityDetail(admin, tok, event.object_id)
+    if (activity) {
+      await recordRideMetrics(admin, userId, activity)
+      if (event.aspect_type === 'create') {
+        raceCandidate = await checkRaceCandidate(admin, userId, activity)
+      }
     }
 
     const [{ data: bikes }, { data: trackers }, { data: subs }, { data: profile }] = await Promise.all([

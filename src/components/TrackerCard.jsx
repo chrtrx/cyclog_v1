@@ -42,6 +42,78 @@ export function CondStats({ conditions, compact = false }) {
   )
 }
 
+// EIN Belastungs-Balken: gefüllt bis zum Tracker-Fortschritt, der gefüllte
+// Teil ist nach Intensität unterteilt (hart → mittel → locker). Wetter steht
+// als Satz darunter; ein Tipp auf ein Segment klappt die Tiefen-Info auf
+// ("Hart: 620 km · Ø 262 W · davon 30 % Regen").
+const LB_LEVELS = [
+  ['hard', '🔴', 'hart', 'var(--crit)'],
+  ['mixed', '🟡', 'mittel', 'var(--warn)'],
+  ['easy', '🟢', 'locker', 'var(--ok)'],
+]
+const LB_WX = [['rain', '🌧️', 'im Regen'], ['wet', '💧', 'nass'], ['dry', '☀️', 'trocken']]
+
+function wxLine(weather, withKm) {
+  const parts = LB_WX.filter(([k]) => (weather[k] || 0) > 0)
+    .map(([k, ico, lbl], i) => `${ico} ${weather[k]} %${i === 0 && withKm ? ' der km' : ''} ${lbl}`)
+  return parts.join(' · ')
+}
+
+export function LoadBar({ conditions, progress }) {
+  const [sel, setSel] = useState(null)
+  if (!conditions || !conditions.totalKm) return null
+  const fillPct = Math.min(100, Math.max(0, progress))
+  const segs = LB_LEVELS
+    .map(([k, ico, lbl, col]) => ({ k, ico, lbl, col, pct: conditions.intensity[k] || 0 }))
+    .filter(s => s.pct > 0)
+  const by = sel ? conditions.byIntensity?.[sel] : null
+  const selSeg = sel ? segs.find(s => s.k === sel) : null
+  return (
+    <div className="lb">
+      <div className="lb-hdr">
+        <span>Belastung</span>
+        {conditions.avgWatts ? <span className="lb-w">Ø {conditions.avgWatts} W</span> : null}
+      </div>
+      <div className="lb-bar">
+        {segs.map(s => (
+          <div key={s.k} className={sel && sel !== s.k ? 'lb-dim' : ''}
+            style={{ width: `${s.pct * fillPct / 100}%`, background: s.col }}
+            onClick={e => { e.stopPropagation(); setSel(sel === s.k ? null : s.k) }} />
+        ))}
+      </div>
+      <div className="lb-leg">
+        {segs.map(s => (
+          <button key={s.k} className={`lb-lvl ${sel === s.k ? 'on' : ''}`}
+            onClick={e => { e.stopPropagation(); setSel(sel === s.k ? null : s.k) }}>
+            {s.ico} {s.pct} % {s.lbl}
+          </button>
+        ))}
+      </div>
+      <div className="lb-wx">{wxLine(conditions.weather, true)}</div>
+      {by && selSeg && (
+        <div className="lb-sub">
+          ▾ <b style={{ color: selSeg.col }}>{selSeg.lbl.charAt(0).toUpperCase() + selSeg.lbl.slice(1)}</b>
+          : {fmtKm(by.km)} km{by.avgWatts ? ` · Ø ${by.avgWatts} W` : ''} · davon {wxLine(by.weather, false)}
+        </div>
+      )}
+      <style>{`
+        .lb { margin-bottom: 10px; }
+        .lb-hdr { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--ink3); }
+        .lb-w { color:var(--ink2); }
+        .lb-bar { display:flex; height:14px; background:var(--panel2); border:1px solid var(--line); overflow:hidden; }
+        .lb-bar div { height:100%; transition:opacity .15s; }
+        .lb-dim { opacity:.3; }
+        .lb-leg { display:flex; flex-wrap:wrap; gap:2px 10px; margin-top:5px; }
+        .lb-lvl { background:none; border:none; padding:0; font-family:var(--mono); font-size:10.5px; color:var(--ink2); letter-spacing:.3px; }
+        .lb-lvl.on { color:var(--ink1); font-weight:700; }
+        .lb-wx { font-family:var(--mono); font-size:10.5px; color:var(--ink3); letter-spacing:.3px; margin-top:3px; }
+        .lb-sub { margin-top:7px; padding:7px 9px; background:var(--panel2); border:1px solid var(--line); font-family:var(--mono); font-size:10.5px; color:var(--ink2); line-height:1.55; }
+        .lb-sub b { font-weight:700; }
+      `}</style>
+    </div>
+  )
+}
+
 export default function TrackerCard({ tracker, bikeKm, bikeHours = 0, conditions, onClick, onPin }) {
   const isH    = tracker.interval_type === 'h'
   const isDate = tracker.interval_type === 'date'
@@ -127,7 +199,7 @@ export default function TrackerCard({ tracker, bikeKm, bikeHours = 0, conditions
             <div className="tc-meta">
               seit {fmtDate(tracker.start_date)} · Start {fmtKm(tracker.km_at_start)} km
             </div>
-            <CondStats conditions={conditions} />
+            <LoadBar conditions={conditions} progress={w} />
             {pred && (
               <div className="tc-pred">
                 <div className="tc-pred-hdr">

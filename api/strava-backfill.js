@@ -85,6 +85,24 @@ export default async function handler(req, res) {
       if (insErr) throw insErr
     }
 
+    // Rad-Zuordnung bestehender Zeilen nachziehen: Wird eine Fahrt in Strava
+    // nachträglich einem anderen Rad zugeordnet, schickt Strava dafür kein
+    // Webhook-Event – hier wandert die bike_id beim nächsten Lauf mit.
+    let moved = 0
+    if (rows.length) {
+      const wanted = new Map(rows.map(r => [String(r.strava_activity_id), r.bike_id]))
+      const { data: existing } = await admin.from('ride_metrics')
+        .select('id,strava_activity_id,bike_id')
+        .in('strava_activity_id', rows.map(r => r.strava_activity_id))
+      for (const r of existing || []) {
+        const want = wanted.get(String(r.strava_activity_id))
+        if (want !== undefined && want !== r.bike_id) {
+          await admin.from('ride_metrics').update({ bike_id: want }).eq('id', r.id)
+          moved++
+        }
+      }
+    }
+
     // Stunden-Basis bestehender h-Tracker korrigieren: Fahrzeit vor dem
     // jeweiligen Tracker-Start zählt nicht zum laufenden Intervall.
     let adjusted = 0
@@ -103,7 +121,7 @@ export default async function handler(req, res) {
     await admin.from('profiles')
       .update({ metrics_backfill_at: new Date().toISOString() }).eq('user_id', userId)
 
-    return res.status(200).json({ ok: true, fetched, imported: rows.length, adjusted })
+    return res.status(200).json({ ok: true, fetched, imported: rows.length, moved, adjusted })
   } catch (e) {
     console.error('strava-backfill error:', e?.message)
     return res.status(500).json({ error: e?.message || 'backfill failed' })

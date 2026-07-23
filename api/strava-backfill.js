@@ -47,13 +47,14 @@ export default async function handler(req, res) {
 
     const accessToken = await getAccessToken(admin, tok)
     let fetched = 0
+    let stravaError = null
     const rows = []
     for (let page = 1; page <= PAGES; page++) {
       const r = await fetch(
         `https://www.strava.com/api/v3/athlete/activities?per_page=${PER_PAGE}&page=${page}`,
         { headers: { Authorization: `Bearer ${accessToken}` } },
       )
-      if (!r.ok) break
+      if (!r.ok) { stravaError = r.status; break }
       const acts = await r.json()
       if (!Array.isArray(acts) || !acts.length) break
       fetched += acts.length
@@ -118,10 +119,23 @@ export default async function handler(req, res) {
       adjusted++
     }
 
-    await admin.from('profiles')
-      .update({ metrics_backfill_at: new Date().toISOString() }).eq('user_id', userId)
+    // Drossel nur nach einem brauchbaren Lauf setzen – ein leerer/gescheiterter
+    // Import (Strava-Fehler, keine Rad-Zuordnung) darf den nächsten Versuch
+    // nicht 24 h blockieren.
+    const matched = rows.filter(r => r.bike_id).length
+    if (matched > 0) {
+      await admin.from('profiles')
+        .update({ metrics_backfill_at: new Date().toISOString() }).eq('user_id', userId)
+    }
 
-    return res.status(200).json({ ok: true, fetched, imported: rows.length, moved, adjusted })
+    // Diagnose: Gesamtbestand nach dem Import (sichtbar im Client-Toast).
+    const { count: totalRows } = await admin.from('ride_metrics')
+      .select('*', { count: 'exact', head: true }).eq('user_id', userId)
+
+    return res.status(200).json({
+      ok: true, fetched, imported: rows.length, matched, moved, adjusted,
+      totalRows: totalRows ?? null, stravaError,
+    })
   } catch (e) {
     console.error('strava-backfill error:', e?.message)
     return res.status(500).json({ error: e?.message || 'backfill failed' })

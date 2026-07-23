@@ -132,13 +132,17 @@ export default function Dashboard() {
     if (!stravaStatus || backfillTried.current) return
     backfillTried.current = true
     backfillRideMetrics().then(r => {
-      if (!r) return
+      if (!r || r.throttled) return
       if (r.error) { showToast('⚠ Fahrzeiten-Import: ' + r.error); return }
+      if (r.stravaError) { showToast(`⚠ Strava-Abruf fehlgeschlagen (HTTP ${r.stravaError})`); return }
+      if (r.imported > 0 && !r.matched) { showToast(`⚠ Import: ${r.imported} Fahrten, aber keinem Rad zuordenbar`); return }
       if (r.imported > 0 || r.adjusted > 0 || r.moved > 0) {
         const id = dashCache?.activeBikeId || activeBikeId
         if (id) getBikeHours(id).then(setActiveBikeHours).catch(() => {})
         load()
-        if (r.imported > 0) showToast('⏱ Fahrzeiten aus Strava importiert')
+        showToast(`⏱ ${r.matched} Fahrten aus Strava importiert`)
+      } else if (r.fetched === 0) {
+        showToast('⚠ Keine Aktivitäten von Strava erhalten')
       }
     }).catch(() => {})
   }, [stravaStatus])

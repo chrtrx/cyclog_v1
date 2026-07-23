@@ -374,7 +374,9 @@ export async function backfillRideMetrics() {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   })
-  return res.json().catch(() => null)
+  const json = await res.json().catch(() => null)
+  if (json) return json
+  return res.ok ? null : { error: `HTTP ${res.status}` }
 }
 
 // ═══════════════════════════════════════════════════════════

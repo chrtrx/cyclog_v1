@@ -220,6 +220,25 @@ export async function addRideCondition(userId, entry) {
   const { error } = await supabase.from('ride_conditions').insert({ ...entry, user_id: userId })
   if (error) throw error
 }
+export async function updateRideCondition(id, patch) {
+  const { error } = await supabase.from('ride_conditions').update(patch).eq('id', id)
+  if (error) throw error
+}
+
+// ── Fahrt-Metriken aus Strava (Intensitäts-Erkennung) ──────
+export async function getRideMetrics(bikeId, sinceIso) {
+  const { data, error } = await supabase
+    .from('ride_metrics').select('*')
+    .eq('bike_id', bikeId).gte('ride_date', sinceIso)
+    .order('ride_date', { ascending: true })
+  if (error) throw error
+  return data
+}
+export async function markRideMetricsConsumed(ids) {
+  if (!ids || !ids.length) return
+  const { error } = await supabase.from('ride_metrics').update({ consumed: true }).in('id', ids)
+  if (error) throw error
+}
 
 // ═══════════════════════════════════════════════════════════
 // SETUPS
@@ -336,11 +355,26 @@ export async function deleteUpgrade(id) {
 // ═══════════════════════════════════════════════════════════
 // AKTIVITÄTEN
 // ═══════════════════════════════════════════════════════════
+// Fahrstunden je Rad – Summe der Fahrzeiten aus ride_metrics (vom Webhook
+// je Aktivität abgelegt, historische Fahrten via /api/strava-backfill).
 export async function getBikeHours(bikeId) {
   const { data, error } = await supabase
-    .from('activities').select('moving_time').eq('bike_id', bikeId)
+    .from('ride_metrics').select('moving_time_s').eq('bike_id', bikeId)
   if (error || !data) return 0
-  return data.reduce((s, a) => s + (Number(a.moving_time) || 0), 0) / 3600
+  return data.reduce((s, a) => s + (Number(a.moving_time_s) || 0), 0) / 3600
+}
+
+// Lädt einmalig die Strava-Historie in ride_metrics nach (Stunden-Basis +
+// Intensitäts-Vergleichswerte). Serverseitig gedrosselt; best effort.
+export async function backfillRideMetrics() {
+  const { data } = await supabase.auth.getSession()
+  const token = data?.session?.access_token
+  if (!token) return null
+  const res = await fetch('/api/strava-backfill', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  return res.json().catch(() => null)
 }
 
 // ═══════════════════════════════════════════════════════════

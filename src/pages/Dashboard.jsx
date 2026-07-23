@@ -6,7 +6,8 @@ import {
   getServiceLogs, addServiceLog, syncStrava, getStravaStatus, getProfile,
   getBikeHours, getUnreadCount, SERVICE_TYPES, BIKE_TYPES,
   getCustomServiceTypes, addCustomServiceType, deleteCustomServiceType,
-  getRideConditions, addRideCondition,
+  getRideConditions, addRideCondition, updateRideCondition,
+  getRideMetrics, markRideMetricsConsumed, backfillRideMetrics,
   getRaceCandidates, dismissRaceCandidate,
 } from '../lib/data'
 
@@ -37,7 +38,7 @@ function computeIntervalSuggestions(logs) {
   }
   return out
 }
-import { BIKE_ICONS, fmtKm, fmtH, kmSince, hoursSince, pct, statusOf, summarizeConditions } from '../lib/helpers'
+import { BIKE_ICONS, fmtKm, fmtH, kmSince, hoursSince, pct, statusOf, summarizeConditions, suggestIntensity } from '../lib/helpers'
 import { Sheet, Field, BtnGreen, BtnDelete, Empty } from '../components/ui'
 import TrackerCard from '../components/TrackerCard'
 
@@ -107,6 +108,20 @@ export default function Dashboard() {
     if (Date.now() - last < 30 * 60 * 1000) return
     autoSync()
   }, [stravaStatus])
+  // Historien-Backfill (Stunden-Basis + Intensitäts-Vergleichswerte):
+  // einmal pro Session anstoßen, Server drosselt auf 24 h. Danach die
+  // Stunden des aktiven Rads auffrischen, damit h-Tracker sofort stimmen.
+  const backfillTried = useRef(false)
+  useEffect(() => {
+    if (!stravaStatus || backfillTried.current) return
+    backfillTried.current = true
+    backfillRideMetrics().then(r => {
+      if (r?.imported > 0 || r?.adjusted > 0) {
+        const id = dashCache?.activeBikeId || activeBikeId
+        if (id) getBikeHours(id).then(setActiveBikeHours).catch(() => {})
+      }
+    }).catch(() => {})
+  }, [stravaStatus])
   async function load() {
     setLoading(true)
     let changeMsg = ''
@@ -140,28 +155,65 @@ export default function Dashboard() {
   // (server-persistiert, überlebt App-Neustarts) und reiht sie für das
   // "Wie war die Fahrt?"-Sheet ein. Läuft eine Abfrage bereits, wird die
   // Warteschlange nicht angetastet, um sie nicht mittendrin zu verwerfen.
+  // Sinkt der km-Stand eines Rads unter die Basislinie (Aktivität auf Strava
+  // nachträglich einem anderen Rad zugeordnet), wird die Basislinie abgesenkt
+  // und eine bereits beantwortete Bedingungs-Abfrage wandert mit aufs Ziel-Rad –
+  // andernfalls kommt die Frage erneut, dann für das richtige Rad.
   async function detectRideChanges(activeB) {
-    setRideQueue(q => {
-      if (q.length) return q
-      const pending = []
-      for (const b of activeB) {
-        if (b.conditions_km_baseline == null) {
-          updateBike(b.id, { conditions_km_baseline: b.km || 0 }).catch(() => {})
-          continue
-        }
-        const delta = Math.round((b.km || 0) - b.conditions_km_baseline)
-        if (delta >= 3) pending.push({ bikeId: b.id, name: b.name, delta })
+    const pending = []
+    const losses = []
+    for (const b of activeB) {
+      if (b.conditions_km_baseline == null) {
+        updateBike(b.id, { conditions_km_baseline: b.km || 0 }).catch(() => {})
+        continue
       }
-      return pending
-    })
+      const delta = Math.round((b.km || 0) - b.conditions_km_baseline)
+      if (delta >= 3) pending.push({ bikeId: b.id, name: b.name, delta })
+      else if (delta <= -3) losses.push({ bike: b, loss: -delta })
+    }
+
+    for (const { bike, loss } of losses) {
+      const newBaseline = bike.km || 0
+      updateBike(bike.id, { conditions_km_baseline: newBaseline }).catch(() => {})
+      setBikes(prev => prev.map(x => x.id === bike.id ? { ...x, conditions_km_baseline: newBaseline } : x))
+      const gain = pending.find(p => Math.abs(p.delta - loss) <= 2)
+      if (!gain) continue
+      try {
+        const rows = await getRideConditions(bike.id)
+        const last = rows[rows.length - 1]
+        const fresh = last && (Date.now() - new Date(last.ride_date).getTime()) < 72 * 3600 * 1000
+        if (fresh && Math.abs(last.km_delta - loss) <= 2) {
+          await updateRideCondition(last.id, { bike_id: gain.bikeId })
+          const gainBase = activeB.find(x => x.id === gain.bikeId)?.km || 0
+          await updateBike(gain.bikeId, { conditions_km_baseline: gainBase })
+          setBikes(prev => prev.map(x => x.id === gain.bikeId ? { ...x, conditions_km_baseline: gainBase } : x))
+          pending.splice(pending.indexOf(gain), 1)
+          if (bike.id === activeBikeId || gain.bikeId === activeBikeId) {
+            getRideConditions(activeBikeId).then(setConditionRows).catch(() => {})
+          }
+        }
+      } catch (e) { /* nächster Ladevorgang versucht es erneut */ }
+    }
+
+    setRideQueue(q => q.length ? q : pending)
   }
 
-  async function resolveRide(entry, choice) {
+  async function resolveRide(entry, choice, skipIds = []) {
     setRideQueue(q => q.slice(1))
     try {
       if (choice) {
-        await addRideCondition(user.id, { bike_id: entry.bikeId, km_delta: entry.delta, weather: choice.weather, intensity: choice.intensity })
+        await addRideCondition(user.id, {
+          bike_id: entry.bikeId, km_delta: entry.delta,
+          weather: choice.weather, intensity: choice.intensity,
+          avg_watts: choice.avgWatts || null,
+          watts_source: choice.avgWatts ? choice.wattsSource : null,
+        })
+        markRideMetricsConsumed(choice.ids).catch(() => {})
         if (entry.bikeId === activeBikeId) getRideConditions(activeBikeId).then(setConditionRows).catch(() => {})
+      } else {
+        // Auch beim Überspringen als verarbeitet markieren, sonst würden die
+        // Metriken die nächste Einstufung verfälschen.
+        markRideMetricsConsumed(skipIds).catch(() => {})
       }
       const bike = bikes.find(b => b.id === entry.bikeId)
       const newBaseline = (bike?.km ?? 0)
@@ -481,7 +533,7 @@ export default function Dashboard() {
             if (!c) return null
             return (
               <div className="due-fazit">
-                📊 Fazit: {fmtKm(c.totalKm)} km · {c.weather.rain}% Regen / {c.weather.wet}% Nass / {c.weather.dry}% Trocken · {c.intensity.hard}% Hart / {c.intensity.mixed}% Gemischt / {c.intensity.easy}% Locker
+                📊 Fazit: {fmtKm(c.totalKm)} km · {c.weather.rain}% Regen / {c.weather.wet}% Nass / {c.weather.dry}% Trocken · {c.intensity.hard}% Hart / {c.intensity.mixed}% Mittel / {c.intensity.easy}% Locker
               </div>
             )
           })()}
@@ -523,9 +575,10 @@ export default function Dashboard() {
       )}
       {!dueTracker && rideQueue.length > 0 && (
         <RideConditionSheet
+          key={rideQueue[0].bikeId}
           entry={rideQueue[0]}
           onSave={(choice) => resolveRide(rideQueue[0], choice)}
-          onSkip={() => resolveRide(rideQueue[0], null)}
+          onSkip={(ids) => resolveRide(rideQueue[0], null, ids)}
         />
       )}
       {!dueTracker && rideQueue.length === 0 && (() => {
@@ -726,21 +779,65 @@ function CustomTypeSheet({ onSave, onClose }) {
 
 // ─── WIE WAR DIE FAHRT? ────────────────────────────────────
 const RC_WEATHER = [['dry', '☀️', 'Trocken'], ['wet', '💧', 'Nass'], ['rain', '🌧️', 'Regen']]
-const RC_INTENSITY = [['easy', '🟢', 'Locker'], ['mixed', '🟡', 'Gemischt'], ['hard', '🔴', 'Hart']]
+const RC_INTENSITY = [['easy', '🟢', 'Locker'], ['mixed', '🟡', 'Mittel'], ['hard', '🔴', 'Hart']]
+
+// Etikett der automatischen Einstufung: "Ø 245 W – 18 % über deinem
+// 90-Tage-Schnitt (208 W)". Fällt je nach Datenlage auf Puls/Tempo zurück.
+function fmtSuggestDetail(s) {
+  const fmtVal = (v) => s.unit === 'km/h' ? v.toLocaleString('de-DE') : Math.round(v)
+  const dir = s.relPct >= 0 ? 'über' : 'unter'
+  return `Ø ${fmtVal(s.value)} ${s.unit} – ${Math.abs(s.relPct)} % ${dir} deinem 90-Tage-Schnitt (${fmtVal(s.base)} ${s.unit})`
+}
 
 function RideConditionSheet({ entry, onSave, onSkip }) {
   const [weather, setWeather] = useState(null)
   const [intensity, setIntensity] = useState(null)
+  const [sug, setSug] = useState(null)
+  const metricsRef = useRef({ ids: [], avgWatts: null, wattsSource: null })
+
+  // Strava-Metriken der offenen Fahrt(en) laden und die Intensität relativ
+  // zum persönlichen 90-Tage-Schnitt vorschlagen – der Nutzer bestätigt nur.
+  useEffect(() => {
+    let alive = true
+    const since = new Date(Date.now() - 90 * 86400e3).toISOString()
+    getRideMetrics(entry.bikeId, since).then(rows => {
+      if (!alive) return
+      const pending = rows.filter(r => !r.consumed)
+      metricsRef.current.ids = pending.map(r => r.id)
+      const withW = pending.filter(r => Number(r.avg_watts) > 0)
+      const wKm = withW.reduce((s, r) => s + (Number(r.distance_km) || 0), 0)
+      if (wKm > 0) {
+        metricsRef.current.avgWatts = Math.round(withW.reduce((s, r) => s + Number(r.avg_watts) * (Number(r.distance_km) || 0), 0) / wKm)
+        metricsRef.current.wattsSource = withW.every(r => r.device_watts) ? 'power' : 'estimated'
+      }
+      const s = suggestIntensity(pending, rows)
+      if (s) { setSug(s); setIntensity(i => i || s.intensity) }
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [entry.bikeId])
+
+  const sugMeta = sug && {
+    easy:  ['🟢', 'Locker erkannt', 'var(--ok)',   'rgba(52,199,154,.45)',  'rgba(52,199,154,.07)'],
+    mixed: ['🟡', 'Mittel erkannt', 'var(--warn)', 'rgba(224,168,77,.45)',  'rgba(224,168,77,.07)'],
+    hard:  ['🔴', 'Hart erkannt',   'var(--crit)', 'rgba(224,86,110,.45)',  'rgba(224,86,110,.07)'],
+  }[sug.intensity]
+
+  const confirmMode = sug && intensity === sug.intensity
+  const finish = (choice) => choice
+    ? onSave({ ...choice, ...metricsRef.current })
+    : onSkip(metricsRef.current.ids)
+
   return (
-    <Sheet title="Wie war die Fahrt?" sub={`${entry.name} · +${entry.delta} km`} onClose={onSkip}>
-      <div className="rc-group">
-        <div className="rc-lbl">Bedingungen</div>
-        <div className="rc-opts">
-          {RC_WEATHER.map(([k, ico, l]) => (
-            <button key={k} className={`rc-opt ${weather === k ? 'on' : ''}`} onClick={() => setWeather(k)}>{ico} {l}</button>
-          ))}
+    <Sheet title="Wie war die Fahrt?" sub={`${entry.name} · +${entry.delta} km`} onClose={() => finish(null)}>
+      {sug && (
+        <div className="rc-auto" style={{ borderColor: sugMeta[3], background: sugMeta[4] }}>
+          <span className="rc-auto-ico">{sugMeta[0]}</span>
+          <div className="rc-auto-tx">
+            <b>{sugMeta[1]}</b>
+            {fmtSuggestDetail(sug)}
+          </div>
         </div>
-      </div>
+      )}
       <div className="rc-group">
         <div className="rc-lbl">Intensität</div>
         <div className="rc-opts">
@@ -749,9 +846,23 @@ function RideConditionSheet({ entry, onSave, onSkip }) {
           ))}
         </div>
       </div>
-      <BtnGreen onClick={() => onSave({ weather, intensity })} disabled={!weather || !intensity}>Speichern</BtnGreen>
-      <button className="rc-skip" onClick={onSkip}>Überspringen</button>
+      <div className="rc-group">
+        <div className="rc-lbl">Bedingungen</div>
+        <div className="rc-opts">
+          {RC_WEATHER.map(([k, ico, l]) => (
+            <button key={k} className={`rc-opt ${weather === k ? 'on' : ''}`} onClick={() => setWeather(k)}>{ico} {l}</button>
+          ))}
+        </div>
+      </div>
+      <BtnGreen onClick={() => finish({ weather, intensity })} disabled={!weather || !intensity}>
+        {confirmMode ? 'Passt – speichern' : 'Speichern'}
+      </BtnGreen>
+      <button className="rc-skip" onClick={() => finish(null)}>Überspringen</button>
       <style>{`
+        .rc-auto { display: flex; align-items: center; gap: 10px; border: 1px solid; padding: 11px 12px; margin-bottom: 14px; }
+        .rc-auto-ico { font-size: 17px; flex-shrink: 0; }
+        .rc-auto-tx { font-family: var(--mono); font-size: 10.5px; color: var(--ink2); line-height: 1.5; }
+        .rc-auto-tx b { display: block; font-family: var(--sans); font-size: 13px; font-weight: 800; color: var(--ink1); letter-spacing: .3px; }
         .rc-group { margin-bottom: 16px; }
         .rc-lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink3); margin-bottom: 8px; }
         .rc-opts { display: flex; gap: 6px; }
@@ -818,7 +929,10 @@ function EditTrackerSheet({ tracker, bikeKm, bikeHours, onDone, onSave, onDelete
 
   function save() {
     if (mode === 'h') {
-      onSave({ interval_type: 'h', interval_hours: intervalH, interval_km: null, hours_at_start: bikeHours, note })
+      // Basis nur beim Umstellen AUF Stunden neu setzen – beim bloßen
+      // Bearbeiten eines h-Trackers bleibt der Zähler erhalten.
+      onSave({ interval_type: 'h', interval_hours: intervalH, interval_km: null,
+        hours_at_start: tracker.interval_type === 'h' ? (tracker.hours_at_start ?? 0) : bikeHours, note })
     } else if (mode === 'date') {
       onSave({ interval_type: 'date', interval_km: intervalM, interval_hours: null, note })
     } else {

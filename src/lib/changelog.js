@@ -5,6 +5,20 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 14,
+    date: '21.07.2026',
+    items: [
+      ['new', 'Neuer Belastungs-Balken am Tracker: EIN Balken zeigt Fortschritt + Intensitäts-Anteile (hart/mittel/locker), Wetter als Zeile darunter – Segment antippen für Details („Hart: 620 km · davon 30 % Regen")'],
+      ['new', 'Intensität wird aus Strava erkannt (Watt, sonst Puls/Tempo, relativ zu deinem 90-Tage-Schnitt) – die „Wie war die Fahrt?"-Abfrage ist vorausgefüllt, du bestätigst nur noch'],
+      ['new', 'Ø-Watt am Tracker, in der Historie und der Gesamt-Statistik („1.240 km · Ø 205 W")'],
+      ['change', 'Intensitäts-Stufe „Gemischt" heißt jetzt „Mittel"'],
+      ['fix', 'Stunden-Tracker zählen jetzt wirklich: Fahrzeiten kommen aus Strava (inkl. nachgeladener Historie) – z. B. „Powermeter-Batterie 380 h" läuft ab sofort mit'],
+      ['fix', 'Bearbeiten eines Stunden-Trackers (z. B. Notiz ändern) setzt den Zähler nicht mehr ungewollt auf 0'],
+      ['fix', 'Mitteilungs-Seite: Titel überlappte den „Alle löschen"-Knopf'],
+      ['new', 'Wird eine Aktivität auf Strava nachträglich einem anderen Rad zugeordnet, wandert die Bedingungs-Abfrage (oder deine schon gegebene Antwort) automatisch mit aufs richtige Rad'],
+    ],
+  },
+  {
     v: 13,
     date: '20.07.2026',
     items: [

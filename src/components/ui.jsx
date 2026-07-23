@@ -35,7 +35,7 @@ export function Page({ title, subtitle, action, children, back }) {
         }
         .page-back:active { background: var(--panel); }
         .page-titles { flex: 1; min-width: 0; }
-        .page-title { font-family: var(--sans); font-size: 19px; font-weight: 900; color: var(--ink1); letter-spacing: 2px; text-transform: uppercase; }
+        .page-title { font-family: var(--sans); font-size: 19px; font-weight: 900; color: var(--ink1); letter-spacing: 2px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .page-sub { font-family: var(--mono); font-size: 11px; color: var(--ink3); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
         .page-body { padding: 16px; }
       `}</style>

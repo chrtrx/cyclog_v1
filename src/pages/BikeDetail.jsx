@@ -31,6 +31,7 @@ function svcStatLine(l) {
   if (l.km_ridden == null) return null
   const parts = [`${Math.round(l.km_ridden).toLocaleString('de')} km Laufzeit`]
   const c = l.conditions
+  if (c?.avgWatts) parts.push(`Ø ${c.avgWatts} W`)
   if (c?.weather) parts.push(`☀️${c.weather.dry}% 💧${c.weather.wet}% 🌧️${c.weather.rain}%`)
   if (c?.intensity) parts.push(`🟢${c.intensity.easy}% 🟡${c.intensity.mixed}% 🔴${c.intensity.hard}%`)
   return parts.join(' · ')
@@ -43,7 +44,7 @@ function aggregateServiceStats(logs) {
     if (l.km_ridden == null) continue
     const g = (byType[l.service_type] ||= {
       type: l.service_type, title: l.title, icon: l.icon || '🔧',
-      runs: 0, km: 0, ckm: 0,
+      runs: 0, km: 0, ckm: 0, wkm: 0, wsum: 0,
       w: { dry: 0, wet: 0, rain: 0 }, i: { easy: 0, mixed: 0, hard: 0 },
     })
     const km = Number(l.km_ridden) || 0
@@ -54,10 +55,12 @@ function aggregateServiceStats(logs) {
       for (const k of ['dry', 'wet', 'rain']) g.w[k] += (c.weather[k] || 0) / 100 * km
       for (const k of ['easy', 'mixed', 'hard']) g.i[k] += (c.intensity?.[k] || 0) / 100 * km
     }
+    if (c?.avgWatts && km > 0) { g.wkm += km; g.wsum += c.avgWatts * km }
   }
   return Object.values(byType).map(g => ({
     ...g,
     avgKm: g.runs ? Math.round(g.km / g.runs) : 0,
+    avgWatts: g.wkm > 0 ? Math.round(g.wsum / g.wkm) : null,
     conditions: g.ckm > 0 ? {
       totalKm: Math.round(g.ckm),
       weather: { dry: Math.round(g.w.dry / g.ckm * 100), wet: Math.round(g.w.wet / g.ckm * 100), rain: Math.round(g.w.rain / g.ckm * 100) },
@@ -309,7 +312,7 @@ export default function BikeDetail() {
                   <div className="agg-top">
                     <span className="agg-ico">{g.icon}</span>
                     <span className="agg-title">{g.title}</span>
-                    <span className="agg-meta">{g.runs}× · Ø {g.avgKm.toLocaleString('de')} km</span>
+                    <span className="agg-meta">{g.runs}× · Ø {g.avgKm.toLocaleString('de')} km{g.avgWatts ? ` · ${g.avgWatts} W` : ''}</span>
                   </div>
                   {g.conditions && <CondStats conditions={g.conditions} compact />}
                 </div>

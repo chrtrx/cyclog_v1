@@ -105,8 +105,10 @@ export default async function handler(req, res) {
     // Aktivitätsdetails einmal holen und daraus Fahrt-Metriken (Watt/Puls/
     // Tempo für die Intensitäts-Erkennung) sowie den Renntagebuch-Vorschlag
     // ableiten. Update-Events aktualisieren die Metriken (z. B. Rad-Wechsel).
+    // Scheitert der Strava-Abruf, dürfen km-/Fällig-Pushes trotzdem laufen.
     let raceCandidate = null
     const activity = await fetchActivityDetail(admin, tok, event.object_id)
+      .catch((e) => { console.error('fetchActivityDetail error:', e?.message); return null })
     if (activity) {
       await recordRideMetrics(admin, userId, activity)
       if (event.aspect_type === 'create') {

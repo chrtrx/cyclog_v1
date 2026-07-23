@@ -108,6 +108,21 @@ export default function Dashboard() {
     if (Date.now() - last < 30 * 60 * 1000) return
     autoSync()
   }, [stravaStatus])
+  // Auch beim Zurückkehren in die App erneut syncen (PWA bleibt auf dem
+  // iPhone im Speicher – "Öffnen" ist dann kein Neustart). Nur so kommen
+  // nachträgliche Strava-Änderungen an, z. B. eine Fahrt aufs andere Rad
+  // umgebucht: Dafür schickt Strava KEIN Webhook-Event.
+  useEffect(() => {
+    if (!stravaStatus) return
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return
+      const last = Number(localStorage.getItem('lastAutoSync') || 0)
+      if (Date.now() - last < 10 * 60 * 1000) return
+      autoSync()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [stravaStatus])
   // Historien-Backfill (Stunden-Basis + Intensitäts-Vergleichswerte):
   // einmal pro Session anstoßen, Server drosselt auf 24 h. Danach die
   // Stunden des aktiven Rads auffrischen, damit h-Tracker sofort stimmen.

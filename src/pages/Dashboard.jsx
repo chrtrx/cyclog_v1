@@ -124,16 +124,21 @@ export default function Dashboard() {
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [stravaStatus])
   // Historien-Backfill (Stunden-Basis + Intensitäts-Vergleichswerte):
-  // einmal pro Session anstoßen, Server drosselt auf 24 h. Danach die
-  // Stunden des aktiven Rads auffrischen, damit h-Tracker sofort stimmen.
+  // einmal pro Session anstoßen, Server drosselt auf 24 h. Nach einem
+  // Import Stunden + Dashboard auffrischen und kurz Bescheid geben –
+  // sonst ist nicht erkennbar, ob der Import lief oder scheiterte.
   const backfillTried = useRef(false)
   useEffect(() => {
     if (!stravaStatus || backfillTried.current) return
     backfillTried.current = true
     backfillRideMetrics().then(r => {
-      if (r?.imported > 0 || r?.adjusted > 0) {
+      if (!r) return
+      if (r.error) { showToast('⚠ Fahrzeiten-Import: ' + r.error); return }
+      if (r.imported > 0 || r.adjusted > 0 || r.moved > 0) {
         const id = dashCache?.activeBikeId || activeBikeId
         if (id) getBikeHours(id).then(setActiveBikeHours).catch(() => {})
+        load()
+        if (r.imported > 0) showToast('⏱ Fahrzeiten aus Strava importiert')
       }
     }).catch(() => {})
   }, [stravaStatus])

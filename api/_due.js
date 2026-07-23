@@ -122,12 +122,15 @@ export async function updateNotifiedKm(admin, bikes) {
   }
 }
 
-// Stunden je Bike aus activities (defensiv – Tabelle evtl. leer/abweichend).
+// Stunden je Bike – Summe der Fahrzeiten aus ride_metrics (Webhook + Backfill).
 export async function hoursByBike(admin) {
   const map = {}
   try {
-    const { data: acts } = await admin.from('activities').select('bike_id,moving_time')
-    for (const a of acts || []) map[a.bike_id] = (map[a.bike_id] || 0) + (Number(a.moving_time) || 0) / 3600
+    const { data: acts } = await admin.from('ride_metrics').select('bike_id,moving_time_s')
+    for (const a of acts || []) {
+      if (!a.bike_id) continue
+      map[a.bike_id] = (map[a.bike_id] || 0) + (Number(a.moving_time_s) || 0) / 3600
+    }
   } catch (e) { /* ignorieren */ }
   return map
 }

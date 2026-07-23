@@ -7,7 +7,7 @@ import {
   getBikeHours, getUnreadCount, SERVICE_TYPES, BIKE_TYPES,
   getCustomServiceTypes, addCustomServiceType, deleteCustomServiceType,
   getRideConditions, addRideCondition, updateRideCondition,
-  getRideMetrics, markRideMetricsConsumed,
+  getRideMetrics, markRideMetricsConsumed, backfillRideMetrics,
   getRaceCandidates, dismissRaceCandidate,
 } from '../lib/data'
 
@@ -107,6 +107,20 @@ export default function Dashboard() {
     const last = Number(localStorage.getItem('lastAutoSync') || 0)
     if (Date.now() - last < 30 * 60 * 1000) return
     autoSync()
+  }, [stravaStatus])
+  // Historien-Backfill (Stunden-Basis + Intensitäts-Vergleichswerte):
+  // einmal pro Session anstoßen, Server drosselt auf 24 h. Danach die
+  // Stunden des aktiven Rads auffrischen, damit h-Tracker sofort stimmen.
+  const backfillTried = useRef(false)
+  useEffect(() => {
+    if (!stravaStatus || backfillTried.current) return
+    backfillTried.current = true
+    backfillRideMetrics().then(r => {
+      if (r?.imported > 0 || r?.adjusted > 0) {
+        const id = dashCache?.activeBikeId || activeBikeId
+        if (id) getBikeHours(id).then(setActiveBikeHours).catch(() => {})
+      }
+    }).catch(() => {})
   }, [stravaStatus])
   async function load() {
     setLoading(true)
@@ -561,6 +575,7 @@ export default function Dashboard() {
       )}
       {!dueTracker && rideQueue.length > 0 && (
         <RideConditionSheet
+          key={rideQueue[0].bikeId}
           entry={rideQueue[0]}
           onSave={(choice) => resolveRide(rideQueue[0], choice)}
           onSkip={(ids) => resolveRide(rideQueue[0], null, ids)}
@@ -914,7 +929,10 @@ function EditTrackerSheet({ tracker, bikeKm, bikeHours, onDone, onSave, onDelete
 
   function save() {
     if (mode === 'h') {
-      onSave({ interval_type: 'h', interval_hours: intervalH, interval_km: null, hours_at_start: bikeHours, note })
+      // Basis nur beim Umstellen AUF Stunden neu setzen – beim bloßen
+      // Bearbeiten eines h-Trackers bleibt der Zähler erhalten.
+      onSave({ interval_type: 'h', interval_hours: intervalH, interval_km: null,
+        hours_at_start: tracker.interval_type === 'h' ? (tracker.hours_at_start ?? 0) : bikeHours, note })
     } else if (mode === 'date') {
       onSave({ interval_type: 'date', interval_km: intervalM, interval_hours: null, note })
     } else {

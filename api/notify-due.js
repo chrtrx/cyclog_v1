@@ -29,8 +29,6 @@ export default async function handler(req, res) {
       admin.from('push_subscriptions').select('endpoint,subscription,user_id'),
       admin.from('profiles').select('user_id,notify_every_ride'),
     ])
-    const hours = await hoursByBike(admin)
-
     const bikeById = {}
     const bikesByUser = {}
     for (const b of bikes || []) {
@@ -41,11 +39,19 @@ export default async function handler(req, res) {
     for (const s of subs || []) (subsByUser[s.user_id] ||= []).push(s)
     const everyRideByUser = {}
     for (const p of profiles || []) everyRideByUser[p.user_id] = !!p.notify_every_ride
-    const itemsByUser = {}
+    const trackersByUser = {}
     for (const t of trackers || []) {
       const bike = bikeById[t.bike_id]
       if (!bike || bike.archived) continue
-      ;(itemsByUser[t.user_id] ||= []).push({ t, bike, p: pct(t, bike.km, hours[bike.id] || 0) })
+      ;(trackersByUser[t.user_id] ||= []).push({ t, bike })
+    }
+
+    // Fahrstunden nur für Nutzer holen, die überhaupt Stunden-Tracker haben.
+    const itemsByUser = {}
+    for (const [uid, list] of Object.entries(trackersByUser)) {
+      const needsHours = list.some(({ t }) => t.interval_type === 'h')
+      const hours = needsHours ? await hoursByBike(admin, uid) : {}
+      itemsByUser[uid] = list.map(({ t, bike }) => ({ t, bike, p: pct(t, bike.km, hours[bike.id] || 0) }))
     }
 
     const now = Date.now()

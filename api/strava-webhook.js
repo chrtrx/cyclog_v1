@@ -131,7 +131,7 @@ export default async function handler(req, res) {
       await logNotification(admin, userId, racePayload)
     }
 
-    const hours = await hoursByBike(admin)
+    const hours = await hoursByBike(admin, userId)
     const bikeById = {}
     for (const b0 of bikes || []) bikeById[b0.id] = b0
     const items = (trackers || [])

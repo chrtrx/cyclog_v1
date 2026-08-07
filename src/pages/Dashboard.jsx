@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import {
   getBikes, addBike, updateBike, getTrackers, addTracker, updateTracker, deleteTracker,
   getServiceLogs, addServiceLog, syncStrava, getStravaStatus, getProfile,
-  getBikeHours, getUnreadCount, SERVICE_TYPES, BIKE_TYPES,
+  getHoursByBike, getUnreadCount, SERVICE_TYPES, BIKE_TYPES,
   getCustomServiceTypes, addCustomServiceType, deleteCustomServiceType,
   getRideConditions, addRideCondition, updateRideCondition,
   getRideMetrics, markRideMetricsConsumed, backfillRideMetrics,
@@ -76,7 +76,10 @@ export default function Dashboard() {
   const [activeBikeId, setActiveBikeId] = useState(cached?.activeBikeId || null)
   const [stravaStatus, setStravaStatus] = useState(cached?.stravaStatus || null)
   const [profile, setProfile] = useState(cached?.profile || null)
-  const [activeBikeHours, setActiveBikeHours] = useState(0)
+  // Fahrstunden ALLER Räder ({ bikeId: h }) – ein aggregierter Aufruf statt
+  // einer Abfrage je Rad. Nur so kennen auch die Fällig-Zähler über alle
+  // Räder die Stunden; vorher galten Stunden-Tracker dort immer als 0 %.
+  const [hoursMap, setHoursMap] = useState(cached?.hoursMap || {})
   const [loading, setLoading] = useState(!cached)
   const [syncing, setSyncing] = useState(false)
   const [sheet, setSheet] = useState(null) // 'log' | 'addBike' | null
@@ -95,7 +98,6 @@ export default function Dashboard() {
   useEffect(() => { getCustomServiceTypes(user.id).then(setCustomTypes).catch(() => {}) }, [])
   useEffect(() => {
     if (!activeBikeId) return
-    getBikeHours(activeBikeId).then(setActiveBikeHours).catch(() => setActiveBikeHours(0))
     getRideConditions(activeBikeId).then(setConditionRows).catch(() => setConditionRows([]))
   }, [activeBikeId])
   // Auto-Sync beim Öffnen: einmal pro Session, höchstens alle 30 Min,
@@ -137,9 +139,7 @@ export default function Dashboard() {
       if (r.stravaError) { showToast(`⚠ Strava-Abruf fehlgeschlagen (HTTP ${r.stravaError})`); return }
       if (r.imported > 0 && !r.matched) { showToast(`⚠ Import: ${r.imported} Fahrten, aber keinem Rad zuordenbar`); return }
       if (r.imported > 0 || r.adjusted > 0 || r.moved > 0) {
-        const id = dashCache?.activeBikeId || activeBikeId
-        if (id) getBikeHours(id).then(setActiveBikeHours).catch(() => {})
-        load()
+        load()   // lädt Stunden, km und Tracker frisch
         showToast(`⏱ ${r.matched} Fahrten aus Strava importiert`)
       } else if (r.fetched === 0) {
         showToast('⚠ Keine Aktivitäten von Strava erhalten')
@@ -150,13 +150,14 @@ export default function Dashboard() {
     setLoading(true)
     let changeMsg = ''
     try {
-      const [b, t, s, p, u] = await Promise.all([
+      const [b, t, s, p, u, h] = await Promise.all([
         getBikes(user.id), getTrackers(user.id), getStravaStatus(user.id), getProfile(user.id),
         getUnreadCount(user.id).catch(() => 0),
+        getHoursByBike(user.id).catch(() => ({})),
       ])
       const activeB = b.filter(x => !x.archived)
       changeMsg = kmChangeToast(dashCache?.bikes, activeB)
-      setBikes(activeB); setTrackers(t); setStravaStatus(s); setProfile(p); setUnread(u)
+      setBikes(activeB); setTrackers(t); setStravaStatus(s); setProfile(p); setUnread(u); setHoursMap(h)
       // aktives Rad bestimmen bzw. validieren (falls das gemerkte weg ist)
       const la = (bikeId) => {
         const ts = t.filter(x => x.bike_id === bikeId)
@@ -167,7 +168,7 @@ export default function Dashboard() {
         nextActive = activeB.length ? [...activeB].sort((x, y) => la(y.id) - la(x.id))[0].id : null
       }
       if (nextActive !== activeBikeId) setActiveBikeId(nextActive)
-      dashCache = { userId: user.id, bikes: activeB, trackers: t, stravaStatus: s, profile: p, unread: u, activeBikeId: nextActive }
+      dashCache = { userId: user.id, bikes: activeB, trackers: t, stravaStatus: s, profile: p, unread: u, activeBikeId: nextActive, hoursMap: h }
       await detectRideChanges(activeB)
       getRaceCandidates(user.id).then(setRaceCands).catch(() => {})
     } catch (e) { showToast('Fehler beim Laden') }
@@ -249,29 +250,52 @@ export default function Dashboard() {
   function showToast(m) { setToast(m); setTimeout(() => setToast(''), 2400) }
 
   const activeBike = bikes.find(b => b.id === activeBikeId)
+  const activeBikeHours = hoursMap[activeBikeId] || 0
   const bikeTrackers = trackers.filter(t => t.bike_id === activeBikeId)
   const sortedBikeTrackers = [...bikeTrackers].sort((a, b) => {
     if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
     return pct(b, activeBike?.km, activeBikeHours) - pct(a, activeBike?.km, activeBikeHours)
   })
 
+  // Verschleiß-Auswertung je Tracker einmal je Datenänderung berechnen –
+  // vorher lief sie bei JEDEM Render erneut über alle Fahrten (× Tracker).
+  const trackerConditions = useMemo(() => {
+    const map = {}
+    for (const t of trackers) {
+      if (t.bike_id !== activeBikeId) continue
+      map[t.id] = summarizeConditions(conditionRows, t.start_date)
+    }
+    return map
+  }, [trackers, activeBikeId, conditionRows])
+
   // Räder nach Aktivität sortieren: das Rad mit dem zuletzt gestarteten/
   // aktualisierten Tracker zuerst. Räder ganz ohne Tracker hinten.
-  function lastActivity(bikeId) {
-    const ts = trackers.filter(t => t.bike_id === bikeId)
-    if (!ts.length) return 0
-    return Math.max(...ts.map(t => new Date(t.start_date || 0).getTime()))
-  }
-  const sortedBikes = [...bikes].sort((a, b) => lastActivity(b.id) - lastActivity(a.id))
+  const lastActivityByBike = useMemo(() => {
+    const map = {}
+    for (const t of trackers) {
+      const ts = new Date(t.start_date || 0).getTime()
+      if (ts > (map[t.bike_id] || 0)) map[t.bike_id] = ts
+    }
+    return map
+  }, [trackers])
+  const sortedBikes = [...bikes].sort((a, b) => (lastActivityByBike[b.id] || 0) - (lastActivityByBike[a.id] || 0))
 
-  // Dashboard-Übersicht: alle fälligen/bald fälligen über alle Bikes
-  const allStatuses = trackers.map(t => {
-    const bike = bikes.find(b => b.id === t.bike_id)
-    if (!bike) return null
-    return { tracker: t, bike, status: statusOf(pct(t, bike.km)) }
-  }).filter(Boolean)
-  const dueCount = allStatuses.filter(s => s.status === 'crit').length
-  const soonCount = allStatuses.filter(s => s.status === 'warn').length
+  // Dashboard-Übersicht: alle fälligen/bald fälligen über alle Bikes.
+  // Stunden je Rad müssen hier mit einfließen, sonst zählen Stunden-Tracker
+  // nie als fällig (sie standen ohne bikeHours dauerhaft bei 0 %).
+  const { dueCount, soonCount, firstDue } = useMemo(() => {
+    const bikeById = {}
+    for (const b of bikes) bikeById[b.id] = b
+    let due = 0, soon = 0, first = null
+    for (const t of trackers) {
+      const bike = bikeById[t.bike_id]
+      if (!bike) continue
+      const st = statusOf(pct(t, bike.km, hoursMap[bike.id] || 0))
+      if (st === 'crit') { due++; if (!first) first = { tracker: t, bike } }
+      else if (st === 'warn') soon++
+    }
+    return { dueCount: due, soonCount: soon, firstDue: first }
+  }, [trackers, bikes, hoursMap])
 
   async function handleSync() {
     setSyncing(true)
@@ -303,7 +327,7 @@ export default function Dashboard() {
     const isDate = svc.intervalType === 'date'
     let hoursNow = activeBikeHours
     if (isH && !hoursNow) {
-      try { hoursNow = await getBikeHours(activeBike.id) } catch {}
+      try { hoursNow = (await getHoursByBike(user.id))[activeBike.id] || 0 } catch {}
     }
     try {
       await addTracker(user.id, {
@@ -373,7 +397,7 @@ export default function Dashboard() {
       last_notified_at: null, warn_notified_at: null,
     }
     if (t.interval_type === 'h') {
-      try { updates.hours_at_start = await getBikeHours(activeBike.id) } catch {}
+      try { updates.hours_at_start = (await getHoursByBike(user.id))[activeBike.id] || 0 } catch {}
     }
     await updateTracker(t.id, updates)
     setDueTracker(null); setEditTracker(null); await load()
@@ -445,8 +469,7 @@ export default function Dashboard() {
             {(dueCount > 0 || soonCount > 0) && (
               <div className="status-banner">
                 {dueCount > 0 && <button className="sb-item crit" onClick={() => {
-                  const first = allStatuses.find(s => s.status === 'crit')
-                  if (first) { setActiveBikeId(first.bike.id); setDueTracker(first.tracker) }
+                  if (firstDue) { setActiveBikeId(firstDue.bike.id); setDueTracker(firstDue.tracker) }
                 }}><span className="sb-num">{dueCount}</span> überfällig</button>}
                 {soonCount > 0 && <div className="sb-item warn"><span className="sb-num">{soonCount}</span> bald fällig</div>}
               </div>
@@ -515,7 +538,7 @@ export default function Dashboard() {
             ) : (
               sortedBikeTrackers.map(t => (
                 <TrackerCard key={t.id} tracker={t} bikeKm={activeBike.km} bikeHours={activeBikeHours}
-                  conditions={summarizeConditions(conditionRows, t.start_date)}
+                  conditions={trackerConditions[t.id]}
                   onClick={() => pct(t, activeBike.km, activeBikeHours) >= 1 ? setDueTracker(t) : setEditTracker(t)}
                   onPin={() => togglePin(t)}
                 />
@@ -553,7 +576,7 @@ export default function Dashboard() {
                 : `Dieser Tracker hat sein Intervall erreicht (${fmtKm(dueTracker.interval_km)} km). Was möchtest du tun?`}
           </div>
           {(() => {
-            const c = summarizeConditions(conditionRows, dueTracker.start_date)
+            const c = trackerConditions[dueTracker.id]
             if (!c) return null
             return (
               <div className="due-fazit">

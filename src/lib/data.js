@@ -226,9 +226,12 @@ export async function updateRideCondition(id, patch) {
 }
 
 // ── Fahrt-Metriken aus Strava (Intensitäts-Erkennung) ──────
+// Nur die Felder holen, die die Einstufung braucht – die Tabelle wächst mit
+// jeder Fahrt, und das Sheet lädt 90 Tage auf einmal.
+const RIDE_METRIC_COLS = 'id,distance_km,avg_watts,device_watts,avg_hr,avg_speed_kmh,ride_date,consumed'
 export async function getRideMetrics(bikeId, sinceIso) {
   const { data, error } = await supabase
-    .from('ride_metrics').select('*')
+    .from('ride_metrics').select(RIDE_METRIC_COLS)
     .eq('bike_id', bikeId).gte('ride_date', sinceIso)
     .order('ride_date', { ascending: true })
   if (error) throw error
@@ -355,13 +358,23 @@ export async function deleteUpgrade(id) {
 // ═══════════════════════════════════════════════════════════
 // AKTIVITÄTEN
 // ═══════════════════════════════════════════════════════════
-// Fahrstunden je Rad – Summe der Fahrzeiten aus ride_metrics (vom Webhook
-// je Aktivität abgelegt, historische Fahrten via /api/strava-backfill).
-export async function getBikeHours(bikeId) {
-  const { data, error } = await supabase
-    .from('ride_metrics').select('moving_time_s').eq('bike_id', bikeId)
-  if (error || !data) return 0
-  return data.reduce((s, a) => s + (Number(a.moving_time_s) || 0), 0) / 3600
+// Fahrstunden ALLER Räder auf einmal – die Datenbank aggregiert (Migration
+// 021), wir bekommen eine Zeile je Rad statt aller Fahrt-Zeilen. Ergebnis:
+// { [bikeId]: stunden }. Ein Aufruf deckt das ganze Dashboard ab, und die
+// 1000-Zeilen-Grenze von PostgREST kann die Summe nicht mehr verfälschen.
+export async function getHoursByBike(userId) {
+  const { data, error } = await supabase.rpc('bike_hours', { p_user_id: userId })
+  if (error || !data) return {}
+  const map = {}
+  for (const r of data) map[r.bike_id] = Number(r.hours) || 0
+  return map
+}
+
+// Fahrstunden eines einzelnen Rads (für Stellen ohne Rad-Übersicht).
+export async function getBikeHours(bikeId, userId) {
+  if (!userId) return 0
+  const map = await getHoursByBike(userId)
+  return map[bikeId] || 0
 }
 
 // Lädt einmalig die Strava-Historie in ride_metrics nach (Stunden-Basis +

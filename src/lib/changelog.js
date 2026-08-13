@@ -5,6 +5,23 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 16,
+    date: '23.07.2026',
+    items: [
+      ['new', 'Neuer Kalender (Mehr → Kalender): Wartungen, Rennen, Defekte und die voraussichtliche Fälligkeit deiner Tracker in einer Monatsübersicht'],
+      ['new', 'Einträge direkt im Kalender anlegen – Rennen, Wartung, Defekt, Sturz, Panne oder Notiz; sie erscheinen automatisch auch im Renntagebuch bzw. in der Rad-Historie'],
+    ],
+  },
+  {
+    v: 15,
+    date: '23.07.2026',
+    items: [
+      ['fix', 'Stunden-Tracker zählten bei „überfällig / bald fällig" oben auf der Startseite nie mit – jetzt fließen die Fahrstunden dort ein'],
+      ['fix', 'Fahrstunden konnten bei vielen Fahrten zu niedrig sein (nur die letzten 1.000 Fahrten wurden gezählt) – die Summe kommt jetzt vollständig aus der Datenbank'],
+      ['change', 'Startseite spürbar flotter: Verschleiß-Auswertung und Rad-Sortierung werden nur noch bei echten Datenänderungen neu berechnet, Fahrstunden aller Räder kommen in einer statt vieler Abfragen'],
+    ],
+  },
+  {
     v: 14,
     date: '21.07.2026',
     items: [

@@ -115,22 +115,25 @@ export async function logNotification(admin, userId, payload) {
 
 // Basislinie nachziehen: notified_km = aktueller km-Stand (für geänderte Räder).
 export async function updateNotifiedKm(admin, bikes) {
-  for (const b of bikes || []) {
-    if (b.notified_km !== b.km) {
-      await admin.from('bikes').update({ notified_km: b.km }).eq('id', b.id)
-    }
-  }
+  const changed = (bikes || []).filter((b) => b.notified_km !== b.km)
+  if (!changed.length) return
+  // parallel statt nacheinander – beim Cron über alle Nutzer sind das sonst
+  // dutzende serielle Round-Trips.
+  await Promise.all(
+    changed.map((b) => admin.from('bikes').update({ notified_km: b.km }).eq('id', b.id)),
+  )
 }
 
-// Stunden je Bike – Summe der Fahrzeiten aus ride_metrics (Webhook + Backfill).
-export async function hoursByBike(admin) {
+// Stunden je Bike – in der Datenbank aggregiert (Migration 021).
+// Früher wurde die komplette ride_metrics-Tabelle ALLER Nutzer geladen und
+// hier summiert: PostgREST schneidet aber nach 1000 Zeilen ab, sodass die
+// Stunden mit wachsender Historie stillschweigend zu niedrig waren und
+// Stunden-Tracker nie ausgelöst haben.
+export async function hoursByBike(admin, userId) {
   const map = {}
   try {
-    const { data: acts } = await admin.from('ride_metrics').select('bike_id,moving_time_s')
-    for (const a of acts || []) {
-      if (!a.bike_id) continue
-      map[a.bike_id] = (map[a.bike_id] || 0) + (Number(a.moving_time_s) || 0) / 3600
-    }
+    const { data } = await admin.rpc('bike_hours', { p_user_id: userId })
+    for (const r of data || []) map[r.bike_id] = Number(r.hours) || 0
   } catch (e) { /* ignorieren */ }
   return map
 }

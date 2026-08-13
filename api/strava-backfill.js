@@ -95,28 +95,39 @@ export default async function handler(req, res) {
       const { data: existing } = await admin.from('ride_metrics')
         .select('id,strava_activity_id,bike_id')
         .in('strava_activity_id', rows.map(r => r.strava_activity_id))
-      for (const r of existing || []) {
+      const toMove = (existing || []).filter((r) => {
         const want = wanted.get(String(r.strava_activity_id))
-        if (want !== undefined && want !== r.bike_id) {
-          await admin.from('ride_metrics').update({ bike_id: want }).eq('id', r.id)
-          moved++
-        }
-      }
+        return want !== undefined && want !== r.bike_id
+      })
+      await Promise.all(toMove.map((r) =>
+        admin.from('ride_metrics')
+          .update({ bike_id: wanted.get(String(r.strava_activity_id)) }).eq('id', r.id)))
+      moved = toMove.length
     }
 
     // Stunden-Basis bestehender h-Tracker korrigieren: Fahrzeit vor dem
     // jeweiligen Tracker-Start zählt nicht zum laufenden Intervall.
+    // Fahrten EINMAL laden und je Tracker in JS auswerten – vorher lief pro
+    // Tracker eine eigene Abfrage.
     let adjusted = 0
     const { data: hTrackers } = await admin.from('trackers')
       .select('id,bike_id,start_date').eq('user_id', userId).eq('interval_type', 'h')
-    for (const t of hTrackers || []) {
-      const { data: before } = await admin.from('ride_metrics')
-        .select('moving_time_s').eq('bike_id', t.bike_id)
-        .lt('ride_date', t.start_date || new Date().toISOString())
-      const hoursBefore = (before || []).reduce((s, r) => s + (Number(r.moving_time_s) || 0), 0) / 3600
-      await admin.from('trackers')
-        .update({ hours_at_start: Math.round(hoursBefore * 10) / 10 }).eq('id', t.id)
-      adjusted++
+    if (hTrackers?.length) {
+      const { data: allRides } = await admin.from('ride_metrics')
+        .select('bike_id,ride_date,moving_time_s').eq('user_id', userId)
+      const ridesByBike = {}
+      for (const r of allRides || []) {
+        if (r.bike_id) (ridesByBike[r.bike_id] ||= []).push(r)
+      }
+      await Promise.all(hTrackers.map((t) => {
+        const cutoff = new Date(t.start_date || Date.now()).getTime()
+        const hoursBefore = (ridesByBike[t.bike_id] || [])
+          .filter((r) => new Date(r.ride_date).getTime() < cutoff)
+          .reduce((s, r) => s + (Number(r.moving_time_s) || 0), 0) / 3600
+        return admin.from('trackers')
+          .update({ hours_at_start: Math.round(hoursBefore * 10) / 10 }).eq('id', t.id)
+      }))
+      adjusted = hTrackers.length
     }
 
     // Drossel nur nach einem brauchbaren Lauf setzen – ein leerer/gescheiterter

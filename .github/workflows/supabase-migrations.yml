@@ -55,6 +55,27 @@ jobs:
             exit 1
           fi
 
+          # Zugang EINMAL vorab prüfen. Ohne diesen Schritt scheitert jede
+          # einzelne Migration mit demselben 401 und die eigentliche Ursache
+          # geht in einer Wand aus Folgefehlern unter.
+          probe=$(curl -sS -o probe.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${token}" \
+            "https://api.supabase.com/v1/projects/${ref}")
+          case "$probe" in
+            401|403)
+              echo "::error::Supabase lehnt den Zugriff ab (HTTP $probe) – der SUPABASE_ACCESS_TOKEN ist ungültig, abgelaufen oder widerrufen. Die Migrationen selbst wurden gar nicht erst ausgeführt."
+              echo "::error::So beheben: 1) Neuen Token erzeugen unter https://supabase.com/dashboard/account/tokens  2) In GitHub unter Settings → Secrets and variables → Actions das Secret SUPABASE_ACCESS_TOKEN ersetzen  3) Diesen Workflow im Actions-Tab über 'Run workflow' erneut starten."
+              exit 1 ;;
+            404)
+              echo "::error::Projekt '$ref' nicht gefunden oder für diesen Token nicht freigegeben (HTTP 404). Reference ID im Supabase-Dashboard unter Settings → General prüfen. Pausierte Projekte (Free-Tier) müssen dort zuerst reaktiviert werden."
+              exit 1 ;;
+            2*)
+              echo "✓ Zugang geprüft – Projekt erreichbar." ;;
+            *)
+              echo "::error::Supabase-API antwortet unerwartet (HTTP $probe): $(cat probe.json)"
+              exit 1 ;;
+          esac
+
           api="https://api.supabase.com/v1/projects/${ref}/database/query"
           fail=0
           for f in $(ls supabase/migrations/*.sql | sort); do
@@ -67,6 +88,11 @@ jobs:
               --data-binary @payload.json)
             echo "   HTTP $code"
             echo "   Antwort: $(cat resp.json)"
+            # Auth-Fehler werden mit der nächsten Datei nicht besser → Abbruch.
+            if [ "$code" = "401" ] || [ "$code" = "403" ]; then
+              echo "::error::Zugriff verweigert (HTTP $code) – Abbruch. Bitte SUPABASE_ACCESS_TOKEN erneuern (siehe Hinweis oben)."
+              exit 1
+            fi
             if [ "$code" -ge 300 ]; then
               echo "::error::$f fehlgeschlagen (HTTP $code)"
               fail=1

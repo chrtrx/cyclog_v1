@@ -135,7 +135,7 @@ export function predictDue(tracker, bikeKm, bikeHours = 0) {
   const timePct = Math.min(daysElapsed / (interval / kmPerDay), 1)
   const weeks = Math.max(1, Math.round(daysLeft / 7))
   const dueDateStr = dueDate.toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })
-  return { dueDateStr, weeks, timePct }
+  return { dueDateStr, dueDate, weeks, timePct }
 }
 
 // Km-gewichtete Verschleiß-Auswertung: wie viel Prozent der gefahrenen km

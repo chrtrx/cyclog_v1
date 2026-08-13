@@ -172,6 +172,34 @@ export async function addServiceLog(userId, log) {
   return data
 }
 
+// Alle Wartungen eines Nutzers über alle Räder – für den Kalender, damit
+// nicht je Rad eine eigene Abfrage nötig ist.
+export async function getAllServiceLogs(userId) {
+  const { data, error } = await supabase
+    .from('service_logs').select('id,bike_id,service_type,title,icon,service_date,km_at_service,km_ridden')
+    .eq('user_id', userId).order('service_date', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+// ── Ereignisse (Defekt, Sturz, Panne, Notiz) ───────────────
+export async function getEvents(userId) {
+  const { data, error } = await supabase
+    .from('bike_events').select('*').eq('user_id', userId).order('event_date', { ascending: false })
+  if (error) throw error
+  return data
+}
+export async function addEvent(userId, entry) {
+  const { data, error } = await supabase
+    .from('bike_events').insert({ ...entry, user_id: userId }).select().single()
+  if (error) throw error
+  return data
+}
+export async function deleteEvent(id) {
+  const { error } = await supabase.from('bike_events').delete().eq('id', id)
+  if (error) throw error
+}
+
 // ── Bike-Fit-Historie ──────────────────────────────────────
 export async function getFitHistory(bikeId) {
   const { data, error } = await supabase

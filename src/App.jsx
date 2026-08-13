@@ -17,6 +17,7 @@ const More            = lazy(() => import('./pages/More'))
 const Setups          = lazy(() => import('./pages/Setups'))
 const BikeFitArchive  = lazy(() => import('./pages/BikeFitArchive'))
 const RaceArchive     = lazy(() => import('./pages/RaceArchive'))
+const Calendar        = lazy(() => import('./pages/Calendar'))
 const Inbox           = lazy(() => import('./pages/Inbox'))
 const TyrePressureDB  = lazy(() => import('./pages/TyrePressureDB'))
 const ConnectStrava   = lazy(() => import('./pages/ConnectStrava'))
@@ -64,6 +65,7 @@ function Gate() {
           <Route path="/setups" element={<Setups />} />
           <Route path="/fit" element={<BikeFitArchive />} />
           <Route path="/races" element={<RaceArchive />} />
+          <Route path="/calendar" element={<Calendar />} />
           <Route path="/inbox" element={<Inbox />} />
           <Route path="/pressure" element={<TyrePressureDB />} />
           <Route path="/connect-strava" element={<ConnectStrava />} />
@@ -87,6 +89,7 @@ export default function App() {
     const id = setTimeout(() => {
       import('./pages/Dashboard'); import('./pages/Bikes'); import('./pages/BikeDetail')
       import('./pages/More'); import('./pages/RaceArchive'); import('./pages/Setups')
+      import('./pages/Calendar')
       import('./pages/Inbox'); import('./pages/TyrePressureDB'); import('./pages/BikeFitArchive')
     }, 1200)
     return () => clearTimeout(id)

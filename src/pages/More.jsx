@@ -63,6 +63,7 @@ export default function More() {
       : 'Erinnerung, wenn Wartung fällig ist'
 
   const items = [
+    { path:'/calendar', icon:'📅', label:'Kalender',      sub:'Wartungen, Rennen, Defekte & fällige Tracker' },
     { path:'/setups',   icon:'🔧', label:'Setups',        sub:'Konfigurationen speichern & vergleichen' },
     { path:'/races',    icon:'🏁', label:'Rennen',        sub:'Setup & Ergebnis dokumentieren' },
     { path:'/pressure', icon:'🔵', label:'Reifendruck',   sub:'Deine Druck-Erfahrungsdatenbank' },

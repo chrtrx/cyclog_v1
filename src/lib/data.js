@@ -200,6 +200,27 @@ export async function deleteEvent(id) {
   if (error) throw error
 }
 
+// ── Nutzungs-Statistik ─────────────────────────────────────
+// Bedienschritte (Seitenaufrufe u. a.) serverseitig gezaehlt.
+export async function getUsageSummary(userId, sinceIso) {
+  const { data, error } = await supabase.rpc('usage_summary', { p_user_id: userId, p_since: sinceIso })
+  if (error || !data) return []
+  return data
+}
+
+// Zaehlt Eintraege einer Tabelle seit einem Stichtag – ohne die Zeilen zu
+// laden. Liefert null, wenn die Tabelle (noch) nicht verfuegbar ist, damit die
+// Auswertung die Zeile still auslaesst statt zu scheitern.
+export async function countSince(table, userId, dateCol, sinceIso) {
+  try {
+    let q = supabase.from(table).select('id', { count: 'exact', head: true }).eq('user_id', userId)
+    if (sinceIso && dateCol) q = q.gte(dateCol, sinceIso)
+    const { count, error } = await q
+    if (error) return null
+    return count || 0
+  } catch { return null }
+}
+
 // ── Bike-Fit-Historie ──────────────────────────────────────
 export async function getFitHistory(bikeId) {
   const { data, error } = await supabase

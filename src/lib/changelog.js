@@ -5,6 +5,14 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 17,
+    date: '13.08.2026',
+    items: [
+      ['new', 'Neue Auswertung „Nutzung" (Mehr → Nutzung): zeigt, welche Funktionen du am häufigsten brauchst – Aktionen rückwirkend aus deinen Daten, Seitenaufrufe ab jetzt'],
+      ['new', 'Zeitraum wählbar: 30 Tage, 90 Tage oder gesamt; Erfassung der Seitenaufrufe jederzeit abschaltbar'],
+    ],
+  },
+  {
     v: 16,
     date: '23.07.2026',
     items: [

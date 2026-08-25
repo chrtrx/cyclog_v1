@@ -67,6 +67,7 @@ export default function More() {
     { path:'/setups',   icon:'🔧', label:'Setups',        sub:'Konfigurationen speichern & vergleichen' },
     { path:'/races',    icon:'🏁', label:'Rennen',        sub:'Setup & Ergebnis dokumentieren' },
     { path:'/pressure', icon:'🔵', label:'Reifendruck',   sub:'Deine Druck-Erfahrungsdatenbank' },
+    { path:'/usage',    icon:'📊', label:'Nutzung',       sub:'Welche Funktionen du am meisten brauchst' },
   ]
 
   return (

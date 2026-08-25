@@ -38,6 +38,7 @@ function computeIntervalSuggestions(logs) {
   }
   return out
 }
+import { track } from '../lib/track'
 import { BIKE_ICONS, fmtKm, fmtH, kmSince, hoursSince, pct, statusOf, summarizeConditions, suggestIntensity } from '../lib/helpers'
 import { Sheet, Field, BtnGreen, BtnDelete, Empty } from '../components/ui'
 import TrackerCard from '../components/TrackerCard'
@@ -224,6 +225,7 @@ export default function Dashboard() {
   }
 
   async function resolveRide(entry, choice, skipIds = []) {
+    track(choice ? 'conditions_answered' : 'conditions_skipped')
     setRideQueue(q => q.slice(1))
     try {
       if (choice) {
@@ -298,6 +300,7 @@ export default function Dashboard() {
   }, [trackers, bikes, hoursMap])
 
   async function handleSync() {
+    track('sync_manual')
     setSyncing(true)
     try { await syncStrava(user.id); const m = await load(); showToast(m || '✓ Strava synchronisiert') }
     catch (e) { showToast('⚠ ' + (e.message || 'Sync fehlgeschlagen')) }

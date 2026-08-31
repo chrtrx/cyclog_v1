@@ -5,6 +5,13 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 19,
+    date: '31.08.2026',
+    items: [
+      ['fix', 'Tablet: Schrift und Bedienelemente waren für den großen Schirm zu klein – die Oberfläche wird jetzt passend hochskaliert (iPad quer +25 %, hoch +15 %); auf dem Handy ändert sich nichts'],
+    ],
+  },
+  {
     v: 18,
     date: '13.08.2026',
     items: [

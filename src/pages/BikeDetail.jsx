@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import {
   getBike, updateBike, archiveBike,
-  getComponents, upsertComponent, deleteComponent,
+  getComponents, upsertComponent, deleteComponent, logComponentChange, buildPartDiff,
   getUpgrades, addUpgrade, updateUpgrade, deleteUpgrade,
   getServiceLogs, getFitHistory,
   PART_CATEGORIES, BIKE_TYPES,
@@ -473,7 +473,7 @@ function PartSheet({ user, bikeId, cat, part, onClose, onSaved }) {
     if (!name.trim()) return
     setSaving(true)
     try {
-      await upsertComponent(user.id, {
+      const payload = {
         ...(part ? { id: part.id } : {}),
         bike_id: bikeId,
         category: cat.id,
@@ -485,7 +485,18 @@ function PartSheet({ user, bikeId, cat, part, onClose, onSaved }) {
         link: link || null,
         specs: specs ? { details: specs } : {},
         notes: note || '',
-      })
+      }
+      const saved = await upsertComponent(user.id, payload)
+      // Verlauf mitschreiben, damit sich das gefahrene Setup je Zeitraum
+      // rekonstruieren laesst. Nur bei echten Aenderungen.
+      const changes = part ? buildPartDiff(part, payload) : []
+      if (!part || changes.length) {
+        logComponentChange(user.id, {
+          bike_id: bikeId, component_id: saved?.id || part?.id || null,
+          category: cat.id, name: payload.name,
+          action: part ? 'changed' : 'added', changes,
+        })
+      }
       onSaved()
     } catch (e) {
       alert(e.message || 'Fehler beim Speichern')
@@ -494,7 +505,13 @@ function PartSheet({ user, bikeId, cat, part, onClose, onSaved }) {
   }
 
   async function remove() {
-    if (part) await deleteComponent(part.id)
+    if (part) {
+      await deleteComponent(part.id)
+      logComponentChange(user.id, {
+        bike_id: bikeId, component_id: part.id, category: cat.id,
+        name: part.name, action: 'removed', changes: [],
+      })
+    }
     onSaved()
   }
 

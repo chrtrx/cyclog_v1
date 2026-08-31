@@ -64,9 +64,9 @@ export default function More() {
 
   const items = [
     { path:'/calendar', icon:'📅', label:'Kalender',      sub:'Wartungen, Rennen, Defekte & fällige Tracker' },
-    { path:'/setups',   icon:'🔧', label:'Setups',        sub:'Konfigurationen speichern & vergleichen' },
+    { path:'/fit',      icon:'📐', label:'Bike-Fit',      sub:'Geometrie, Sitzposition & Rad-Vergleich' },
+    { path:'/setups',   icon:'🔧', label:'Setups',        sub:'Teile-Verlauf & gespeicherte Konfigurationen' },
     { path:'/races',    icon:'🏁', label:'Rennen',        sub:'Setup & Ergebnis dokumentieren' },
-    { path:'/pressure', icon:'🔵', label:'Reifendruck',   sub:'Deine Druck-Erfahrungsdatenbank' },
     { path:'/usage',    icon:'📊', label:'Nutzung',       sub:'Welche Funktionen du am meisten brauchst' },
   ]
 
@@ -122,6 +122,15 @@ export default function More() {
           <div className="mr-sub">Design wechseln</div>
         </div>
         <div className={`theme-pill ${theme}`}>{theme === 'dark' ? 'DUNKEL' : 'HELL'}</div>
+      </button>
+
+      <button className="more-row" onClick={() => nav('/backup')}>
+        <div className="mr-icon">💾</div>
+        <div className="mr-body">
+          <div className="mr-label">Datensicherung</div>
+          <div className="mr-sub">Alle Daten als Excel-Tabelle oder Volldatei sichern</div>
+        </div>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
       </button>
 
       <button className="more-row logout" onClick={() => { if (confirm('Wirklich abmelden?')) signOut() }}>

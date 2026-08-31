@@ -273,10 +273,11 @@ function AddEntrySheet({ user, bikes, date, onClose, onSaved }) {
   const [bikeId, setBikeId] = useState(bikes[0]?.id || '')
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState('')
 
   async function save() {
     if (!title.trim() || saving) return
-    setSaving(true)
+    setSaving(true); setErr('')
     try {
       if (kind === 'race') {
         await addRace(user.id, { event_name: title.trim(), race_date: when, bike_id: bikeId || null })
@@ -296,7 +297,13 @@ function AddEntrySheet({ user, bikes, date, onClose, onSaved }) {
       onSaved(`✓ ${KINDS[kind].label} eingetragen`)
     } catch (e) {
       setSaving(false)
-      alert('Speichern fehlgeschlagen: ' + (e?.message || 'unbekannter Fehler'))
+      // Fehlt die Tabelle noch (Datenbank-Update nicht gelaufen), ist die
+      // rohe Postgres-Meldung für Anwender wertlos – daher übersetzen.
+      const raw = `${e?.code || ''} ${e?.message || ''}`
+      const missing = /42P01|PGRST205|does not exist|schema cache/i.test(raw)
+      setErr(missing
+        ? 'Ereignisse lassen sich noch nicht speichern: Das Datenbank-Update steht aus. Rennen und Wartungen kannst du bereits eintragen.'
+        : `Speichern fehlgeschlagen: ${e?.message || 'unbekannter Fehler'}`)
     }
   }
 
@@ -343,6 +350,8 @@ function AddEntrySheet({ user, bikes, date, onClose, onSaved }) {
         </>
       )}
 
+      {err && <div className="ae-err">⚠ {err}</div>}
+
       <BtnGreen onClick={save} disabled={!title.trim() || (needsBike && !bikeId) || saving}>
         {saving ? 'Speichert…' : 'Speichern'}
       </BtnGreen>
@@ -357,6 +366,7 @@ function AddEntrySheet({ user, bikes, date, onClose, onSaved }) {
         .ae-bike.on { background:rgba(47,123,255,.12); border-color:var(--acc); color:var(--acc); }
         .ae-note { width:100%; background:var(--panel2); border:1px solid var(--line); color:var(--ink1); font-family:var(--mono); font-size:12.5px; padding:11px; margin-bottom:16px; resize:vertical; }
         .ae-note:focus { outline:none; border-color:var(--acc); }
+        .ae-err { border:1px solid rgba(224,86,110,.45); background:rgba(224,86,110,.08); color:var(--ink2); font-family:var(--mono); font-size:11.5px; line-height:1.55; padding:10px 12px; margin-bottom:12px; }
       `}</style>
     </Sheet>
   )

@@ -5,6 +5,24 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 18,
+    date: '13.08.2026',
+    items: [
+      ['new', 'Setups zeigen jetzt automatisch deine verbauten Teile – inklusive Verlauf: Du siehst, welchen Reifen oder Lenker du in welchem Zeitraum gefahren bist'],
+      ['new', 'Datensicherung (Mehr → Datensicherung): alle Daten als Excel-Tabelle oder Volldatei sichern'],
+      ['change', '„Fit" ist von der unteren Leiste nach Mehr → Werkzeuge umgezogen; die Leiste hat jetzt drei klare Bereiche'],
+      ['fix', 'Tablet im Querformat: Inhalt nutzt die Breite besser, Kopfzeilen sind flacher, Navigationsleiste und Seite laufen nicht mehr auseinander'],
+    ],
+  },
+  {
+    v: 17,
+    date: '13.08.2026',
+    items: [
+      ['new', 'Neue Auswertung „Nutzung" (Mehr → Nutzung): zeigt, welche Funktionen du am häufigsten brauchst – Aktionen rückwirkend aus deinen Daten, Seitenaufrufe ab jetzt'],
+      ['new', 'Zeitraum wählbar: 30 Tage, 90 Tage oder gesamt; Erfassung der Seitenaufrufe jederzeit abschaltbar'],
+    ],
+  },
+  {
     v: 16,
     date: '23.07.2026',
     items: [

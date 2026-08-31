@@ -200,6 +200,72 @@ export async function deleteEvent(id) {
   if (error) throw error
 }
 
+
+// ── Teile-Verlauf (automatische Setups) ────────────────────
+// Welche Felder eines Teils fuer den Verlauf interessant sind – Notizen und
+// Links bewusst nicht, die sagen ueber das gefahrene Setup nichts aus.
+const PART_FIELDS = [
+  ['name', 'Name'], ['manufacturer', 'Hersteller'], ['model', 'Modell'],
+  ['weight_g', 'Gewicht'], ['price_eur', 'Preis'],
+]
+
+function fmtPartValue(key, v) {
+  if (v == null || v === '') return '—'
+  if (key === 'weight_g') return `${v} g`
+  if (key === 'price_eur') return `${v} €`
+  return String(v)
+}
+
+// Vergleicht alten und neuen Stand eines Teils und liefert die Aenderungen.
+export function buildPartDiff(prev, next) {
+  const out = []
+  for (const [key, label] of PART_FIELDS) {
+    const a = prev?.[key] ?? null
+    const b = next?.[key] ?? null
+    if (String(a ?? '') === String(b ?? '')) continue
+    out.push({ field: key, label, from: fmtPartValue(key, a), to: fmtPartValue(key, b) })
+  }
+  return out
+}
+
+export async function logComponentChange(userId, entry) {
+  try {
+    const summary = entry.action === 'added' ? `${entry.name} eingebaut`
+      : entry.action === 'removed' ? `${entry.name} ausgebaut`
+      : (entry.changes || []).map(c => `${c.label} ${c.from} → ${c.to}`).join(' · ')
+    await supabase.from('component_history').insert({ ...entry, user_id: userId, summary })
+  } catch { /* Verlauf ist Zusatz – darf das Speichern des Teils nie verhindern */ }
+}
+
+export async function getComponentHistory(bikeId) {
+  const { data, error } = await supabase
+    .from('component_history').select('*').eq('bike_id', bikeId)
+    .order('changed_at', { ascending: false })
+  if (error) return []
+  return data
+}
+
+// ── Nutzungs-Statistik ─────────────────────────────────────
+// Bedienschritte (Seitenaufrufe u. a.) serverseitig gezaehlt.
+export async function getUsageSummary(userId, sinceIso) {
+  const { data, error } = await supabase.rpc('usage_summary', { p_user_id: userId, p_since: sinceIso })
+  if (error || !data) return []
+  return data
+}
+
+// Zaehlt Eintraege einer Tabelle seit einem Stichtag – ohne die Zeilen zu
+// laden. Liefert null, wenn die Tabelle (noch) nicht verfuegbar ist, damit die
+// Auswertung die Zeile still auslaesst statt zu scheitern.
+export async function countSince(table, userId, dateCol, sinceIso) {
+  try {
+    let q = supabase.from(table).select('id', { count: 'exact', head: true }).eq('user_id', userId)
+    if (sinceIso && dateCol) q = q.gte(dateCol, sinceIso)
+    const { count, error } = await q
+    if (error) return null
+    return count || 0
+  } catch { return null }
+}
+
 // ── Bike-Fit-Historie ──────────────────────────────────────
 export async function getFitHistory(bikeId) {
   const { data, error } = await supabase

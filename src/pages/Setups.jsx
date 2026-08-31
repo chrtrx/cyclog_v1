@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../lib/auth'
-import { getSetups, addSetup, deleteSetup, getBikes } from '../lib/data'
+import { getSetups, addSetup, deleteSetup, getBikes, getComponents, getComponentHistory, PART_CATEGORIES } from '../lib/data'
 import { Page, AddButton, Sheet, Field, BtnGreen, BtnDelete, Empty } from '../components/ui'
 
 export default function Setups() {
@@ -36,12 +36,16 @@ export default function Setups() {
   return (
     <Page
       title="Setups"
-      subtitle="Komplette Bike-Konfigurationen speichern & vergleichen"
+      subtitle="Teile-Verlauf & gespeicherte Konfigurationen"
       action={<AddButton onClick={() => setShowAdd(true)} />}
     >
+      {loading ? null : <PartsTimeline bikes={bikes} />}
+
+      {loading ? null : <div className="sec-title">Gespeicherte Setups</div>}
+
       {loading ? null : setups.length === 0 ? (
         <Empty emoji="🔧" title="Noch keine Setups"
-          sub="Speichere komplette Konfigurationen wie 'Race Setup Frühjahr 2025'." />
+          sub="Momentaufnahmen mit eigenem Namen, z.B. 'Race Setup Frühjahr'. Deine Teile werden oben ohnehin automatisch mitgeschrieben." />
       ) : (
         <>
           {compare.length === 2 && (
@@ -177,5 +181,140 @@ function AddSetupSheet({ user, bikes, onClose, onSaved }) {
         .select-x { width: 100%; background: var(--bg); border: 2px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 15px; font-weight: 600; color: var(--t1); outline: none; font-family: 'Nunito Sans', sans-serif; }
       `}</style>
     </Sheet>
+  )
+}
+
+// ─── Automatischer Teile-Verlauf ───────────────────────────
+// Beantwortet die Frage, die ein manuell gepflegtes Setup nie beantworten
+// kann: "Welchen Reifen bin ich von April bis Juni gefahren?" Grundlage sind
+// die Teile des Rads plus deren Aenderungs-Verlauf (Migration 024).
+const fmtDay = (d) => d
+  ? new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })
+  : null
+
+function PartsTimeline({ bikes }) {
+  const [bikeId, setBikeId] = useState(bikes[0]?.id || null)
+  const [parts, setParts] = useState([])
+  const [hist, setHist] = useState([])
+  const [busy, setBusy] = useState(true)
+
+  useEffect(() => {
+    if (!bikeId) { setBusy(false); return }
+    setBusy(true)
+    Promise.all([getComponents(bikeId).catch(() => []), getComponentHistory(bikeId).catch(() => [])])
+      .then(([c, h]) => { setParts(c); setHist(h) })
+      .finally(() => setBusy(false))
+  }, [bikeId])
+
+  if (!bikes.length) return null
+
+  // Einbaudatum eines aktuellen Teils: fruehester "added"-Eintrag, sonst das
+  // Anlegedatum des Teils (fuer alles, was es vor dem Verlauf schon gab).
+  const addedAt = (p) => {
+    const rows = hist.filter(h => h.component_id === p.id && h.action === 'added')
+    return rows.length ? rows[rows.length - 1].changed_at : p.created_at
+  }
+
+  // Ausgebaute Teile mit Zeitraum – das eigentliche "von … bis".
+  const removed = hist.filter(h => h.action === 'removed').map(h => {
+    const add = hist.find(x => x.component_id === h.component_id && x.action === 'added'
+      && new Date(x.changed_at) <= new Date(h.changed_at))
+    return { ...h, from: add?.changed_at || null, to: h.changed_at }
+  })
+  const changes = hist.filter(h => h.action === 'changed')
+
+  return (
+    <>
+      <div className="sec-title">Aus deinen Teilen</div>
+
+      {bikes.length > 1 && (
+        <div className="pt-bikes">
+          {bikes.map(b => (
+            <button key={b.id} className={`pt-bike ${b.id === bikeId ? 'on' : ''}`} onClick={() => setBikeId(b.id)}>
+              {b.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {busy ? null : parts.length === 0 && !hist.length ? (
+        <div className="pt-empty">
+          Für dieses Rad sind noch keine Teile eingetragen. Trage sie unter <b>Räder → Teile</b> ein –
+          sie erscheinen dann hier automatisch als Setup, samt Verlauf bei jeder Änderung.
+        </div>
+      ) : (
+        <>
+          <div className="pt-block">
+            <div className="pt-hdr">Aktuell verbaut</div>
+            {PART_CATEGORIES.map(cat => {
+              const list = parts.filter(p => p.category === cat.id)
+              if (!list.length) return null
+              return (
+                <div key={cat.id} className="pt-cat">
+                  <div className="pt-cat-t">{cat.icon} {cat.label}</div>
+                  {list.map(p => (
+                    <div key={p.id} className="pt-row">
+                      <span className="pt-name">
+                        {p.name}
+                        {(p.manufacturer || p.model) && (
+                          <span className="pt-sub">{[p.manufacturer, p.model].filter(Boolean).join(' ')}</span>
+                        )}
+                      </span>
+                      <span className="pt-since">{addedAt(p) ? `seit ${fmtDay(addedAt(p))}` : '—'}</span>
+                    </div>
+                  ))}
+                </div>
+              )
+            })}
+          </div>
+
+          {(removed.length > 0 || changes.length > 0) && (
+            <div className="pt-block">
+              <div className="pt-hdr">Verlauf</div>
+              {removed.map(r => (
+                <div key={r.id} className="pt-row">
+                  <span className="pt-name">
+                    {r.name}
+                    <span className="pt-sub">ausgebaut</span>
+                  </span>
+                  <span className="pt-period">
+                    {r.from ? `${fmtDay(r.from)} – ${fmtDay(r.to)}` : `bis ${fmtDay(r.to)}`}
+                  </span>
+                </div>
+              ))}
+              {changes.map(c => (
+                <div key={c.id} className="pt-row">
+                  <span className="pt-name">
+                    {c.name}
+                    {c.summary && <span className="pt-sub">{c.summary}</span>}
+                  </span>
+                  <span className="pt-since">{fmtDay(c.changed_at)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      <style>{`
+        .sec-title { font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink3); margin:22px 2px 10px; }
+        .sec-title:first-of-type { margin-top:2px; }
+        .pt-bikes { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+        .pt-bike { background:var(--panel2); border:1px solid var(--line); color:var(--ink2); font-family:var(--mono); font-size:11.5px; font-weight:700; padding:8px 11px; }
+        .pt-bike.on { background:rgba(47,123,255,.12); border-color:var(--acc); color:var(--acc); }
+        .pt-empty { border:1px dashed var(--line); padding:16px; font-family:var(--mono); font-size:11.5px; color:var(--ink3); line-height:1.7; }
+        .pt-empty b { color:var(--ink2); }
+        .pt-block { border:1px solid var(--line); padding:13px 14px 6px; margin-bottom:10px; }
+        .pt-hdr { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--acc); margin-bottom:10px; }
+        .pt-cat { margin-bottom:12px; }
+        .pt-cat-t { font-family:var(--mono); font-size:11px; font-weight:700; color:var(--ink3); letter-spacing:.5px; margin-bottom:6px; }
+        .pt-row { display:flex; align-items:flex-start; gap:10px; padding:7px 0; border-top:1px solid var(--line); }
+        .pt-cat .pt-row:first-of-type { border-top:none; }
+        .pt-name { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; font-family:var(--sans); font-size:13px; font-weight:800; color:var(--ink1); letter-spacing:.2px; }
+        .pt-sub { font-family:var(--mono); font-size:10.5px; font-weight:400; color:var(--ink3); line-height:1.4; }
+        .pt-since, .pt-period { flex-shrink:0; font-family:var(--mono); font-size:10.5px; color:var(--ink2); white-space:nowrap; padding-top:2px; }
+        .pt-period { color:var(--warn); }
+      `}</style>
+    </>
   )
 }

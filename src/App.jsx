@@ -1,11 +1,12 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/auth'
 import NavBar from './components/NavBar'
 import InstallHint from './components/InstallHint'
 import ForegroundToast from './components/ForegroundToast'
 import UpdatePrompt from './components/UpdatePrompt'
 import WhatsNew from './components/WhatsNew'
+import { initTracking, track } from './lib/track'
 
 // Seiten erst bei Bedarf laden → kleinerer Start, flüssigeres Öffnen.
 const Login           = lazy(() => import('./pages/Login'))
@@ -18,6 +19,8 @@ const Setups          = lazy(() => import('./pages/Setups'))
 const BikeFitArchive  = lazy(() => import('./pages/BikeFitArchive'))
 const RaceArchive     = lazy(() => import('./pages/RaceArchive'))
 const Calendar        = lazy(() => import('./pages/Calendar'))
+const Usage           = lazy(() => import('./pages/Usage'))
+const Backup          = lazy(() => import('./pages/Backup'))
 const Inbox           = lazy(() => import('./pages/Inbox'))
 const TyrePressureDB  = lazy(() => import('./pages/TyrePressureDB'))
 const ConnectStrava   = lazy(() => import('./pages/ConnectStrava'))
@@ -39,8 +42,18 @@ function Loader() {
   )
 }
 
+// Haelt fest, welche Seiten geoeffnet werden – die Grundlage der
+// Nutzungs-Auswertung unter „Mehr → Nutzung". Rendert nichts.
+function RouteTracker() {
+  const loc = useLocation()
+  useEffect(() => { track('page', { path: loc.pathname }) }, [loc.pathname])
+  return null
+}
+
 function Gate() {
   const { user, loading, recovery, clearRecovery } = useAuth()
+  // Muss vor dem fruehen return stehen, sonst aendert sich die Hook-Reihenfolge.
+  useEffect(() => { if (user) initTracking(user.id) }, [user])
   if (loading) return <Loader />
 
   let content
@@ -66,11 +79,14 @@ function Gate() {
           <Route path="/fit" element={<BikeFitArchive />} />
           <Route path="/races" element={<RaceArchive />} />
           <Route path="/calendar" element={<Calendar />} />
+          <Route path="/usage" element={<Usage />} />
+          <Route path="/backup" element={<Backup />} />
           <Route path="/inbox" element={<Inbox />} />
           <Route path="/pressure" element={<TyrePressureDB />} />
           <Route path="/connect-strava" element={<ConnectStrava />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <RouteTracker />
         <NavBar />
         <InstallHint />
         <ForegroundToast />
@@ -89,7 +105,7 @@ export default function App() {
     const id = setTimeout(() => {
       import('./pages/Dashboard'); import('./pages/Bikes'); import('./pages/BikeDetail')
       import('./pages/More'); import('./pages/RaceArchive'); import('./pages/Setups')
-      import('./pages/Calendar')
+      import('./pages/Calendar'); import('./pages/Usage'); import('./pages/Backup')
       import('./pages/Inbox'); import('./pages/TyrePressureDB'); import('./pages/BikeFitArchive')
     }, 1200)
     return () => clearTimeout(id)

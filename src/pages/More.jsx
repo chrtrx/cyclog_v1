@@ -65,7 +65,7 @@ export default function More() {
   const items = [
     { path:'/calendar', icon:'📅', label:'Kalender',      sub:'Wartungen, Rennen, Defekte & fällige Tracker' },
     { path:'/fit',      icon:'📐', label:'Bike-Fit',      sub:'Geometrie, Sitzposition & Rad-Vergleich' },
-    { path:'/setups',   icon:'🔧', label:'Setups',        sub:'Teile-Verlauf & gespeicherte Konfigurationen' },
+    { path:'/setups',   icon:'🔧', label:'Setups',        sub:'Verbaute Teile & was sich geändert hat' },
     { path:'/races',    icon:'🏁', label:'Rennen',        sub:'Setup & Ergebnis dokumentieren' },
     { path:'/usage',    icon:'📊', label:'Nutzung',       sub:'Welche Funktionen du am meisten brauchst' },
   ]

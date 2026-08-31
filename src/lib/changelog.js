@@ -8,7 +8,7 @@ export const CHANGELOG = [
     v: 18,
     date: '13.08.2026',
     items: [
-      ['new', 'Setups zeigen jetzt automatisch deine verbauten Teile – inklusive Verlauf: Du siehst, welchen Reifen oder Lenker du in welchem Zeitraum gefahren bist'],
+      ['change', 'Setups komplett vereinfacht: zeigt nur noch die verbauten Teile deines Rads und darunter, was sich wann geändert hat (inkl. Zeitraum bei ausgebauten Teilen). Vergleich und von Hand angelegte Setups sind entfallen'],
       ['new', 'Datensicherung (Mehr → Datensicherung): alle Daten als Excel-Tabelle oder Volldatei sichern'],
       ['change', '„Fit" ist von der unteren Leiste nach Mehr → Werkzeuge umgezogen; die Leiste hat jetzt drei klare Bereiche'],
       ['fix', 'Tablet im Querformat: Inhalt nutzt die Breite besser, Kopfzeilen sind flacher, Navigationsleiste und Seite laufen nicht mehr auseinander'],

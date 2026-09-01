@@ -47,7 +47,7 @@ export default function UpdatePrompt() {
         @keyframes updDrop { from { transform: translate(-50%, -120%); } to { transform: translate(-50%, 0); } }
         .upd-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--acc); flex-shrink: 0; }
         .upd-txt { flex: 1; font-family: var(--sans); font-size: 14px; font-weight: 800; letter-spacing: .3px; color: var(--ink1); }
-        .upd-btn { flex-shrink: 0; background: var(--acc); color: #fff; border: none; border-radius: 8px; padding: 8px 14px; font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
+        .upd-btn { flex-shrink: 0; background: var(--acc); color: var(--on-acc); border: none; border-radius: 8px; padding: 8px 14px; font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
       `}</style>
     </div>
   )

@@ -86,7 +86,7 @@ export default function Backup() {
         .bk-row.total .bk-lbl, .bk-row.total .bk-n { color:var(--acc); }
         .bk-btn { width:100%; display:flex; flex-direction:column; align-items:flex-start; gap:3px; background:var(--panel2); border:1px solid var(--line); color:var(--ink1); font-family:var(--sans); font-size:14px; font-weight:800; letter-spacing:.3px; padding:14px; margin-bottom:10px; text-align:left; }
         .bk-btn small { font-family:var(--mono); font-size:10.5px; font-weight:400; color:var(--ink3); letter-spacing:.3px; }
-        .bk-btn.primary { border-color:var(--acc); background:rgba(47,123,255,.10); }
+        .bk-btn.primary { border-color:var(--acc); background:color-mix(in srgb, var(--acc) 10%, transparent); }
         .bk-msg { margin-top:4px; font-family:var(--mono); font-size:11.5px; color:var(--ink2); padding:10px 12px; border:1px solid var(--line); }
         .bk-hint { margin-top:14px; font-family:var(--mono); font-size:10.5px; color:var(--ink3); line-height:1.6; }
       `}</style>

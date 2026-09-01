@@ -6,6 +6,14 @@ import { getTheme, setTheme } from '../lib/theme'
 import { getPushState, enablePush, disablePush, sendTestPush } from '../lib/push'
 import { getProfile, updateProfile } from '../lib/data'
 
+// Blau ist der Ausgangszustand; „Schwarz-Weiß" nimmt die Farbe überall
+// heraus, wo sie nur dekoriert – Marke und Zustandsbalken bleiben farbig.
+const THEMES = [
+  ['dark',  'Blau',         'Dunkelblaue Standard-Darstellung'],
+  ['mono',  'Schwarz-Weiß', 'Einfarbig, roter Schriftzug, farbige Balken'],
+  ['light', 'Hell',         'Helle Darstellung'],
+]
+
 export default function More() {
   const nav = useNavigate()
   const { user, signOut } = useAuth()
@@ -23,8 +31,7 @@ export default function More() {
     catch (e) { setEveryRide(!next); alert('Konnte Einstellung nicht speichern.') }
   }
 
-  function toggleTheme() {
-    const next = theme === 'dark' ? 'light' : 'dark'
+  function pickTheme(next) {
     setTheme(next)
     setThemeState(next)
   }
@@ -115,14 +122,18 @@ export default function More() {
         </button>
       )}
 
-      <button className="more-row" onClick={toggleTheme}>
-        <div className="mr-icon">{theme === 'dark' ? '☀️' : '🌙'}</div>
+      <div className="more-row theme-row">
+        <div className="mr-icon">🎨</div>
         <div className="mr-body">
-          <div className="mr-label">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</div>
-          <div className="mr-sub">Design wechseln</div>
+          <div className="mr-label">Darstellung</div>
+          <div className="th-opts">
+            {THEMES.map(([id, label, hint]) => (
+              <button key={id} className={`th-opt ${theme === id ? 'on' : ''}`}
+                onClick={() => pickTheme(id)} title={hint}>{label}</button>
+            ))}
+          </div>
         </div>
-        <div className={`theme-pill ${theme}`}>{theme === 'dark' ? 'DUNKEL' : 'HELL'}</div>
-      </button>
+      </div>
 
       <button className="more-row" onClick={() => nav('/backup')}>
         <div className="mr-icon">💾</div>
@@ -152,12 +163,13 @@ export default function More() {
         .mr-sub { font-family:var(--mono); font-size:10.5px; color:var(--ink3); letter-spacing:.5px; margin-top:3px; }
         .more-row.logout { margin-top:20px; }
         .more-row.logout .mr-label { color:var(--crit); }
-        .theme-pill { font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;padding:4px 9px;border:1px solid var(--line);color:var(--ink3); }
-        .theme-pill.dark { border-color:rgba(47,123,255,.3);color:var(--acc); }
-        .theme-pill.light { border-color:rgba(180,140,0,.3);color:var(--warn); }
+        .theme-row { cursor:default; }
+        .th-opts { display:flex; gap:6px; margin-top:8px; }
+        .th-opt { flex:1; background:var(--panel2); border:1px solid var(--line); color:var(--ink2); font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.3px; padding:9px 6px; }
+        .th-opt.on { background:color-mix(in srgb, var(--acc) 12%, transparent); border-color:var(--acc); color:var(--acc); }
         .push-pill { font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;padding:4px 9px;border:1px solid var(--line);color:var(--ink3);flex-shrink:0; }
-        .push-pill.on { border-color:rgba(52,199,154,.4);color:var(--ok); }
-        .push-pill.denied, .push-pill.unsupported { border-color:rgba(224,86,110,.3);color:var(--crit); }
+        .push-pill.on { border-color:color-mix(in srgb, var(--ok) 40%, transparent);color:var(--ok); }
+        .push-pill.denied, .push-pill.unsupported { border-color:color-mix(in srgb, var(--crit) 30%, transparent);color:var(--crit); }
       `}</style>
     </Page>
   )

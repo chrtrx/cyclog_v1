@@ -564,7 +564,7 @@ export default function Dashboard() {
           <style>{`
             .dup-msg { font-family:var(--mono); font-size:13px; color:var(--ink2); line-height:1.6; margin-bottom:16px; padding:0 2px; }
             .dup-msg b { color:var(--ink1); }
-            .dup-yes { width:100%; font-family:var(--sans); font-weight:800; font-size:14px; letter-spacing:.5px; text-transform:uppercase; color:#fff; background:var(--acc); border:none; padding:14px; margin-bottom:10px; }
+            .dup-yes { width:100%; font-family:var(--sans); font-weight:800; font-size:14px; letter-spacing:.5px; text-transform:uppercase; color: var(--on-acc); background:var(--acc); border:none; padding:14px; margin-bottom:10px; }
             .dup-yes:active { background:var(--acc-d); }
             .dup-no { width:100%; font-family:var(--mono); font-weight:700; font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--ink2); background:var(--panel2); border:1px solid var(--line); padding:13px; }
           `}</style>
@@ -617,8 +617,8 @@ export default function Dashboard() {
             .due-opt { display:flex; align-items:center; gap:13px; width:100%; background:var(--panel2); border:1px solid var(--line); padding:14px; margin-bottom:8px; text-align:left; transition:border-color .12s; }
             .due-opt:active { border-color:var(--acc); }
             .due-ico { width:34px; height:34px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:16px; border:1px solid var(--line); }
-            .due-done .due-ico { color:var(--ok); border-color:rgba(52,199,154,.4); }
-            .due-extend .due-ico { color:var(--acc); border-color:rgba(47,123,255,.4); }
+            .due-done .due-ico { color:var(--ok); border-color:color-mix(in srgb, var(--ok) 40%, transparent); }
+            .due-extend .due-ico { color:var(--acc); border-color:color-mix(in srgb, var(--acc) 40%, transparent); }
             .due-later .due-ico { color:var(--ink3); }
             .due-txt { display:flex; flex-direction:column; gap:2px; }
             .due-txt b { font-family:var(--sans); font-size:14px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--ink1); }
@@ -772,7 +772,7 @@ function LogSheet({ bike, customTypes = [], onAdd, onCreateCustom, onDeleteCusto
         .svc-del { flex-shrink: 0; background: none; border: none; color: var(--ink3); font-size: 14px; padding: 4px 6px; }
         .svc-row-wrap { margin-bottom: 6px; }
         .svc-row-wrap .svc-row { margin-bottom: 0; }
-        .svc-chip { display: block; width: 100%; text-align: left; padding: 8px 13px; background: rgba(47,123,255,.08); border: 1px solid rgba(47,123,255,.3); border-top: none; color: var(--acc); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .2px; }
+        .svc-chip { display: block; width: 100%; text-align: left; padding: 8px 13px; background: color-mix(in srgb, var(--acc) 8%, transparent); border: 1px solid color-mix(in srgb, var(--acc) 30%, transparent); border-top: none; color: var(--acc); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .2px; }
         .svc-create { width: 100%; padding: 12px; background: var(--panel); border: 1px dashed var(--line); color: var(--acc); font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; margin-top: 2px; }
         .svc-sec { margin-bottom: 12px; }
         .svc-sec-lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; padding: 0 2px; }
@@ -821,10 +821,10 @@ function CustomTypeSheet({ onSave, onClose }) {
       <style>{`
         .ct-icons { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-bottom: 16px; }
         .ct-emoji { aspect-ratio: 1; font-size: 20px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-        .ct-emoji.on { border-color: var(--acc); background: rgba(47,123,255,.12); }
+        .ct-emoji.on { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 12%, transparent); }
         .ct-type { display: flex; gap: 6px; margin-bottom: 14px; }
         .ct-type-opt { flex: 1; padding: 11px 6px; background: var(--panel2); border: 1px solid var(--line); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--ink2); }
-        .ct-type-opt.on { background: var(--acc); border-color: var(--acc); color: #fff; }
+        .ct-type-opt.on { background: var(--acc); border-color: var(--acc); color: var(--on-acc); }
       `}</style>
     </Sheet>
   )
@@ -870,9 +870,9 @@ function RideConditionSheet({ entry, onSave, onSkip }) {
   }, [entry.bikeId])
 
   const sugMeta = sug && {
-    easy:  ['🟢', 'Locker erkannt', 'var(--ok)',   'rgba(52,199,154,.45)',  'rgba(52,199,154,.07)'],
-    mixed: ['🟡', 'Mittel erkannt', 'var(--warn)', 'rgba(224,168,77,.45)',  'rgba(224,168,77,.07)'],
-    hard:  ['🔴', 'Hart erkannt',   'var(--crit)', 'rgba(224,86,110,.45)',  'rgba(224,86,110,.07)'],
+    easy:  ['🟢', 'Locker erkannt', 'var(--ok)',   'color-mix(in srgb, var(--ok) 45%, transparent)',  'color-mix(in srgb, var(--ok) 7%, transparent)'],
+    mixed: ['🟡', 'Mittel erkannt', 'var(--warn)', 'color-mix(in srgb, var(--warn) 45%, transparent)',  'color-mix(in srgb, var(--warn) 7%, transparent)'],
+    hard:  ['🔴', 'Hart erkannt',   'var(--crit)', 'color-mix(in srgb, var(--crit) 45%, transparent)',  'color-mix(in srgb, var(--crit) 7%, transparent)'],
   }[sug.intensity]
 
   const confirmMode = sug && intensity === sug.intensity
@@ -920,7 +920,7 @@ function RideConditionSheet({ entry, onSave, onSkip }) {
         .rc-lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink3); margin-bottom: 8px; }
         .rc-opts { display: flex; gap: 6px; }
         .rc-opt { flex: 1; padding: 12px 6px; background: var(--panel2); border: 1px solid var(--line); font-family: var(--sans); font-size: 12.5px; font-weight: 700; color: var(--ink2); }
-        .rc-opt.on { background: rgba(47,123,255,.12); border-color: var(--acc); color: var(--acc); }
+        .rc-opt.on { background: color-mix(in srgb, var(--acc) 12%, transparent); border-color: var(--acc); color: var(--acc); }
         .rc-skip { width: 100%; padding: 12px; background: none; border: none; color: var(--ink3); font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
       `}</style>
     </Sheet>
@@ -963,7 +963,7 @@ function AddBikeSheet({ user, onClose, onSaved }) {
         .lblx { display:block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px; }
         .type-grid { display:flex;gap:6px;flex-wrap:wrap; }
         .type-opt { padding:9px 14px;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.5px;background:var(--panel2);border:1px solid var(--line);color:var(--ink2); }
-        .type-opt.on { background:var(--acc);border-color:var(--acc);color:white; }
+        .type-opt.on { background:var(--acc);border-color:var(--acc);color: var(--on-acc); }
         .g2 { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
       `}</style>
     </Sheet>
@@ -1061,12 +1061,12 @@ function EditTrackerSheet({ tracker, bikeKm, bikeHours, onDone, onSave, onDelete
       <BtnDelete armed={armed} onClick={() => armed ? onDelete() : (setArmed(true), setTimeout(() => setArmed(false), 3000))} />
       <style>{`
         .ib { margin-bottom: 11px; background: var(--panel2); border: 1px solid var(--line); padding: 15px; }
-        .et-done { display:flex; flex-direction:column; align-items:flex-start; gap:3px; width:100%; text-align:left; background:rgba(52,199,154,.08); border:1px solid rgba(52,199,154,.4); color:var(--ok); padding:13px 14px; margin-bottom:16px; font-family:var(--sans); font-size:14px; font-weight:800; letter-spacing:.5px; }
+        .et-done { display:flex; flex-direction:column; align-items:flex-start; gap:3px; width:100%; text-align:left; background:color-mix(in srgb, var(--ok) 8%, transparent); border:1px solid color-mix(in srgb, var(--ok) 40%, transparent); color:var(--ok); padding:13px 14px; margin-bottom:16px; font-family:var(--sans); font-size:14px; font-weight:800; letter-spacing:.5px; }
         .et-done small { font-family:var(--mono); font-size:10.5px; font-weight:400; color:var(--ink3); letter-spacing:.3px; }
         .ib-lbl { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 9px; }
         .mode-row { display: flex; gap: 6px; }
         .mode-btn { flex: 1; padding: 9px; font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: var(--panel); border: 1px solid var(--line); color: var(--ink2); }
-        .mode-btn.on { background: var(--acc); border-color: var(--acc); color: white; }
+        .mode-btn.on { background: var(--acc); border-color: var(--acc); color: var(--on-acc); }
         .ib-edit { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-top: 10px; }
         .ib-num { background: none; border: none; outline: none; font-family: var(--sans); font-size: 34px; font-weight: 900; letter-spacing: -1px; color: var(--ink1); width: 100%; padding: 0; }
         .ib-num::-webkit-outer-spin-button, .ib-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -1094,7 +1094,7 @@ function DashStyles() {
     .logo { display:flex;align-items:center;gap:10px; }
     .logo-icon { width:36px;height:36px;overflow:hidden;box-shadow:0 4px 12px rgba(34,211,238,.3); }
     .logo-icon svg { width:100%;height:100%;display:block; }
-    .logo-text { color:var(--ink1);display:flex;align-items:center; }
+    .logo-text { color:var(--brand);display:flex;align-items:center; }
     .hdr-right { display:flex;align-items:center;gap:12px; }
     .streak { font-family:var(--mono);font-weight:700;font-size:14px;color:var(--warn); }
     .bell-btn { position:relative;background:var(--panel2);border:1px solid var(--line);color:var(--ink2);padding:8px;display:flex; }
@@ -1115,18 +1115,18 @@ function DashStyles() {
     .status-banner { display:flex;gap:8px;margin-bottom:14px; }
     .sb-item { flex:1;padding:12px;font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;gap:7px;justify-content:center;border:1px solid;cursor:pointer; }
     button.sb-item { font-family:var(--mono); }
-    .sb-item.crit { background:rgba(224,86,110,.08);color:var(--crit);border-color:rgba(224,86,110,.35); }
-    .sb-item.warn { background:rgba(224,168,77,.08);color:var(--warn);border-color:rgba(224,168,77,.35); }
+    .sb-item.crit { background:color-mix(in srgb, var(--crit) 8%, transparent);color:var(--crit);border-color:color-mix(in srgb, var(--crit) 35%, transparent); }
+    .sb-item.warn { background:color-mix(in srgb, var(--warn) 8%, transparent);color:var(--warn);border-color:color-mix(in srgb, var(--warn) 35%, transparent); }
     .sb-num { font-family:var(--sans);font-size:18px;font-weight:900; }
     .bike-chips { display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px; }
     .bchip { flex-shrink:0;padding:9px 15px;background:var(--panel);border:1px solid var(--line);font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.5px;color:var(--ink2);white-space:nowrap; }
-    .bchip.on { background:var(--acc);border-color:var(--acc);color:#fff; }
+    .bchip.on { background:var(--acc);border-color:var(--acc);color: var(--on-acc); }
     .bchip.add { font-size:16px;padding:9px 16px;color:var(--ink3); }
     .bike-hero { position:relative;background:linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.02));border:1px solid var(--line);padding:20px;margin-bottom:16px;cursor:pointer;overflow:hidden;clip-path:polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%); }
     .bike-hero::before { content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:22px 22px; }
     .bike-hero:active { background:rgba(255,255,255,.02); }
     .bh-top { display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;position:relative; }
-    .bh-type { background:rgba(47,123,255,.10);color:var(--acc);font-family:var(--mono);font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;padding:3px 10px;border:1px solid rgba(47,123,255,.35); }
+    .bh-type { background:color-mix(in srgb, var(--acc) 10%, transparent);color:var(--acc);font-family:var(--mono);font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;padding:3px 10px;border:1px solid color-mix(in srgb, var(--acc) 35%, transparent); }
     .bh-detail { font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--acc-soft); }
     .bh-name { font-family:var(--sans);font-size:24px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;color:var(--ink1);position:relative; }
     .bh-km-row { display:flex;align-items:flex-end;gap:7px;position:relative; }
@@ -1146,19 +1146,19 @@ function DashStyles() {
     .bh-seg-warn { background:var(--warn); }
     .bh-seg-crit { background:var(--crit); }
     .sec-hdr { display:flex;align-items:center;gap:10px;margin-bottom:12px; }
-    .sec-icon { width:28px;height:28px;background:rgba(52,199,154,.10);border:1px solid rgba(52,199,154,.3);display:flex;align-items:center;justify-content:center;font-size:14px; }
+    .sec-icon { width:28px;height:28px;background:color-mix(in srgb, var(--ok) 10%, transparent);border:1px solid color-mix(in srgb, var(--ok) 30%, transparent);display:flex;align-items:center;justify-content:center;font-size:14px; }
     .sec-title { font-family:var(--sans);font-size:15px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--ink1); }
     .sec-spacer { flex:1; }
     .sec-count { font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3); }
-    .sec-action { display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--acc);background:rgba(47,123,255,.1);border:1px solid rgba(47,123,255,.35);padding:7px 12px;cursor:pointer; }
+    .sec-action { display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--acc);background:color-mix(in srgb, var(--acc) 10%, transparent);border:1px solid color-mix(in srgb, var(--acc) 35%, transparent);padding:7px 12px;cursor:pointer; }
     .sec-action svg { width:14px;height:14px; }
-    .sec-action:active { background:rgba(47,123,255,.2); }
+    .sec-action:active { background:color-mix(in srgb, var(--acc) 20%, transparent); }
     .empty-actions { display:flex;flex-direction:column;gap:8px;margin-top:16px; }
-    .ea-green { background:var(--acc);color:white;border:none;padding:14px;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase; }
+    .ea-green { background:var(--acc);color: var(--on-acc);border:none;padding:14px;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase; }
     .ea-strava { background:var(--strava);color:white;border:none;padding:14px;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase; }
     .toast { position:fixed;bottom:140px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--acc);color:var(--ink1);padding:11px 22px;font-family:var(--mono);font-weight:500;font-size:13px;letter-spacing:.5px;z-index:1000; }
     .toast-undo { display:flex;align-items:center;gap:16px;padding:11px 14px 11px 18px; }
-    .undo-btn { background:var(--acc);border:none;color:#fff;font-family:var(--sans);font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:7px 12px;cursor:pointer; }
+    .undo-btn { background:var(--acc);border:none;color: var(--on-acc);font-family:var(--sans);font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:7px 12px;cursor:pointer; }
     .undo-btn:active { background:var(--acc-d); }
   `}</style>
 }

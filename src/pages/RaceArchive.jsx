@@ -344,26 +344,26 @@ export default function RaceArchive() {
         .rtabs { display:flex; border:1px solid var(--line); margin-bottom:16px; overflow:hidden; }
         .rtab { flex:1; padding:12px 8px; font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--ink3); background:none; border:none; border-right:1px solid var(--line); transition:background .15s,color .15s; display:flex; align-items:center; justify-content:center; gap:6px; }
         .rtab:last-child { border-right:none; }
-        .rtab.on { background:rgba(47,123,255,.1); color:var(--acc); }
+        .rtab.on { background:color-mix(in srgb, var(--acc) 10%, transparent); color:var(--acc); }
         .rtab:active { background:var(--panel2); }
         .rtab-badge { background:var(--crit); color:white; border-radius:50%; width:16px; height:16px; font-size:9px; display:flex; align-items:center; justify-content:center; font-weight:900; flex-shrink:0; }
 
-        .race-cand { border:1px solid rgba(47,123,255,.4); background:rgba(47,123,255,.06); padding:14px; margin-bottom:12px; }
+        .race-cand { border:1px solid color-mix(in srgb, var(--acc) 40%, transparent); background:color-mix(in srgb, var(--acc) 6%, transparent); padding:14px; margin-bottom:12px; }
         .race-cand-top { margin-bottom:6px; }
         .race-cand-tag { font-family:var(--mono); font-size:10.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--acc); }
         .race-cand-name { font-family:var(--sans); font-size:15px; font-weight:800; color:var(--ink1); letter-spacing:.3px; margin-bottom:4px; }
         .race-cand-meta { display:flex; gap:12px; font-family:var(--mono); font-size:11px; color:var(--ink3); margin-bottom:10px; }
         .race-cand-actions { display:flex; gap:8px; }
-        .race-cand-fill { flex:1; padding:11px; background:var(--acc); color:#fff; font-family:var(--sans); font-size:12px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; }
+        .race-cand-fill { flex:1; padding:11px; background:var(--acc); color: var(--on-acc); font-family:var(--sans); font-size:12px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; }
         .race-cand-dismiss { padding:11px 14px; background:none; border:1px solid var(--line); color:var(--ink3); font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; }
 
         .race-card { border:1px solid var(--line); padding:14px; margin-bottom:10px; }
         .race-top { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
         .race-name { font-family:var(--sans); font-size:16px; font-weight:800; color:var(--ink1); letter-spacing:.5px; }
-        .race-place { background:rgba(224,168,77,.15); color:var(--warn); font-family:var(--mono); font-weight:900; font-size:12px; padding:3px 10px; border:1px solid rgba(224,168,77,.35); white-space:nowrap; }
+        .race-place { background:color-mix(in srgb, var(--warn) 15%, transparent); color:var(--warn); font-family:var(--mono); font-weight:900; font-size:12px; padding:3px 10px; border:1px solid color-mix(in srgb, var(--warn) 35%, transparent); white-space:nowrap; }
         .race-meta { display:flex; gap:12px; font-family:var(--mono); font-size:11px; color:var(--ink3); margin-bottom:8px; }
         .race-stats { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
-        .rstat { background:rgba(47,123,255,.08); color:var(--acc); border:1px solid rgba(47,123,255,.25); padding:4px 10px; font-family:var(--mono); font-size:11px; font-weight:700; }
+        .rstat { background:color-mix(in srgb, var(--acc) 8%, transparent); color:var(--acc); border:1px solid color-mix(in srgb, var(--acc) 25%, transparent); padding:4px 10px; font-family:var(--mono); font-size:11px; font-weight:700; }
         .race-setup { font-family:var(--mono); font-size:11px; color:var(--ink2); padding-top:8px; border-top:1px solid var(--line); }
         .race-learn { font-family:var(--mono); font-size:11px; color:var(--ink2); margin-top:6px; line-height:1.5; }
         .race-cond { font-family:var(--mono); font-size:11px; color:var(--ink3); margin-top:4px; }
@@ -372,8 +372,8 @@ export default function RaceArchive() {
         .pack-empty-ico { font-size:40px; margin-bottom:12px; }
         .pack-empty-title { font-family:var(--sans); font-size:18px; font-weight:900; color:var(--ink1); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; }
         .pack-empty-sub { font-family:var(--mono); font-size:12px; color:var(--ink3); margin-bottom:20px; }
-        .pack-tpl-btn { background:rgba(47,123,255,.1); border:1px solid rgba(47,123,255,.35); color:var(--acc); font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:12px 24px; }
-        .pack-tpl-btn:active { background:rgba(47,123,255,.2); }
+        .pack-tpl-btn { background:color-mix(in srgb, var(--acc) 10%, transparent); border:1px solid color-mix(in srgb, var(--acc) 35%, transparent); color:var(--acc); font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:12px 24px; }
+        .pack-tpl-btn:active { background:color-mix(in srgb, var(--acc) 20%, transparent); }
 
         .pack-progress { border:1px solid var(--line); padding:12px 14px; margin-bottom:10px; }
         .pp-meta { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
@@ -406,7 +406,7 @@ export default function RaceArchive() {
         .pi-cb svg { width:12px; height:12px; }
         .pi-body { flex:1; display:flex; align-items:center; gap:8px; text-align:left; background:none; border:none; padding:0; cursor:pointer; min-width:0; }
         .pi-name { font-family:var(--sans); font-size:14px; font-weight:700; color:var(--ink1); }
-        .pi-crit-tag { font-family:var(--mono); font-size:9px; font-weight:900; background:rgba(224,86,110,.15); color:var(--crit); border:1px solid rgba(224,86,110,.35); padding:1px 5px; letter-spacing:.5px; flex-shrink:0; }
+        .pi-crit-tag { font-family:var(--mono); font-size:9px; font-weight:900; background:color-mix(in srgb, var(--crit) 15%, transparent); color:var(--crit); border:1px solid color-mix(in srgb, var(--crit) 35%, transparent); padding:1px 5px; letter-spacing:.5px; flex-shrink:0; }
         .ra-toast { position:fixed; bottom:140px; left:50%; transform:translateX(-50%); background:var(--panel); border:1px solid var(--acc); color:var(--ink1); padding:11px 22px; font-family:var(--mono); font-weight:500; font-size:13px; letter-spacing:.5px; z-index:1000; white-space:nowrap; }
       `}</style>
     </Page>
@@ -491,12 +491,12 @@ function PackItemSheet({ user, item, onClose, onSaved }) {
         <BtnDelete armed={armed} onClick={() => armed ? remove() : (setArmed(true), setTimeout(() => setArmed(false), 3000))} />
       )}
       <style>{`
-        .pi-err { font-family:var(--mono); font-size:11px; color:var(--crit); background:rgba(224,86,110,.07); border:1px solid rgba(224,86,110,.3); padding:10px 12px; margin-bottom:12px; line-height:1.5; }
+        .pi-err { font-family:var(--mono); font-size:11px; color:var(--crit); background:color-mix(in srgb, var(--crit) 7%, transparent); border:1px solid color-mix(in srgb, var(--crit) 30%, transparent); padding:10px 12px; margin-bottom:12px; line-height:1.5; }
         .pi-field { margin-bottom:14px; }
         .pi-lbl { display:block; font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--ink3); margin-bottom:6px; }
         .pi-sel { width:100%; background:var(--panel2); border:1px solid var(--line); padding:12px 14px; font-family:var(--mono); font-size:13px; font-weight:700; color:var(--ink1); outline:none; }
         .pi-crit-row { display:flex; align-items:center; gap:10px; width:100%; padding:13px 14px; background:var(--panel2); border:1px solid var(--line); margin-bottom:14px; }
-        .pi-crit-row.on { background:rgba(224,86,110,.06); border-color:rgba(224,86,110,.3); }
+        .pi-crit-row.on { background:color-mix(in srgb, var(--crit) 6%, transparent); border-color:color-mix(in srgb, var(--crit) 30%, transparent); }
         .pi-crit-row:active { background:var(--panel); }
         .pi-crit-cb { width:22px; height:22px; border:1.5px solid var(--line); flex-shrink:0; display:flex; align-items:center; justify-content:center; background:none; }
         .pi-crit-cb.on { background:var(--crit); border-color:var(--crit); }
@@ -592,7 +592,7 @@ function AddRaceSheet({ user, bikes, prefill, onClose, onSaved }) {
         .ar-g2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
         .ar-feel { display:flex; gap:6px; }
         .ar-feel-opt { flex:1; padding:11px 4px; background:var(--panel2); border:1px solid var(--line); font-family:var(--sans); font-size:12px; font-weight:700; color:var(--ink2); }
-        .ar-feel-opt.on { background:rgba(47,123,255,.12); border-color:var(--acc); color:var(--acc); }
+        .ar-feel-opt.on { background:color-mix(in srgb, var(--acc) 12%, transparent); border-color:var(--acc); color:var(--acc); }
         .ar-area { width:100%; min-height:84px; background:var(--panel2); border:1px solid var(--line); padding:12px 14px; font-family:var(--mono); font-size:13px; color:var(--ink1); outline:none; resize:vertical; }
       `}</style>
     </Sheet>

@@ -920,7 +920,7 @@ export default function BikeFitArchive() {
       <style>{`
         .bf-chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 14px; }
         .bf-chip { flex-shrink: 0; padding: 9px 15px; background: var(--panel); border: 1px solid var(--line); font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: .5px; color: var(--ink2); white-space: nowrap; }
-        .bf-chip.on { background: var(--acc); border-color: var(--acc); color: #fff; }
+        .bf-chip.on { background: var(--acc); border-color: var(--acc); color: var(--on-acc); }
         .bf-type { display: flex; gap: 8px; margin-bottom: 12px; }
         .bf-legend { display: flex; gap: 16px; justify-content: center; margin-bottom: 10px; }
         .bf-align { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
@@ -949,7 +949,7 @@ export default function BikeFitArchive() {
         .bf-diff-row .neg { color: var(--crit); }
         .bf-tools { display: flex; gap: 8px; margin-bottom: 14px; }
         .bf-tbtn { flex: 1; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; padding: 9px 6px; background: var(--panel); border: 1px solid var(--line); color: var(--ink2); }
-        .bf-tbtn.on { background: rgba(47,123,255,.12); border-color: rgba(47,123,255,.5); color: var(--acc); }
+        .bf-tbtn.on { background: color-mix(in srgb, var(--acc) 12%, transparent); border-color: color-mix(in srgb, var(--acc) 50%, transparent); color: var(--acc); }
         .bf-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px; }
         .metric { background: var(--panel2); border: 1px solid var(--line); padding: 10px 6px; text-align: center; }
         .metric-val { font-family: var(--sans); font-size: 15px; font-weight: 900; color: var(--ink1); letter-spacing: -.3px; }

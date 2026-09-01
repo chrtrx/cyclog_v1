@@ -32,6 +32,8 @@
       --bg0:#070d1a; --bg2:#0a1426; --panel:#0c1730; --panel2:#0e1b38;
       --line:#1c2c4d; --line2:#16243f;
       --acc:#2f7bff; --acc-d:#1f5fd0; --acc-soft:#3a6fc4;
+      --on-acc:#fff;          /* Schrift auf Akzentflächen */
+      --brand:#2f7bff;        /* Markenfarbe: Schriftzug oben */
       --ink1:#eef3fb; --ink2:#8fa3c8; --ink3:#54678c;
       --ok:#34c79a; --warn:#e0a84d; --crit:#e0566e;
       --mono:'JetBrains Mono', ui-monospace, monospace;
@@ -48,10 +50,45 @@
       --t1:#eef3fb; --t2:#8fa3c8; --t3:#54678c; --border:#1c2c4d;
       --r-xl:6px; --r-lg:6px; --r-md:4px; --r-sm:4px;
     }
+    /* ── Schwarz-Weiß mit rotem Schriftzug ──
+       Farbe erscheint nur noch an zwei Stellen: oben die Marke, in den
+       Balken der Zustand. Alles dazwischen bleibt ruhig. */
+    [data-theme="mono"] {
+      --bg0:#08080a; --bg2:#0f0f11; --panel:#131316; --panel2:#191920;
+      --line:#2a2a33; --line2:#212128;
+      --acc:#f2f2f5; --acc-d:#d2d2d8; --acc-soft:#83838f;
+      --on-acc:#0b0b0e;       /* heller Akzent braucht dunkle Schrift */
+      --brand:#ff2b2b;
+      --ink1:#f4f4f7; --ink2:#9b9ba6; --ink3:#5f5f6b;
+      /* Rot ist allein der Marke vorbehalten. "Überfällig" wird deshalb
+         nicht rot, sondern hell: Auf fast schwarzem Grund ist volles Weiß
+         das auffälligste Signal, das es gibt – und die Punktreihe ist dann
+         zusätzlich randvoll. */
+      --ok:#2fbf87; --warn:#e8a83a; --crit:#ffffff;
+      --mono:'JetBrains Mono', ui-monospace, monospace;
+      --sans:'Inter', -apple-system, sans-serif;
+      --green:#2fbf87; --green-d:#26a173; --green-l:color-mix(in srgb, #2fbf87 12%, transparent);
+      --blue:#f2f2f5; --blue-d:#d2d2d8; --blue-l:color-mix(in srgb, #f2f2f5 12%, transparent);
+      --orange:#e8a83a; --orange-d:#c68f2f; --orange-l:color-mix(in srgb, #e8a83a 12%, transparent);
+      --red:#ffffff; --red-d:#d2d2d8; --red-l:color-mix(in srgb, #ffffff 12%, transparent);
+      --strava:#f2f2f5; --strava-d:#d2d2d8; --strava-l:color-mix(in srgb, #f2f2f5 12%, transparent);
+      --bg:#08080a; --white:#131316;
+      --t1:#f4f4f7; --t2:#9b9ba6; --t3:#5f5f6b; --border:#2a2a33;
+      --r-xl:6px; --r-lg:6px; --r-md:4px; --r-sm:4px;
+    }
+    /* Emoji-Symbole entsättigen, damit sie zum einfarbigen Bild passen */
+    [data-theme="mono"] .tc-ico,
+    [data-theme="mono"] .bchip,
+    [data-theme="mono"] .sec-icon,
+    [data-theme="mono"] .mr-icon,
+    [data-theme="mono"] .streak,
+    [data-theme="mono"] .bell-btn,
+    [data-theme="mono"] .id-type-btn { filter: grayscale(1); }
     [data-theme="light"] {
       --bg0:#f0f5ff; --bg2:#ffffff; --panel:#ffffff; --panel2:#f0f4fc;
       --line:#ccd5ec; --line2:#d8dfef;
       --acc:#2f7bff; --acc-d:#1f5fd0; --acc-soft:#5590f5;
+      --on-acc:#fff; --brand:#2f7bff;
       --ink1:#0a1628; --ink2:#3a5080; --ink3:#8098c4;
       --ok:#1aab7f; --warn:#b8720e; --crit:#c4364f;
       --mono:'JetBrains Mono',ui-monospace,monospace;

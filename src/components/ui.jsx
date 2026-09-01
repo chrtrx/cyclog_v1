@@ -51,7 +51,7 @@ export function AddButton({ onClick, label = 'Neu' }) {
       {label}
       <style>{`
         .add-btn {
-          background: var(--acc); color: white; border: none;
+          background: var(--acc); color: var(--on-acc); border: none;
           padding: 10px 15px; flex-shrink: 0;
           display: flex; align-items: center; gap: 6px;
           font-family: var(--sans); font-size: 12px; font-weight: 800;
@@ -145,7 +145,7 @@ export function Field({ label, value, onChange, placeholder, type = 'text', inpu
 export function BtnGreen({ onClick, children, disabled }) {
   return (
     <button className="bg-btn" onClick={onClick} disabled={disabled}>{children}
-      <style>{`.bg-btn{display:block;width:100%;margin:8px 0;background:var(--acc);color:white;border:none;padding:15px;font-family:var(--sans);font-size:14px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;transition:background .12s;}.bg-btn:active{background:var(--acc-d);}.bg-btn:disabled{opacity:.4;}`}</style>
+      <style>{`.bg-btn{display:block;width:100%;margin:8px 0;background:var(--acc);color: var(--on-acc);border:none;padding:15px;font-family:var(--sans);font-size:14px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;transition:background .12s;}.bg-btn:active{background:var(--acc-d);}.bg-btn:disabled{opacity:.4;}`}</style>
     </button>
   )
 }
@@ -154,7 +154,7 @@ export function BtnDelete({ onClick, armed }) {
   return (
     <button className={`del-btn ${armed ? 'armed' : ''}`} onClick={onClick}>
       {armed ? 'Wirklich löschen?' : 'Löschen'}
-      <style>{`.del-btn{display:block;width:100%;margin:0 0 8px;background:rgba(224,86,110,.08);color:var(--crit);border:1px solid rgba(224,86,110,.4);padding:13px;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;transition:all .12s;}.del-btn.armed{background:var(--crit);color:white;border-color:var(--crit);}`}</style>
+      <style>{`.del-btn{display:block;width:100%;margin:0 0 8px;background:color-mix(in srgb, var(--crit) 8%, transparent);color:var(--crit);border:1px solid color-mix(in srgb, var(--crit) 40%, transparent);padding:13px;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;transition:all .12s;}.del-btn.armed{background:var(--crit);color:white;border-color:var(--crit);}`}</style>
     </button>
   )
 }

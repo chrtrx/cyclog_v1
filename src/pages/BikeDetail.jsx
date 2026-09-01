@@ -369,11 +369,11 @@ export default function BikeDetail() {
         .id-weight { font-family:var(--mono); font-size:12px; color:var(--ink2); font-weight:700; margin-top:6px; }
         .id-right { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
         .id-right span { font-family:var(--mono); font-size:11px; color:var(--ink3); }
-        .id-type-btn { display:flex; align-items:center; gap:5px; background:rgba(47,123,255,.08); border:1px solid rgba(47,123,255,.3); padding:5px 9px; font-family:var(--mono); font-size:11px; font-weight:700; color:var(--acc); letter-spacing:.5px; }
-        .id-type-btn:active { background:rgba(47,123,255,.18); }
+        .id-type-btn { display:flex; align-items:center; gap:5px; background:color-mix(in srgb, var(--acc) 8%, transparent); border:1px solid color-mix(in srgb, var(--acc) 30%, transparent); padding:5px 9px; font-family:var(--mono); font-size:11px; font-weight:700; color:var(--acc); letter-spacing:.5px; }
+        .id-type-btn:active { background:color-mix(in srgb, var(--acc) 18%, transparent); }
         .id-archive-btn { display:flex; align-items:center; gap:4px; background:rgba(255,255,255,.04); border:1px solid var(--line); padding:4px 8px; font-family:var(--mono); font-size:10px; font-weight:700; color:var(--ink3); letter-spacing:.5px; text-transform:uppercase; margin-top:2px; }
         .id-archive-btn:active { background:rgba(255,255,255,.08); }
-        .id-archive-btn.on { background:rgba(52,199,154,.08); border-color:rgba(52,199,154,.35); color:var(--ok); }
+        .id-archive-btn.on { background:color-mix(in srgb, var(--ok) 8%, transparent); border-color:color-mix(in srgb, var(--ok) 35%, transparent); color:var(--ok); }
 
         .bd-tabs { display:flex; border-bottom:1px solid var(--line); margin-bottom:16px; }
         .bd-tab { flex:1; padding:11px 6px; font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--ink3); background:none; border:none; border-bottom:2px solid transparent; transition:color .15s,border-color .15s; }
@@ -385,8 +385,8 @@ export default function BikeDetail() {
         .cat-hdr { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
         .cat-ico { font-size:15px; width:20px; text-align:center; }
         .cat-lbl { flex:1; font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink2); }
-        .cat-add { width:26px; height:26px; background:rgba(47,123,255,.1); border:1px solid rgba(47,123,255,.3); color:var(--acc); font-size:17px; font-weight:400; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-        .cat-add:active { background:rgba(47,123,255,.2); }
+        .cat-add { width:26px; height:26px; background:color-mix(in srgb, var(--acc) 10%, transparent); border:1px solid color-mix(in srgb, var(--acc) 30%, transparent); color:var(--acc); font-size:17px; font-weight:400; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .cat-add:active { background:color-mix(in srgb, var(--acc) 20%, transparent); }
         .cat-empty { padding:11px 12px; font-family:var(--mono); font-size:11px; color:var(--ink3); border:1px dashed var(--line); text-align:center; cursor:pointer; }
         .cat-empty:active { background:var(--panel2); }
 
@@ -419,12 +419,12 @@ export default function BikeDetail() {
         .upgr-price { font-family:var(--mono); font-size:12px; color:var(--warn); font-weight:700; flex-shrink:0; }
         .upgr-edit { background:none; border:none; padding:4px; flex-shrink:0; }
         .upgr-empty { padding:20px; font-family:var(--mono); font-size:12px; color:var(--ink3); text-align:center; border:1px dashed var(--line); margin-bottom:10px; }
-        .upgr-add { width:100%; padding:13px; background:rgba(47,123,255,.08); border:1px solid rgba(47,123,255,.25); color:var(--acc); font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }
-        .upgr-add:active { background:rgba(47,123,255,.15); }
+        .upgr-add { width:100%; padding:13px; background:color-mix(in srgb, var(--acc) 8%, transparent); border:1px solid color-mix(in srgb, var(--acc) 25%, transparent); color:var(--acc); font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }
+        .upgr-add:active { background:color-mix(in srgb, var(--acc) 15%, transparent); }
 
         .geo-bar { display:flex; justify-content:flex-end; margin-bottom:12px; }
-        .geo-edit-btn { padding:9px 16px; background:rgba(47,123,255,.08); border:1px solid rgba(47,123,255,.25); color:var(--acc); font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
-        .geo-edit-btn:active { background:rgba(47,123,255,.18); }
+        .geo-edit-btn { padding:9px 16px; background:color-mix(in srgb, var(--acc) 8%, transparent); border:1px solid color-mix(in srgb, var(--acc) 25%, transparent); color:var(--acc); font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
+        .geo-edit-btn:active { background:color-mix(in srgb, var(--acc) 18%, transparent); }
         .geo-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; }
         .geo-cell { background:var(--panel); border:1px solid var(--line); padding:10px 8px; text-align:center; }
         .geo-num { font-family:var(--sans); font-size:17px; font-weight:900; color:var(--ink1); }
@@ -444,7 +444,7 @@ export default function BikeDetail() {
         .hist-row { display:flex; align-items:flex-start; gap:12px; padding:12px 4px; border-bottom:1px solid var(--line); }
         .hist-row:last-child { border-bottom:none; }
         .hist-ico { width:34px; height:34px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:16px; background:var(--panel2); border:1px solid var(--line); }
-        .hist-ico.fit { background:rgba(47,123,255,.1); border-color:rgba(47,123,255,.3); }
+        .hist-ico.fit { background:color-mix(in srgb, var(--acc) 10%, transparent); border-color:color-mix(in srgb, var(--acc) 30%, transparent); }
         .hist-body { flex:1; min-width:0; }
         .hist-title { font-family:var(--sans); font-size:14px; font-weight:800; color:var(--ink1); letter-spacing:.3px; }
         .hist-sub { font-family:var(--mono); font-size:11px; color:var(--ink2); margin-top:3px; line-height:1.5; }
@@ -622,7 +622,7 @@ function BikeTypeSheet({ bike, onClose, onSaved }) {
       <style>{`
         .type-grid { display:flex; flex-direction:column; gap:7px; margin-bottom:14px; }
         .type-opt { display:flex; align-items:center; gap:11px; padding:13px 14px; font-family:var(--mono); font-size:13px; font-weight:700; letter-spacing:.5px; background:var(--panel2); border:1px solid var(--line); color:var(--ink2); text-align:left; }
-        .type-opt.on { background:rgba(47,123,255,.1); border-color:rgba(47,123,255,.5); color:var(--acc); }
+        .type-opt.on { background:color-mix(in srgb, var(--acc) 10%, transparent); border-color:color-mix(in srgb, var(--acc) 50%, transparent); color:var(--acc); }
         .type-opt:active { border-color:var(--acc); }
         .type-ico { font-size:18px; width:24px; text-align:center; flex-shrink:0; }
       `}</style>

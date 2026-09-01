@@ -5,6 +5,13 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 20,
+    date: '31.08.2026',
+    items: [
+      ['change', 'Neuer Schriftzug: „CYCLOG" wird jetzt als leuchtendes Punktraster gezeichnet – groß auf der Anmeldeseite, kompakt in der Kopfzeile'],
+    ],
+  },
+  {
     v: 19,
     date: '31.08.2026',
     items: [

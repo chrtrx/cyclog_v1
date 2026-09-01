@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import DotLogo from '../components/DotLogo'
 import { useAuth } from '../lib/auth'
 import {
   getBikes, addBike, updateBike, getTrackers, addTracker, updateTracker, deleteTracker,
@@ -441,7 +442,7 @@ export default function Dashboard() {
           <div className="logo-icon">
             <svg viewBox="0 0 100 100"><defs><linearGradient id="dgg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#22d3ee"/><stop offset="1" stopColor="#1466d6"/></linearGradient></defs><rect width="100" height="100" rx="14" fill="#0d2240"/><path d="M70 28 A29 29 0 1 0 70 72" fill="none" stroke="url(#dgg)" strokeWidth="11" strokeLinecap="round"/><g stroke="#22d3ee" strokeWidth="2.4" opacity="0.5"><line x1="50" y1="50" x2="50" y2="28"/><line x1="50" y1="50" x2="69" y2="39"/><line x1="50" y1="50" x2="69" y2="61"/><line x1="50" y1="50" x2="50" y2="72"/><line x1="50" y1="50" x2="31" y2="61"/><line x1="50" y1="50" x2="31" y2="39"/></g><circle cx="50" cy="50" r="5" fill="#22d3ee"/><circle cx="70" cy="28" r="5.5" fill="#22d3ee"/></svg>
           </div>
-          <span className="logo-text">CYCLOG</span>
+          <span className="logo-text"><DotLogo cell={3} gap={1} /></span>
         </div>
         <div className="hdr-right">
           {profile?.streak > 0 && <div className="streak">🔥 {profile.streak}</div>}
@@ -1091,7 +1092,7 @@ function DashStyles() {
     .logo { display:flex;align-items:center;gap:10px; }
     .logo-icon { width:36px;height:36px;overflow:hidden;box-shadow:0 4px 12px rgba(34,211,238,.3); }
     .logo-icon svg { width:100%;height:100%;display:block; }
-    .logo-text { font-family:var(--sans);font-size:20px;font-weight:900;color:var(--ink1);letter-spacing:4px; }
+    .logo-text { color:var(--ink1);display:flex;align-items:center; }
     .hdr-right { display:flex;align-items:center;gap:12px; }
     .streak { font-family:var(--mono);font-weight:700;font-size:14px;color:var(--warn); }
     .bell-btn { position:relative;background:var(--panel2);border:1px solid var(--line);color:var(--ink2);padding:8px;display:flex; }

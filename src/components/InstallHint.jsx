@@ -80,7 +80,7 @@ export default function InstallHint() {
         .ih-title { font-family: var(--sans); font-size: 13px; font-weight: 800; letter-spacing: .3px; color: var(--ink1); }
         .ih-sub { font-family: var(--mono); font-size: 10.5px; color: var(--ink3); margin-top: 2px; line-height: 1.35; }
         .ih-btn { flex-shrink: 0; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
-          color: #fff; background: var(--acc); border: none; padding: 9px 13px; border-radius: 8px; cursor: pointer; }
+          color: var(--on-acc); background: var(--acc); border: none; padding: 9px 13px; border-radius: 8px; cursor: pointer; }
         .ih-btn:active { background: var(--acc-d); }
         .ih-close { flex-shrink: 0; background: none; border: none; color: var(--ink3); font-size: 13px; padding: 4px 6px; cursor: pointer; }
       `}</style>

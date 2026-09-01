@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import DotBar from './DotBar'
 import { kmSince, hoursSince, daysSince, dueDateOf, daysUntilDue, pct, statusOf, fmtKm, fmtH, fmtDate, predictDue } from '../lib/helpers'
 
 // Anschauliche km-gewichtete Verschleiß-Statistik eines Trackers:
@@ -145,9 +146,7 @@ export default function TrackerCard({ tracker, bikeKm, bikeHours = 0, conditions
       <div className="tc-row">
         <span className="tc-ico">{tracker.icon}</span>
         <span className="tc-name">{tracker.title}</span>
-        <div className="tc-bar-track">
-          <div className={`tc-bar-fill tc-fill-${st}`} style={{ transform: `scaleX(${w / 100})` }} />
-        </div>
+        <DotBar value={p} dots={18} cell={4} color={`var(--${st})`} />
         <span className={`tc-pct tc-pct-${st}`}>{w}%</span>
         {onPin && (
           <button className={`tc-pin ${tracker.pinned ? 'on' : ''}`} onClick={e => { e.stopPropagation(); onPin() }}>
@@ -221,14 +220,11 @@ export default function TrackerCard({ tracker, bikeKm, bikeHours = 0, conditions
 
       <style>{`
         .tc { border:1px solid var(--line);margin-bottom:6px;cursor:pointer;overflow:hidden; }
-        .tc-warn { border-color:rgba(224,168,77,.4); }
-        .tc-crit { border-color:rgba(224,86,110,.4);background:rgba(224,86,110,.03); }
+        .tc-warn { border-color:color-mix(in srgb, var(--warn) 40%, transparent); }
+        .tc-crit { border-color:color-mix(in srgb, var(--crit) 40%, transparent);background:color-mix(in srgb, var(--crit) 3%, transparent); }
         .tc-row { display:flex;align-items:center;gap:10px;padding:11px 13px; }
         .tc-ico { font-size:17px;flex-shrink:0;width:24px;text-align:center; }
         .tc-name { flex:1;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0; }
-        .tc-bar-track { flex:0 0 72px;height:7px;background:var(--panel2);border:1px solid var(--line);overflow:hidden; }
-        .tc-bar-fill { height:100%;width:100%;transform-origin:left center;transition:transform .4s ease-out; }
-        .tc-fill-ok{background:var(--ok)}.tc-fill-warn{background:var(--warn)}.tc-fill-crit{background:var(--crit)}
         .tc-pct { font-family:var(--sans);font-size:14px;font-weight:900;letter-spacing:-.5px;flex-shrink:0;width:36px;text-align:right; }
         .tc-pct-ok{color:var(--ink3)}.tc-pct-warn{color:var(--warn)}.tc-pct-crit{color:var(--crit)}
         .tc-pin { background:none;border:none;padding:0 2px 0 6px;font-size:14px;color:var(--ink3);flex-shrink:0;line-height:1; }
@@ -244,8 +240,8 @@ export default function TrackerCard({ tracker, bikeKm, bikeHours = 0, conditions
         .tc-pred-val { font-family:var(--mono);font-size:11px;font-weight:700;color:var(--acc); }
         .tc-pred-track { height:4px;background:var(--panel2);border:1px solid var(--line);overflow:hidden; }
         .tc-pred-fill { height:100%;width:100%;background:var(--acc);opacity:.5;transform-origin:left center;transition:transform .4s ease-out; }
-        .tc-action { font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--acc);background:none;border:1px solid rgba(47,123,255,.3);padding:8px 13px;cursor:pointer; }
-        .tc-action:active { background:rgba(47,123,255,.08); }
+        .tc-action { font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--acc);background:none;border:1px solid color-mix(in srgb, var(--acc) 30%, transparent);padding:8px 13px;cursor:pointer; }
+        .tc-action:active { background:color-mix(in srgb, var(--acc) 8%, transparent); }
       `}</style>
     </div>
   )

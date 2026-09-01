@@ -120,7 +120,7 @@ export default function Usage() {
       <style>{`
         .us-range { display:flex; gap:6px; margin-bottom:18px; }
         .us-chip { flex:1; background:var(--panel2); border:1px solid var(--line); color:var(--ink2); font-family:var(--mono); font-size:11.5px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; padding:10px 6px; }
-        .us-chip.on { background:rgba(47,123,255,.12); border-color:var(--acc); color:var(--acc); }
+        .us-chip.on { background:color-mix(in srgb, var(--acc) 12%, transparent); border-color:var(--acc); color:var(--acc); }
         .us-hdr { font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink3); margin:20px 0 10px; }
         .us-hdr:first-of-type { margin-top:0; }
         .us-row { display:flex; align-items:center; gap:11px; margin-bottom:11px; }

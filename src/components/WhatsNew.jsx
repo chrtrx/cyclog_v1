@@ -76,7 +76,7 @@ export default function WhatsNew() {
         }
         .wn-text { font-family: var(--sans); font-size: 14px; line-height: 1.45; color: var(--ink1); }
         .wn-btn {
-          margin-top: 18px; width: 100%; background: var(--acc); color: #fff; border: none; border-radius: 10px;
+          margin-top: 18px; width: 100%; background: var(--acc); color: var(--on-acc); border: none; border-radius: 10px;
           padding: 14px; font-family: var(--sans); font-size: 14px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
         }
       `}</style>

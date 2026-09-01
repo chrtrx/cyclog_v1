@@ -91,10 +91,10 @@ export default function Inbox() {
       )}
 
       <style>{`
-        .nx-clear { flex-shrink:0; background:rgba(224,86,110,.08); border:1px solid rgba(224,86,110,.4); color:var(--crit); font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; padding:8px 12px; }
+        .nx-clear { flex-shrink:0; background:color-mix(in srgb, var(--crit) 8%, transparent); border:1px solid color-mix(in srgb, var(--crit) 40%, transparent); color:var(--crit); font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; padding:8px 12px; }
         .nx-hint { font-family:var(--mono); font-size:10px; color:var(--ink3); letter-spacing:.5px; margin-bottom:10px; text-align:center; }
         .nx-wrap { position:relative; margin-bottom:8px; overflow:hidden; }
-        .nx-behind { position:absolute; inset:0; display:flex; align-items:center; padding-left:18px; background:rgba(224,86,110,.15); font-family:var(--mono); font-size:12px; font-weight:700; color:var(--crit); }
+        .nx-behind { position:absolute; inset:0; display:flex; align-items:center; padding-left:18px; background:color-mix(in srgb, var(--crit) 15%, transparent); font-family:var(--mono); font-size:12px; font-weight:700; color:var(--crit); }
         .nx-row { position:relative; display:flex; align-items:flex-start; gap:10px; background:linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.015)), var(--panel); border:1px solid var(--line); padding:13px 14px; }
         .nx-body { flex:1; min-width:0; }
         .nx-title { font-family:var(--sans); font-size:14px; font-weight:800; letter-spacing:.3px; color:var(--ink1); }

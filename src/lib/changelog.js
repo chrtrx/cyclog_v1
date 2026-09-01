@@ -5,6 +5,15 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 21,
+    date: '01.09.2026',
+    items: [
+      ['new', 'Neue Darstellung „Schwarz-Weiß" (Mehr → Darstellung): einfarbige Oberfläche mit rotem Schriftzug – Farbe bleibt nur dort, wo sie etwas bedeutet'],
+      ['change', 'Fortschritt am Tracker jetzt als Punktreihe statt als durchgezogener Balken – abzählbar statt nur farbig'],
+      ['change', 'Darstellung wird nicht mehr umgeschaltet, sondern gewählt: Blau, Schwarz-Weiß oder Hell'],
+    ],
+  },
+  {
     v: 20,
     date: '31.08.2026',
     items: [

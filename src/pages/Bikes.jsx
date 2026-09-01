@@ -100,9 +100,9 @@ export default function Bikes() {
         .br-arc { background:rgba(255,255,255,.06); border:1px solid var(--line); padding:1px 6px; font-size:9px; letter-spacing:1px; }
         .br-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
         .br-badge { min-width:24px; height:24px; padding:0 7px; display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-weight:700; font-size:12px; border:1px solid transparent; }
-        .br-badge.crit { background:rgba(224,86,110,.10); color:var(--crit); border-color:rgba(224,86,110,.35); }
-        .br-badge.warn { background:rgba(224,168,77,.10); color:var(--warn); border-color:rgba(224,168,77,.35); }
-        .br-badge.ok { background:rgba(52,199,154,.10); color:var(--ok); border-color:rgba(52,199,154,.35); }
+        .br-badge.crit { background:color-mix(in srgb, var(--crit) 10%, transparent); color:var(--crit); border-color:color-mix(in srgb, var(--crit) 35%, transparent); }
+        .br-badge.warn { background:color-mix(in srgb, var(--warn) 10%, transparent); color:var(--warn); border-color:color-mix(in srgb, var(--warn) 35%, transparent); }
+        .br-badge.ok { background:color-mix(in srgb, var(--ok) 10%, transparent); color:var(--ok); border-color:color-mix(in srgb, var(--ok) 35%, transparent); }
         .arc-section { margin-top:8px; }
         .arc-toggle { display:flex; align-items:center; justify-content:space-between; width:100%; padding:12px 14px; background:var(--panel2); border:1px solid var(--line); margin-bottom:8px; }
         .arc-toggle-lbl { font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--ink3); }

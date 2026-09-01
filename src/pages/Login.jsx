@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import DotLogo from '../components/DotLogo'
 import { useAuth } from '../lib/auth'
 
 export default function Login() {
@@ -41,7 +42,7 @@ export default function Login() {
         <div className="lg-mark">
           <svg viewBox="0 0 100 100"><defs><linearGradient id="lgg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#22d3ee"/><stop offset="1" stopColor="#1466d6"/></linearGradient></defs><rect width="100" height="100" rx="14" fill="#0d2240"/><path d="M70 28 A29 29 0 1 0 70 72" fill="none" stroke="url(#lgg)" strokeWidth="11" strokeLinecap="round"/><g stroke="#22d3ee" strokeWidth="2.4" opacity="0.5"><line x1="50" y1="50" x2="50" y2="28"/><line x1="50" y1="50" x2="69" y2="39"/><line x1="50" y1="50" x2="69" y2="61"/><line x1="50" y1="50" x2="50" y2="72"/><line x1="50" y1="50" x2="31" y2="61"/><line x1="50" y1="50" x2="31" y2="39"/></g><circle cx="50" cy="50" r="5" fill="#22d3ee"/><circle cx="70" cy="28" r="5.5" fill="#22d3ee"/></svg>
         </div>
-        <h1 className="lg-title">CYCLOG</h1>
+        <div className="lg-logo"><DotLogo cell={14} gap={2} fluid /></div>
         <p className="lg-sub">Dein digitales Fahrrad-Gedächtnis</p>
 
         <div className="lg-seg">
@@ -79,7 +80,7 @@ export default function Login() {
         .lg-card { background:linear-gradient(160deg, rgba(255,255,255,.05), rgba(255,255,255,.015)); border:1px solid var(--line); padding:34px 26px; width:100%; max-width:380px; text-align:center; box-shadow:0 18px 40px rgba(0,0,0,.5); }
         .lg-mark { width:60px; height:60px; margin:0 auto 18px; box-shadow:0 6px 18px rgba(34,211,238,.3); }
         .lg-mark svg { width:100%; height:100%; display:block; }
-        .lg-title { font-family:var(--sans); font-size:26px; font-weight:900; letter-spacing:6px; color:var(--ink1); margin-bottom:6px; }
+        .lg-logo { color:var(--ink1); margin:4px auto 14px; max-width:100%; }
         .lg-sub { font-family:var(--mono); font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--ink3); margin-bottom:22px; }
         .lg-seg { display:flex; gap:0; border:1px solid var(--line); margin-bottom:18px; }
         .lg-seg-b { flex:1; border:none; background:none; padding:11px; font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--ink3); }

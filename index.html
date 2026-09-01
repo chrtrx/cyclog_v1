@@ -88,7 +88,16 @@
        laufen die beiden auf breiten Schirmen auseinander. */
     :root { --app-w: 480px; }
     @media (min-width: 700px)  { :root { --app-w: 560px; } }
-    @media (min-width: 1000px) { :root { --app-w: 700px; } }
+    /* Ab Tablet-Breite die volle Flaeche nutzen: eine zentrierte Spalte
+       laesst links und rechts breite leere Baender stehen. */
+    @media (min-width: 900px)  { :root { --app-w: 100%; } }
+    /* Auf Tablet/Desktop wirkt die Oberfläche sonst wie eine vergrößerte
+       Handy-Ansicht: Schrift und Bedienelemente sind zu klein für den
+       Betrachtungsabstand. Sämtliche Größen sind fest in px angegeben –
+       ein gleichmäßiger Zoom hält deshalb alle Proportionen exakt, statt
+       zweihundert Einzelwerte nachzuziehen. */
+    @media (min-width: 820px)  { :root { zoom: 1.15; } }
+    @media (min-width: 1150px) { :root { zoom: 1.25; } }
     #root {
       max-width: var(--app-w);
       margin: 0 auto;

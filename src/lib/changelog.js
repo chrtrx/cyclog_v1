@@ -5,6 +5,21 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 20,
+    date: '31.08.2026',
+    items: [
+      ['change', 'Neuer Schriftzug: „CYCLOG" wird als leuchtendes Punktraster gezeichnet – mit weichem Schein und einem leichten Schimmern, das von links nach rechts über die Buchstaben wandert'],
+      ['fix', 'Tablet: Die App nutzt jetzt die volle Bildschirmbreite – keine leeren Balken mehr links und rechts. Die Tracker stehen dort in zwei Spalten'],
+    ],
+  },
+  {
+    v: 19,
+    date: '31.08.2026',
+    items: [
+      ['fix', 'Tablet: Schrift und Bedienelemente waren für den großen Schirm zu klein – die Oberfläche wird jetzt passend hochskaliert (iPad quer +25 %, hoch +15 %); auf dem Handy ändert sich nichts'],
+    ],
+  },
+  {
     v: 18,
     date: '13.08.2026',
     items: [

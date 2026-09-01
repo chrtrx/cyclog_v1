@@ -60,13 +60,17 @@
       --on-acc:#0b0b0e;       /* heller Akzent braucht dunkle Schrift */
       --brand:#ff2b2b;
       --ink1:#f4f4f7; --ink2:#9b9ba6; --ink3:#5f5f6b;
-      --ok:#2fbf87; --warn:#e8a83a; --crit:#ff2b2b;
+      /* Rot ist allein der Marke vorbehalten. "Überfällig" wird deshalb
+         nicht rot, sondern hell: Auf fast schwarzem Grund ist volles Weiß
+         das auffälligste Signal, das es gibt – und die Punktreihe ist dann
+         zusätzlich randvoll. */
+      --ok:#2fbf87; --warn:#e8a83a; --crit:#ffffff;
       --mono:'JetBrains Mono', ui-monospace, monospace;
       --sans:'Inter', -apple-system, sans-serif;
       --green:#2fbf87; --green-d:#26a173; --green-l:color-mix(in srgb, #2fbf87 12%, transparent);
       --blue:#f2f2f5; --blue-d:#d2d2d8; --blue-l:color-mix(in srgb, #f2f2f5 12%, transparent);
       --orange:#e8a83a; --orange-d:#c68f2f; --orange-l:color-mix(in srgb, #e8a83a 12%, transparent);
-      --red:#ff2b2b; --red-d:#d92222; --red-l:color-mix(in srgb, #ff2b2b 12%, transparent);
+      --red:#ffffff; --red-d:#d2d2d8; --red-l:color-mix(in srgb, #ffffff 12%, transparent);
       --strava:#f2f2f5; --strava-d:#d2d2d8; --strava-l:color-mix(in srgb, #f2f2f5 12%, transparent);
       --bg:#08080a; --white:#131316;
       --t1:#f4f4f7; --t2:#9b9ba6; --t3:#5f5f6b; --border:#2a2a33;

@@ -540,13 +540,15 @@ export default function Dashboard() {
               <Empty emoji="🔧" title="Noch kein Tracker"
                 sub='Tippe oben auf "+ Service" und der Balken zählt automatisch mit.' />
             ) : (
-              sortedBikeTrackers.map(t => (
-                <TrackerCard key={t.id} tracker={t} bikeKm={activeBike.km} bikeHours={activeBikeHours}
-                  conditions={trackerConditions[t.id]}
-                  onClick={() => pct(t, activeBike.km, activeBikeHours) >= 1 ? setDueTracker(t) : setEditTracker(t)}
-                  onPin={() => togglePin(t)}
-                />
-              ))
+              <div className="tc-grid">
+                {sortedBikeTrackers.map(t => (
+                  <TrackerCard key={t.id} tracker={t} bikeKm={activeBike.km} bikeHours={activeBikeHours}
+                    conditions={trackerConditions[t.id]}
+                    onClick={() => pct(t, activeBike.km, activeBikeHours) >= 1 ? setDueTracker(t) : setEditTracker(t)}
+                    onPin={() => togglePin(t)}
+                  />
+                ))}
+              </div>
             )}
           </>
         )}
@@ -1103,6 +1105,13 @@ function DashStyles() {
     .sdot.spin { animation:pulse 1s infinite; }
     @keyframes pulse { 50% { opacity:.3; } }
     .main { padding:16px 15px 0; }
+    /* Auf breiten Schirmen wuerden die Karten sonst zu ueberlangen Streifen
+       mit einem winzigen Balken am rechten Rand – zwei Spalten halten die
+       Zeilen lesbar und fuellen die Flaeche sinnvoll. */
+    @media (min-width: 780px) {
+      .main { padding:18px 22px 0; }
+      .tc-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:0 12px; align-items:start; }
+    }
     .status-banner { display:flex;gap:8px;margin-bottom:14px; }
     .sb-item { flex:1;padding:12px;font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;gap:7px;justify-content:center;border:1px solid;cursor:pointer; }
     button.sb-item { font-family:var(--mono); }

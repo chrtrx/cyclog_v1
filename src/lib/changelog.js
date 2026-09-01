@@ -9,6 +9,7 @@ export const CHANGELOG = [
     date: '31.08.2026',
     items: [
       ['change', 'Neuer Schriftzug: „CYCLOG" wird jetzt als leuchtendes Punktraster gezeichnet – groß auf der Anmeldeseite, kompakt in der Kopfzeile'],
+      ['fix', 'Tablet: Die App nutzt jetzt die volle Bildschirmbreite – keine leeren Balken mehr links und rechts. Die Tracker stehen dort in zwei Spalten'],
     ],
   },
   {

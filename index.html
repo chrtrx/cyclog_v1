@@ -6,7 +6,7 @@
   <meta name="theme-color" id="theme-color" content="#070d1a" />
   <meta name="description" content="Cyclog – Verschleiß-Tracker für dein Fahrrad mit Strava-Sync" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Cyclog" />
   <meta name="mobile-web-app-capable" content="yes" />
   <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
@@ -50,9 +50,15 @@
        ist Kopfzeilen-Hintergrund, also einfarbig, und dort faellt eine
        Weichzeichnung nicht auf.
        Reicht der Abstand nicht, ist --top-guard die einzige Stellschraube. */
-    :root { --top-guard: 0px; }
+    :root { --top-guard: 14px; }
     @media (display-mode: standalone), (display-mode: fullscreen) {
-      :root { --top-guard: 40px; }
+      /* Nicht ein fester Leerstreifen, sondern genau der Systembereich:
+         Die Kopfzeile reicht bis an den oberen Rand, Uhr und Akku liegen
+         auf ihrer Flaeche. Dort ist einfarbiger Hintergrund, also faellt
+         die Weichzeichnung von iOS nicht auf. Der Inhalt beginnt knapp
+         darunter. Das iPad meldet keinen Einschub, daher der Mindestwert
+         von 24px - die Hoehe der Statusleiste. */
+      :root { --top-guard: calc(max(env(safe-area-inset-top), 24px) + 6px); }
     }
     :root {
       /* ── NEUE Datenblatt-Palette (dunkelblau) ── */
@@ -177,7 +183,7 @@
        senkrechten Abstände werden gestaucht, damit oben nicht die halbe
        Höhe für Kopfzeilen draufgeht. */
     @media (orientation: landscape) and (max-height: 900px) and (min-width: 900px) {
-      .page-hdr, .hdr { padding-top: calc(10px + var(--top-guard)) !important; padding-bottom: 10px !important; }
+      .page-hdr, .hdr { padding-top: var(--top-guard) !important; padding-bottom: 10px !important; }
       .page-body, .main { padding-top: 12px !important; }
     }
     button { font-family: inherit; cursor: pointer; user-select: none; -webkit-user-select: none; }

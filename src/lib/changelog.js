@@ -8,7 +8,7 @@ export const CHANGELOG = [
     v: 23,
     date: '16.09.2026',
     items: [
-      ['fix', 'Oberer Bildschirmrand: iOS legt seit dem Update einen Weichzeichner über den Streifen bei Uhr und Akku, und der reicht in die App hinein. Abschalten lässt er sich nicht – die Kopfzeile beginnt jetzt darunter, sodass nur noch einfarbiger Hintergrund in dem Streifen liegt'],
+      ['change', 'Obere Leiste wie in einer nativen App: Sie reicht jetzt bis an den oberen Bildschirmrand, Uhrzeit und Akku liegen auf ihrer Fläche statt auf einem eigenen Balken darüber. Das nimmt dem Weichzeichner, den iOS seit dem Update dort hinlegt, die Wirkung – er liegt auf einfarbigem Hintergrund – und spart obendrein Höhe'],
     ],
   },
   {

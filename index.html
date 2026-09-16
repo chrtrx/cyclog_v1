@@ -42,6 +42,18 @@
        Weichzeichner ueber den Bereich unter Uhr und Akku. Die feste Farbe
        liegt unter dem Verlauf und aendert optisch nichts. */
     html, body { background-color: var(--bg0); }
+    /* iOS legt seit dem 26er-Update einen Weichzeichner ueber den oberen
+       Bildschirmrand, damit Uhr und Akku lesbar bleiben. Der Streifen reicht
+       in die App hinein und erwischt dort die Kopfzeile. Dagegen laesst sich
+       von der Seite aus nichts ausrichten - es gibt keinen dokumentierten
+       Schalter. Also beginnt der Inhalt einfach darunter: Der Schutzabstand
+       ist Kopfzeilen-Hintergrund, also einfarbig, und dort faellt eine
+       Weichzeichnung nicht auf.
+       Reicht der Abstand nicht, ist --top-guard die einzige Stellschraube. */
+    :root { --top-guard: 0px; }
+    @media (display-mode: standalone), (display-mode: fullscreen) {
+      :root { --top-guard: 40px; }
+    }
     :root {
       /* ── NEUE Datenblatt-Palette (dunkelblau) ── */
       --bg0:#070d1a; --bg2:#0a1426; --panel:#0c1730; --panel2:#0e1b38;
@@ -165,7 +177,7 @@
        senkrechten Abstände werden gestaucht, damit oben nicht die halbe
        Höhe für Kopfzeilen draufgeht. */
     @media (orientation: landscape) and (max-height: 900px) and (min-width: 900px) {
-      .page-hdr, .hdr { padding-top: 10px !important; padding-bottom: 10px !important; }
+      .page-hdr, .hdr { padding-top: calc(10px + var(--top-guard)) !important; padding-bottom: 10px !important; }
       .page-body, .main { padding-top: 12px !important; }
     }
     button { font-family: inherit; cursor: pointer; user-select: none; -webkit-user-select: none; }

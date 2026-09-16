@@ -11,6 +11,7 @@ export const CHANGELOG = [
       ['new', 'Der Kalender zeigt jetzt jede einzelne Fahrt: Tag antippen und du siehst „+12,0 km · Madone SL6" – noch einmal antippen und die Fahrt klappt auf mit Wetter, Intensität, Ø-Watt, Fahrzeit, Schnitt und Höhenmetern'],
       ['fix', 'Oberer Bildschirmrand war seit dem iOS-Update unscharf: Die App legte sich unter Uhr und Akku, worauf iOS eine eigene Weichzeichnung darüberlegte. Die Statusleiste gehört jetzt dem System, die App beginnt sauber darunter'],
       ['fix', 'Die Farbe der Statusleiste folgt jetzt der gewählten Darstellung statt immer dunkelblau zu bleiben'],
+      ['fix', 'Der Schriftzug „CYCLOG" in der Kopfzeile wirkte unscharf: Der weiche Schein lag auch über den Punkten selbst und war breiter als sie. Der Schein liegt jetzt nur noch dahinter, die Punkte stehen pixelgenau'],
     ],
   },
   {

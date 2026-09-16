@@ -35,10 +35,13 @@ export default function DotLogo({
   const cols = letters.length * 5 + Math.max(0, letters.length - 1) * gap
   const w = cols * cell
   const h = 7 * cell
-  const r = cell * 0.30
+  // 0.38 statt 0.30: ohne den fruehereren Weichzeichner fehlte dem Raster
+  // sonst das Gewicht. Darueber verkleben die Punkte zu Balken und der
+  // Punktraster-Charakter geht verloren.
+  const r = cell * 0.38
 
   // Einmal erzeugen, zweimal verwenden: als weicher Schein im Hintergrund
-  // und als scharfe Punkte darüber.
+  // und als wirklich ungefilterte Punkte darüber.
   const build = (prefix) => {
     const out = []
     let ox = 0
@@ -72,7 +75,6 @@ export default function DotLogo({
     ? { display: 'block', overflow: 'visible', width: '100%', height: 'auto', maxWidth: w }
     : { display: 'block', overflow: 'visible', width: w, height: h, flexShrink: 0 }
 
-  const gid = `dlg-${cols}-${cell}`
   const bid = `dlb-${cols}-${cell}`
 
   return (
@@ -80,24 +82,22 @@ export default function DotLogo({
       role="img" aria-label={text} style={svgStyle}>
       {glow && (
         <defs>
-          <filter id={gid} x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation={cell * 0.38} result="b" />
-            <feMerge>
-              <feMergeNode in="b" />
-              <feMergeNode in="b" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
+          {/* Nur noch eine Ebene wird weichgezeichnet, und zwar die hinterste.
+              Der Radius bleibt unter dem Punktdurchmesser: ein Schein, der
+              breiter ist als der Punkt selbst, frisst die Kontur auf. */}
           <filter id={bid} x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur stdDeviation={cell * 1.25} />
+            <feGaussianBlur stdDeviation={cell * 0.5} />
           </filter>
         </defs>
       )}
-      {glow && <g fill={color} filter={`url(#${bid})`} opacity="0.5">{build('b')}</g>}
-      <g fill={color} filter={glow ? `url(#${gid})` : undefined}>{build('d')}</g>
+      {glow && <g fill={color} filter={`url(#${bid})`} opacity="0.55">{build('b')}</g>}
+      {/* Bewusst ohne filter: die Punkte sollen pixelgenau stehen. Lag hier
+          ein Weichzeichner drauf, wirkte der Schriftzug in der Kopfzeile
+          (cell=3, Punktradius 0,9 px) schlicht unscharf. */}
+      <g fill={color}>{build('d')}</g>
       {shimmer && (
         <style>{`
-          @keyframes dl-shimmer { 0%, 100% { opacity: .68 } 50% { opacity: 1 } }
+          @keyframes dl-shimmer { 0%, 100% { opacity: .82 } 50% { opacity: 1 } }
           .dl-dot { animation: dl-shimmer ${CYCLE}s ease-in-out infinite; }
           @media (prefers-reduced-motion: reduce) { .dl-dot { animation: none; opacity: 1 } }
         `}</style>

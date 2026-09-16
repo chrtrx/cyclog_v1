@@ -5,6 +5,7 @@ import { Page, Sheet, Field, BtnGreen, Empty } from '../components/ui'
 import {
   getBikes, getTrackers, getRaces, addRace, getEvents, addEvent, deleteEvent,
   getAllServiceLogs, addServiceLog, getHoursByBike,
+  getAllRideMetrics, getAllRideConditions,
 } from '../lib/data'
 import { predictDue, dueDateOf, BIKE_ICONS } from '../lib/helpers'
 
@@ -17,9 +18,20 @@ const KINDS = {
   crash:   { ico: '💥', label: 'Sturz',   col: 'var(--crit)' },
   flat:    { ico: '🛞', label: 'Panne',   col: 'var(--crit)' },
   note:    { ico: '📝', label: 'Notiz',   col: 'var(--ink3)' },
+  ride:    { ico: '🚴', label: 'Fahrt',   col: 'var(--ink2)' },
   due:     { ico: '⏱',  label: 'Fällig',  col: 'var(--warn)' },
 }
 const ADD_KINDS = ['race', 'service', 'defect', 'crash', 'flat', 'note']
+const WX  = { dry: '☀️ Trocken', wet: '💧 Nass', rain: '🌧️ Regen' }
+const INT = { easy: '🟢 Locker', mixed: '🟡 Mittel', hard: '🔴 Hart' }
+
+// Fahrzeit als "1:12 h"
+function fmtDur(sec) {
+  if (!sec) return null
+  const h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60)
+  return h ? `${h}:${String(m).padStart(2, '0')} h` : `${m} min`
+}
+
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
 const MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
   'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
@@ -41,6 +53,9 @@ export default function Calendar() {
   const [races, setRaces] = useState([])
   const [events, setEvents] = useState([])
   const [logs, setLogs] = useState([])
+  const [rides, setRides] = useState([])
+  const [rideCond, setRideCond] = useState([])
+  const [openEntry, setOpenEntry] = useState(null)
   const [hoursMap, setHoursMap] = useState({})
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState('')
@@ -51,6 +66,22 @@ export default function Calendar() {
   const [addFor, setAddFor] = useState(null)   // Tagesschlüssel für das Anlegen
 
   useEffect(() => { load() }, [])
+
+  // Fahrten nur für den sichtbaren Monat laden (plus die Randtage, die das
+  // Raster mitzeigt). Die Bedingungen reichen bewusst einen Monat weiter,
+  // weil die "Wie war die Fahrt?"-Abfrage oft erst Tage später beantwortet
+  // wird und sonst keiner Fahrt mehr zugeordnet werden könnte.
+  useEffect(() => {
+    const y = cursor.getFullYear(), m = cursor.getMonth()
+    const from = new Date(y, m, -7).toISOString()
+    const to = new Date(y, m + 1, 14).toISOString()
+    let alive = true
+    Promise.all([
+      getAllRideMetrics(user.id, from, to).catch(() => []),
+      getAllRideConditions(user.id, from, new Date(y, m + 2, 14).toISOString()).catch(() => []),
+    ]).then(([rm, rc]) => { if (alive) { setRides(rm); setRideCond(rc) } })
+    return () => { alive = false }
+  }, [cursor])
 
   async function load() {
     try {
@@ -101,6 +132,33 @@ export default function Calendar() {
         deletable: ev.id,
       })
     }
+    // Einzelne Fahrten. Die Bedingungen stammen aus der "Wie war die Fahrt?"-
+    // Abfrage, die erst nach der Fahrt beantwortet wird – deshalb wird die
+    // früheste Antwort desselben Rads NACH der Fahrt zugeordnet. Findet sich
+    // keine, bleibt die Zeile ohne Bedingungen, statt etwas zu erfinden.
+    const condFor = (ride) => {
+      const t = new Date(ride.ride_date).getTime()
+      return rideCond.find(c => c.bike_id === ride.bike_id && new Date(c.ride_date).getTime() >= t) || null
+    }
+    for (const ride of rides) {
+      const km = Number(ride.distance_km) || 0
+      if (km <= 0) continue
+      const c = condFor(ride)
+      const detail = [
+        c && WX[c.weather], c && INT[c.intensity],
+        ride.avg_watts && `Ø ${Math.round(ride.avg_watts)} W`,
+        fmtDur(ride.moving_time_s),
+        ride.avg_speed_kmh && `Ø ${ride.avg_speed_kmh} km/h`,
+        ride.elevation_m && `${Math.round(ride.elevation_m)} hm`,
+      ].filter(Boolean).join(' · ')
+      push(dayKey(ride.ride_date), {
+        id: `m-${ride.id}`, kind: 'ride',
+        title: `+${km.toLocaleString('de')} km`,
+        sub: bikeName(ride.bike_id) || 'Kein Rad zugeordnet',
+        detail: detail || null,
+      })
+    }
+
     // Prognostizierte Fälligkeiten aus den laufenden Trackern
     for (const t of trackers) {
       const bike = bikeById[t.bike_id]
@@ -116,7 +174,7 @@ export default function Calendar() {
       })
     }
     return map
-  }, [races, logs, events, trackers, bikeById, hoursMap, nav])
+  }, [races, logs, events, trackers, rides, rideCond, bikeById, hoursMap, nav])
 
   // 6 Wochen × 7 Tage, beginnend am Montag – auch die Randtage der
   // Nachbarmonate werden gezeigt (abgeblendet), damit das Raster stabil bleibt.
@@ -142,7 +200,7 @@ export default function Calendar() {
   }
 
   return (
-    <Page title="Kalender" subtitle="Wartung · Rennen · Ereignisse" back="/more">
+    <Page title="Kalender" subtitle="Fahrten · Wartung · Ereignisse" back="/more">
       {loading ? null : (
         <>
           <div className="cal-nav">
@@ -173,7 +231,7 @@ export default function Calendar() {
           </div>
 
           <div className="cal-legend">
-            {['race', 'service', 'due', 'defect'].map(k => (
+            {['ride', 'service', 'due', 'race', 'defect'].map(k => (
               <span key={k} className="cal-lg"><i style={{ background: KINDS[k].col }} />{KINDS[k].label}</span>
             ))}
           </div>
@@ -189,13 +247,23 @@ export default function Calendar() {
             <div className="cal-empty">Nichts eingetragen. Tippe auf „＋ Eintrag".</div>
           ) : dayEntries.map(e => {
             const k = KINDS[e.kind]
+            const open = openEntry === e.id
+            // Einträge mit Zusatzinfos klappen auf, alle anderen springen
+            // weiterhin zur passenden Seite.
+            const act = e.detail
+              ? () => setOpenEntry(open ? null : e.id)
+              : (e.onOpen || undefined)
             return (
-              <div key={e.id} className="cal-row" onClick={e.onOpen || undefined}
-                style={{ cursor: e.onOpen ? 'pointer' : 'default' }}>
+              <div key={e.id} className={`cal-row ${open ? 'open' : ''}`} onClick={act}
+                style={{ cursor: act ? 'pointer' : 'default' }}>
                 <span className="cal-row-ico" style={{ borderColor: k.col }}>{e.ico || k.ico}</span>
                 <span className="cal-row-body">
-                  <span className="cal-row-t">{e.title}</span>
+                  <span className="cal-row-t">
+                    {e.title}
+                    {e.detail && <i className="cal-caret">{open ? '▾' : '›'}</i>}
+                  </span>
                   {e.sub && <span className="cal-row-s">{e.sub}</span>}
+                  {open && e.detail && <span className="cal-row-d">{e.detail}</span>}
                 </span>
                 {e.deletable && (
                   <button className="cal-del" aria-label="Löschen" onClick={async (ev) => {
@@ -254,6 +322,9 @@ export default function Calendar() {
         .cal-row-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
         .cal-row-t { font-family:var(--sans); font-size:13.5px; font-weight:800; letter-spacing:.3px; color:var(--ink1); }
         .cal-row-s { font-family:var(--mono); font-size:10.5px; color:var(--ink3); line-height:1.45; }
+        .cal-caret { font-style:normal; color:var(--ink3); font-size:11px; margin-left:6px; }
+        .cal-row.open { border-color:var(--acc); }
+        .cal-row-d { font-family:var(--mono); font-size:11px; color:var(--ink2); line-height:1.6; margin-top:6px; padding-top:6px; border-top:1px solid var(--line); }
         .cal-del { flex-shrink:0; background:none; border:none; color:var(--ink3); font-size:13px; padding:2px 4px; }
 
         .cal-toast { position:fixed; left:50%; bottom:96px; transform:translateX(-50%); background:var(--panel2); border:1px solid var(--line); color:var(--ink1); font-family:var(--mono); font-size:12px; padding:11px 16px; z-index:1400; }

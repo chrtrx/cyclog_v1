@@ -319,6 +319,35 @@ export async function updateRideCondition(id, patch) {
   if (error) throw error
 }
 
+// ── Einzelne Fahrten (für den Kalender) ────────────────────
+// Der Kalender zeigt jede Fahrt einzeln; deshalb hier über alle Räder
+// hinweg statt je Rad, und nur die Felder, die dort auch auftauchen.
+// Bewusst auf einen Zeitraum begrenzt: Der Kalender zeigt immer nur einen
+// Monat, und die Fahrten wachsen mit jeder Ausfahrt. Ohne Fenster liefe die
+// Abfrage irgendwann in die 1000-Zeilen-Grenze und würde die ältesten
+// Fahrten stillschweigend verschlucken.
+export async function getAllRideMetrics(userId, fromIso, toIso) {
+  let q = supabase.from('ride_metrics')
+    .select('id,bike_id,distance_km,moving_time_s,elevation_m,avg_watts,avg_speed_kmh,ride_date')
+    .eq('user_id', userId).order('ride_date', { ascending: false })
+  if (fromIso) q = q.gte('ride_date', fromIso)
+  if (toIso) q = q.lte('ride_date', toIso)
+  const { data, error } = await q
+  if (error) return []
+  return data || []
+}
+
+export async function getAllRideConditions(userId, fromIso, toIso) {
+  let q = supabase.from('ride_conditions')
+    .select('id,bike_id,km_delta,weather,intensity,avg_watts,ride_date')
+    .eq('user_id', userId).order('ride_date', { ascending: true })
+  if (fromIso) q = q.gte('ride_date', fromIso)
+  if (toIso) q = q.lte('ride_date', toIso)
+  const { data, error } = await q
+  if (error) return []
+  return data || []
+}
+
 // ── Fahrt-Metriken aus Strava (Intensitäts-Erkennung) ──────
 // Nur die Felder holen, die die Einstufung braucht – die Tabelle wächst mit
 // jeder Fahrt, und das Sheet lädt 90 Tage auf einmal.

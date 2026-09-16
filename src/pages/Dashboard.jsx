@@ -1090,7 +1090,7 @@ function DashStyles() {
     .spinner { width:38px;height:38px;border:3px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
     .dash { min-height:100vh;padding-bottom:120px; }
-    .hdr { background:var(--bg2);border-bottom:1px solid var(--line);padding:var(--top-guard) 16px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50; }
+    .hdr { background:var(--bg2);border-bottom:1px solid var(--line);padding:calc(max(env(safe-area-inset-top),14px) + var(--top-guard)) 16px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50; }
     .logo { display:flex;align-items:center;gap:10px; }
     .logo-icon { width:36px;height:36px;overflow:hidden;box-shadow:0 2px 6px rgba(8,16,34,.18); }
     .logo-icon svg { width:100%;height:100%;display:block; }

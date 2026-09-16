@@ -25,7 +25,7 @@ export function Page({ title, subtitle, action, children, back }) {
         .page { min-height: 100vh; padding-bottom: 90px; }
         .page-hdr {
           background: var(--bg2); border-bottom: 1px solid var(--line);
-          padding: var(--top-guard) 16px 14px;
+          padding: calc(max(env(safe-area-inset-top),14px) + var(--top-guard)) 16px 14px;
           display: flex; align-items: center; gap: 12px;
           position: sticky; top: 0; z-index: 50;
         }

@@ -51,15 +51,15 @@ export default function ResetPassword({ onDone }) {
       <style>{`
         .rp-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
         .rp-card { background:var(--white); border-radius:var(--r-xl); border:2px solid var(--border); box-shadow:0 6px 0 var(--border); padding:36px 28px; width:100%; max-width:380px; text-align:center; }
-        .rp-logo { width:64px; height:64px; background:var(--blue,#1cb0f6); border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:32px; margin:0 auto 18px; box-shadow:0 5px 0 #1899d6; }
-        .rp-title { font-family:'Nunito',sans-serif; font-size:26px; font-weight:900; color:var(--t1); margin-bottom:8px; }
-        .rp-sub { font-size:14px; color:var(--t2); font-weight:600; line-height:1.5; margin-bottom:22px; }
-        .rp-input { width:100%; background:var(--bg); border:2px solid var(--border); border-radius:14px; padding:14px 16px; font-size:16px; color:var(--t1); font-weight:600; outline:none; margin-bottom:12px; font-family:'Nunito Sans',sans-serif; }
+        .rp-logo { width:64px; height:64px; background:var(--blue,#1cb0f6); border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto 18px; box-shadow:0 5px 0 #1899d6; }
+        .rp-title { font-family:'Nunito',sans-serif; font-size:1.625rem; font-weight:900; color:var(--t1); margin-bottom:8px; }
+        .rp-sub { font-size:0.875rem; color:var(--t2); font-weight:600; line-height:1.5; margin-bottom:22px; }
+        .rp-input { width:100%; background:var(--bg); border:2px solid var(--border); border-radius:14px; padding:14px 16px; font-size:1rem; color:var(--t1); font-weight:600; outline:none; margin-bottom:12px; font-family:'Nunito Sans',sans-serif; }
         .rp-input:focus { border-color:var(--blue,#1cb0f6); }
-        .rp-btn { width:100%; background:var(--green); color:white; border:none; border-radius:14px; padding:15px; font-family:'Nunito',sans-serif; font-size:17px; font-weight:900; box-shadow:0 5px 0 var(--green-d); transition:all .1s; }
+        .rp-btn { width:100%; background:var(--green); color:white; border:none; border-radius:14px; padding:15px; font-family:'Nunito',sans-serif; font-size:1.0625rem; font-weight:900; box-shadow:0 5px 0 var(--green-d); transition:all .1s; }
         .rp-btn:active { transform:translateY(3px); box-shadow:0 2px 0 var(--green-d); }
         .rp-btn:disabled { opacity:.6; }
-        .rp-msg { margin-top:14px; padding:10px 12px; border-radius:12px; font-size:13px; font-weight:700; }
+        .rp-msg { margin-top:14px; padding:10px 12px; border-radius:12px; font-size:0.8125rem; font-weight:700; }
         .rp-msg.err { background:var(--red-l); color:var(--red-d); }
       `}</style>
     </div>

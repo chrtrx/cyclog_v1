@@ -81,21 +81,21 @@ export default function Login() {
         .lg-mark { width:60px; height:60px; margin:0 auto 18px; box-shadow:0 6px 18px rgba(34,211,238,.3); }
         .lg-mark svg { width:100%; height:100%; display:block; }
         .lg-logo { color:var(--brand); margin:4px auto 14px; max-width:100%; }
-        .lg-sub { font-family:var(--mono); font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--ink3); margin-bottom:22px; }
+        .lg-sub { font-family:var(--mono); font-size:0.6875rem; letter-spacing:1px; text-transform:uppercase; color:var(--ink3); margin-bottom:22px; }
         .lg-seg { display:flex; gap:0; border:1px solid var(--line); margin-bottom:18px; }
-        .lg-seg-b { flex:1; border:none; background:none; padding:11px; font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--ink3); }
+        .lg-seg-b { flex:1; border:none; background:none; padding:11px; font-family:var(--mono); font-size:0.75rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--ink3); }
         .lg-seg-b.on { background:var(--acc); color: var(--on-acc); }
-        .lg-input { width:100%; background:var(--panel2); border:1px solid var(--line); padding:14px 14px; font-size:15px; color:var(--ink1); font-family:var(--mono); outline:none; margin-bottom:11px; }
+        .lg-input { width:100%; background:var(--panel2); border:1px solid var(--line); padding:14px 14px; font-size:0.9375rem; color:var(--ink1); font-family:var(--mono); outline:none; margin-bottom:11px; }
         .lg-input:focus { border-color:var(--acc); }
         .lg-input::placeholder { color:var(--ink3); }
-        .lg-btn { width:100%; background:var(--acc); color: var(--on-acc); border:none; padding:15px; font-family:var(--sans); font-size:14px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; transition:background .12s; }
+        .lg-btn { width:100%; background:var(--acc); color: var(--on-acc); border:none; padding:15px; font-family:var(--sans); font-size:0.875rem; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; transition:background .12s; }
         .lg-btn:active { background:var(--acc-d); }
         .lg-btn:disabled { opacity:.6; }
-        .lg-link { background:none; border:none; color:var(--acc-soft); font-family:var(--mono); font-size:12px; font-weight:500; letter-spacing:.5px; margin-top:12px; }
-        .lg-msg { margin-top:14px; padding:11px 12px; font-family:var(--mono); font-size:12px; font-weight:500; line-height:1.5; border:1px solid; text-align:left; }
+        .lg-link { background:none; border:none; color:var(--acc-soft); font-family:var(--mono); font-size:0.75rem; font-weight:500; letter-spacing:.5px; margin-top:12px; }
+        .lg-msg { margin-top:14px; padding:11px 12px; font-family:var(--mono); font-size:0.75rem; font-weight:500; line-height:1.5; border:1px solid; text-align:left; }
         .lg-msg.err { color:var(--crit); border-color:color-mix(in srgb, var(--crit) 40%, transparent); background:color-mix(in srgb, var(--crit) 6%, transparent); }
         .lg-msg.ok { color:var(--ok); border-color:color-mix(in srgb, var(--ok) 40%, transparent); background:color-mix(in srgb, var(--ok) 6%, transparent); }
-        .lg-hint { font-family:var(--mono); font-size:11px; color:var(--ink3); margin-top:16px; line-height:1.6; }
+        .lg-hint { font-family:var(--mono); font-size:0.6875rem; color:var(--ink3); margin-top:16px; line-height:1.6; }
       `}</style>
     </div>
   )

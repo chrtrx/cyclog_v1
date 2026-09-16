@@ -87,15 +87,15 @@ export default function ConnectStrava() {
       <style>{`
         .cs-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .cs-card { background: var(--white); border-radius: var(--r-xl); border: 2px solid var(--border); box-shadow: 0 6px 0 var(--border); padding: 36px 28px; width: 100%; max-width: 380px; text-align: center; }
-        .cs-logo { font-size: 56px; margin-bottom: 16px; }
-        .cs-title { font-family: 'Nunito', sans-serif; font-size: 26px; font-weight: 900; color: var(--t1); margin-bottom: 12px; }
-        .cs-text { font-size: 14px; color: var(--t2); font-weight: 600; line-height: 1.6; margin-bottom: 22px; }
-        .cs-btn { width: 100%; background: var(--strava); color: white; border: none; border-radius: 14px; padding: 15px; font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 900; box-shadow: 0 5px 0 var(--strava-d); display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
+        .cs-logo { font-size: 3.5rem; margin-bottom: 16px; }
+        .cs-title { font-family: 'Nunito', sans-serif; font-size: 1.625rem; font-weight: 900; color: var(--t1); margin-bottom: 12px; }
+        .cs-text { font-size: 0.875rem; color: var(--t2); font-weight: 600; line-height: 1.6; margin-bottom: 22px; }
+        .cs-btn { width: 100%; background: var(--strava); color: white; border: none; border-radius: 14px; padding: 15px; font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 900; box-shadow: 0 5px 0 var(--strava-d); display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
         .cs-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--strava-d); }
-        .cs-skip { width: 100%; background: none; border: none; color: var(--t3); font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; padding: 10px; }
+        .cs-skip { width: 100%; background: none; border: none; color: var(--t3); font-family: 'Nunito', sans-serif; font-size: 0.875rem; font-weight: 800; padding: 10px; }
         .cs-spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--strava); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 16px; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .cs-check, .cs-err-icon { font-size: 48px; margin-bottom: 14px; }
+        .cs-check, .cs-err-icon { font-size: 3rem; margin-bottom: 14px; }
       `}</style>
     </div>
   )

@@ -35,6 +35,13 @@
       overscroll-behavior-x: none;
       height: 100%;
     }
+    /* Der Seitenhintergrund wurde bisher ausschliesslich von body::before
+       gemalt - html und body selbst blieben durchsichtig. Safari 26 tastet
+       fuer seine "Liquid Glass"-Behandlung am oberen Rand aber genau diese
+       Wurzelfarbe ab; findet es nichts, legt es ersatzweise einen eigenen
+       Weichzeichner ueber den Bereich unter Uhr und Akku. Die feste Farbe
+       liegt unter dem Verlauf und aendert optisch nichts. */
+    html, body { background-color: var(--bg0); }
     :root {
       /* ── NEUE Datenblatt-Palette (dunkelblau) ── */
       --bg0:#070d1a; --bg2:#0a1426; --panel:#0c1730; --panel2:#0e1b38;
@@ -137,12 +144,15 @@
        laesst links und rechts breite leere Baender stehen. */
     @media (min-width: 900px)  { :root { --app-w: 100%; } }
     /* Auf Tablet/Desktop wirkt die Oberfläche sonst wie eine vergrößerte
-       Handy-Ansicht: Schrift und Bedienelemente sind zu klein für den
-       Betrachtungsabstand. Sämtliche Größen sind fest in px angegeben –
-       ein gleichmäßiger Zoom hält deshalb alle Proportionen exakt, statt
-       zweihundert Einzelwerte nachzuziehen. */
-    @media (min-width: 820px)  { :root { zoom: 1.15; } }
-    @media (min-width: 1150px) { :root { zoom: 1.25; } }
+       Handy-Ansicht: Schrift ist zu klein für den Betrachtungsabstand.
+       Vergrößert wird über die Wurzel-Schriftgröße, nicht über `zoom`:
+       Letzteres skaliert auf iPad-Safari die fertig gerasterte Ebene und
+       zieht dabei über fixierten Elementen – Kopfzeile, Navigationsleiste –
+       alles unscharf (WebKit 73316). Die Schriftgrößen stehen deshalb in
+       rem; 16px Basis heißt, dass sich am Handy nichts ändert. */
+    :root { font-size: 16px; }
+    @media (min-width: 820px)  { :root { font-size: 18.4px; } }   /* 16 × 1.15 */
+    @media (min-width: 1150px) { :root { font-size: 20px; } }     /* 16 × 1.25 */
     #root {
       max-width: var(--app-w);
       margin: 0 auto;

@@ -74,21 +74,21 @@ export default function Backup() {
       )}
 
       <style>{`
-        .bk-lead { font-family:var(--mono); font-size:11.5px; color:var(--ink2); line-height:1.75; margin-bottom:18px; }
-        .bk-empty { padding:20px; text-align:center; font-family:var(--mono); font-size:11.5px; color:var(--ink3); border:1px dashed var(--line); }
+        .bk-lead { font-family:var(--mono); font-size:0.71875rem; color:var(--ink2); line-height:1.75; margin-bottom:18px; }
+        .bk-empty { padding:20px; text-align:center; font-family:var(--mono); font-size:0.71875rem; color:var(--ink3); border:1px dashed var(--line); }
         .bk-list { border:1px solid var(--line); padding:4px 14px; margin-bottom:16px; }
         .bk-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 0; border-top:1px solid var(--line); }
         .bk-row:first-child { border-top:none; }
         .bk-row.zero { opacity:.4; }
         .bk-row.total { border-top:1px solid var(--acc); }
-        .bk-lbl { font-family:var(--mono); font-size:11.5px; color:var(--ink2); letter-spacing:.3px; }
-        .bk-n { font-family:var(--sans); font-size:13px; font-weight:900; color:var(--ink1); }
+        .bk-lbl { font-family:var(--mono); font-size:0.71875rem; color:var(--ink2); letter-spacing:.3px; }
+        .bk-n { font-family:var(--sans); font-size:0.8125rem; font-weight:900; color:var(--ink1); }
         .bk-row.total .bk-lbl, .bk-row.total .bk-n { color:var(--acc); }
-        .bk-btn { width:100%; display:flex; flex-direction:column; align-items:flex-start; gap:3px; background:var(--panel2); border:1px solid var(--line); color:var(--ink1); font-family:var(--sans); font-size:14px; font-weight:800; letter-spacing:.3px; padding:14px; margin-bottom:10px; text-align:left; }
-        .bk-btn small { font-family:var(--mono); font-size:10.5px; font-weight:400; color:var(--ink3); letter-spacing:.3px; }
+        .bk-btn { width:100%; display:flex; flex-direction:column; align-items:flex-start; gap:3px; background:var(--panel2); border:1px solid var(--line); color:var(--ink1); font-family:var(--sans); font-size:0.875rem; font-weight:800; letter-spacing:.3px; padding:14px; margin-bottom:10px; text-align:left; }
+        .bk-btn small { font-family:var(--mono); font-size:0.65625rem; font-weight:400; color:var(--ink3); letter-spacing:.3px; }
         .bk-btn.primary { border-color:var(--acc); background:color-mix(in srgb, var(--acc) 10%, transparent); }
-        .bk-msg { margin-top:4px; font-family:var(--mono); font-size:11.5px; color:var(--ink2); padding:10px 12px; border:1px solid var(--line); }
-        .bk-hint { margin-top:14px; font-family:var(--mono); font-size:10.5px; color:var(--ink3); line-height:1.6; }
+        .bk-msg { margin-top:4px; font-family:var(--mono); font-size:0.71875rem; color:var(--ink2); padding:10px 12px; border:1px solid var(--line); }
+        .bk-hint { margin-top:14px; font-family:var(--mono); font-size:0.65625rem; color:var(--ink3); line-height:1.6; }
       `}</style>
     </Page>
   )

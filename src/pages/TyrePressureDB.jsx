@@ -59,16 +59,16 @@ export default function TyrePressureDB() {
       <style>{`
         .tp-card { background: var(--white); border-radius: var(--r-lg); border: 2px solid var(--border); box-shadow: 0 4px 0 var(--border); padding: 16px; margin-bottom: 10px; }
         .tp-top { display: flex; align-items: center; justify-content: space-between; }
-        .tp-tyre { font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 900; color: var(--t1); }
-        .tp-rating { color: var(--orange); font-size: 13px; letter-spacing: 1px; }
+        .tp-tyre { font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 900; color: var(--t1); }
+        .tp-rating { color: var(--orange); font-size: 0.8125rem; letter-spacing: 1px; }
         .tp-pressure { display: flex; align-items: center; gap: 12px; margin: 12px 0; }
         .tp-p { display: flex; align-items: baseline; gap: 4px; }
-        .tp-p-num { font-family: 'Nunito', sans-serif; font-size: 28px; font-weight: 900; color: var(--blue); letter-spacing: -1px; }
-        .tp-p-lbl { font-size: 12px; color: var(--t3); font-weight: 700; }
-        .tp-p-div { font-size: 22px; color: var(--t3); font-weight: 300; }
+        .tp-p-num { font-family: 'Nunito', sans-serif; font-size: 1.75rem; font-weight: 900; color: var(--blue); letter-spacing: -1px; }
+        .tp-p-lbl { font-size: 0.75rem; color: var(--t3); font-weight: 700; }
+        .tp-p-div { font-size: 1.375rem; color: var(--t3); font-weight: 300; }
         .tp-cond { display: flex; gap: 6px; flex-wrap: wrap; }
-        .tp-chip { background: var(--bg); border-radius: 50px; padding: 4px 10px; font-size: 12px; font-weight: 800; color: var(--t2); font-family: 'Nunito', sans-serif; }
-        .tp-notes { font-size: 12px; color: var(--t3); font-weight: 600; margin-top: 8px; padding-top: 8px; border-top: 2px solid var(--bg); }
+        .tp-chip { background: var(--bg); border-radius: 50px; padding: 4px 10px; font-size: 0.75rem; font-weight: 800; color: var(--t2); font-family: 'Nunito', sans-serif; }
+        .tp-notes { font-size: 0.75rem; color: var(--t3); font-weight: 600; margin-top: 8px; padding-top: 8px; border-top: 2px solid var(--bg); }
       `}</style>
     </Page>
   )
@@ -135,12 +135,12 @@ function AddPressureSheet({ user, bikes, defaultWeight, onClose, onSaved }) {
       <BtnGreen onClick={save}>Eintrag speichern</BtnGreen>
       <style>{`
         .grid2 { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
-        .lblx { display:block;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;color:var(--t2);margin-bottom:5px; }
+        .lblx { display:block;font-family:'Nunito',sans-serif;font-size:0.8125rem;font-weight:800;color:var(--t2);margin-bottom:5px; }
         .seg { display:flex;gap:6px;flex-wrap:wrap; }
-        .seg-opt { padding:8px 14px;border-radius:50px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;background:var(--bg);border:2px solid var(--border);color:var(--t2);box-shadow:0 2px 0 var(--border); }
+        .seg-opt { padding:8px 14px;border-radius:50px;font-family:'Nunito',sans-serif;font-size:0.8125rem;font-weight:800;background:var(--bg);border:2px solid var(--border);color:var(--t2);box-shadow:0 2px 0 var(--border); }
         .seg-opt.on { background:var(--blue);border-color:var(--blue-d);color:white;box-shadow:0 2px 0 var(--blue-d); }
         .star-row { display:flex;gap:4px; }
-        .star-btn { background:none;border:none;font-size:30px;color:var(--orange);cursor:pointer;padding:0; }
+        .star-btn { background:none;border:none;font-size:1.875rem;color:var(--orange);cursor:pointer;padding:0; }
       `}</style>
     </Sheet>
   )

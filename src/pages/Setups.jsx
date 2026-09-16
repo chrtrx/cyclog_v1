@@ -145,30 +145,30 @@ export default function Setups() {
 
       <style>{`
         .st-bikes { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px; }
-        .st-bike { background:var(--panel2); border:1px solid var(--line); color:var(--ink2); font-family:var(--mono); font-size:11.5px; font-weight:700; padding:9px 12px; }
+        .st-bike { background:var(--panel2); border:1px solid var(--line); color:var(--ink2); font-family:var(--mono); font-size:0.71875rem; font-weight:700; padding:9px 12px; }
         .st-bike.on { background:color-mix(in srgb, var(--acc) 12%, transparent); border-color:var(--acc); color:var(--acc); }
 
-        .st-hdr { display:flex; align-items:center; justify-content:space-between; gap:10px; font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink3); margin:0 2px 12px; }
+        .st-hdr { display:flex; align-items:center; justify-content:space-between; gap:10px; font-family:var(--mono); font-size:0.65625rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink3); margin:0 2px 12px; }
         .st-hdr2 { margin-top:26px; }
-        .st-edit { background:none; border:1px solid color-mix(in srgb, var(--acc) 35%, transparent); color:var(--acc); font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; padding:6px 10px; }
+        .st-edit { background:none; border:1px solid color-mix(in srgb, var(--acc) 35%, transparent); color:var(--acc); font-family:var(--mono); font-size:0.625rem; font-weight:700; letter-spacing:.5px; text-transform:uppercase; padding:6px 10px; }
 
         .st-cat { margin-bottom:16px; }
-        .st-cat-t { font-family:var(--mono); font-size:11px; font-weight:700; color:var(--ink3); letter-spacing:.5px; margin-bottom:7px; }
+        .st-cat-t { font-family:var(--mono); font-size:0.6875rem; font-weight:700; color:var(--ink3); letter-spacing:.5px; margin-bottom:7px; }
         .st-row { display:flex; align-items:flex-start; gap:12px; padding:10px 12px; border:1px solid var(--line); margin-bottom:5px; }
-        .st-main { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; font-family:var(--sans); font-size:13.5px; font-weight:800; color:var(--ink1); letter-spacing:.2px; }
-        .st-sub { font-family:var(--mono); font-size:10.5px; font-weight:400; color:var(--ink3); line-height:1.5; }
-        .st-date { flex-shrink:0; font-family:var(--mono); font-size:10.5px; color:var(--ink2); white-space:nowrap; padding-top:3px; }
+        .st-main { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; font-family:var(--sans); font-size:0.84375rem; font-weight:800; color:var(--ink1); letter-spacing:.2px; }
+        .st-sub { font-family:var(--mono); font-size:0.65625rem; font-weight:400; color:var(--ink3); line-height:1.5; }
+        .st-date { flex-shrink:0; font-family:var(--mono); font-size:0.65625rem; color:var(--ink2); white-space:nowrap; padding-top:3px; }
 
         .st-chg { display:flex; align-items:flex-start; gap:12px; padding:11px 12px; border:1px solid var(--line); margin-bottom:5px; }
-        .st-when { flex-shrink:0; width:52px; font-family:var(--mono); font-size:10.5px; font-weight:700; color:var(--ink3); padding-top:3px; }
-        .st-chg-t { font-family:var(--sans); font-size:13.5px; font-weight:800; color:var(--ink1); letter-spacing:.2px; }
-        .st-tag { font-family:var(--mono); font-size:10px; font-weight:700; font-style:normal; letter-spacing:.5px; text-transform:uppercase; padding:2px 6px; margin-left:4px; border:1px solid var(--line); color:var(--ink3); }
+        .st-when { flex-shrink:0; width:52px; font-family:var(--mono); font-size:0.65625rem; font-weight:700; color:var(--ink3); padding-top:3px; }
+        .st-chg-t { font-family:var(--sans); font-size:0.84375rem; font-weight:800; color:var(--ink1); letter-spacing:.2px; }
+        .st-tag { font-family:var(--mono); font-size:0.625rem; font-weight:700; font-style:normal; letter-spacing:.5px; text-transform:uppercase; padding:2px 6px; margin-left:4px; border:1px solid var(--line); color:var(--ink3); }
         .st-tag.added { border-color:color-mix(in srgb, var(--ok) 40%, transparent); color:var(--ok); }
         .st-tag.removed { border-color:color-mix(in srgb, var(--warn) 45%, transparent); color:var(--warn); }
         .st-tag.changed { border-color:color-mix(in srgb, var(--acc) 40%, transparent); color:var(--acc); }
 
-        .st-empty { border:1px dashed var(--line); padding:18px; font-family:var(--mono); font-size:11.5px; color:var(--ink3); line-height:1.75; }
-        .st-link { display:block; margin-top:10px; background:none; border:none; padding:0; color:var(--acc); font-family:var(--mono); font-size:11.5px; font-weight:700; }
+        .st-empty { border:1px dashed var(--line); padding:18px; font-family:var(--mono); font-size:0.71875rem; color:var(--ink3); line-height:1.75; }
+        .st-link { display:block; margin-top:10px; background:none; border:none; padding:0; color:var(--acc); font-family:var(--mono); font-size:0.71875rem; font-weight:700; }
       `}</style>
     </Page>
   )

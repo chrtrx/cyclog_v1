@@ -290,44 +290,44 @@ export default function Calendar() {
 
       <style>{`
         .cal-nav { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
-        .cal-arrow { width:38px; height:38px; flex-shrink:0; background:var(--panel2); border:1px solid var(--line); color:var(--ink1); font-size:20px; font-family:var(--sans); line-height:1; }
+        .cal-arrow { width:38px; height:38px; flex-shrink:0; background:var(--panel2); border:1px solid var(--line); color:var(--ink1); font-size:1.25rem; font-family:var(--sans); line-height:1; }
         .cal-arrow:active { background:var(--panel); }
-        .cal-month { flex:1; font-family:var(--sans); font-size:15px; font-weight:900; letter-spacing:1px; text-transform:uppercase; color:var(--ink1); }
-        .cal-today { flex-shrink:0; background:none; border:1px solid color-mix(in srgb, var(--acc) 35%, transparent); color:var(--acc); font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; padding:9px 12px; }
+        .cal-month { flex:1; font-family:var(--sans); font-size:0.9375rem; font-weight:900; letter-spacing:1px; text-transform:uppercase; color:var(--ink1); }
+        .cal-today { flex-shrink:0; background:none; border:1px solid color-mix(in srgb, var(--acc) 35%, transparent); color:var(--acc); font-family:var(--mono); font-size:0.6875rem; font-weight:700; letter-spacing:.5px; text-transform:uppercase; padding:9px 12px; }
 
         .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
         .cal-head { margin-bottom:4px; }
-        .cal-wd { text-align:center; font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--ink3); padding-bottom:2px; }
+        .cal-wd { text-align:center; font-family:var(--mono); font-size:0.625rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--ink3); padding-bottom:2px; }
         .cal-day { aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; background:var(--panel2); border:1px solid var(--line); padding:0; }
         .cal-day.out { opacity:.35; }
         .cal-day.today { border-color:var(--acc); }
         .cal-day.sel { background:color-mix(in srgb, var(--acc) 14%, transparent); border-color:var(--acc); }
-        .cal-num { font-family:var(--mono); font-size:12.5px; font-weight:700; color:var(--ink1); line-height:1; }
+        .cal-num { font-family:var(--mono); font-size:0.78125rem; font-weight:700; color:var(--ink1); line-height:1; }
         .cal-day.today .cal-num { color:var(--acc); }
         .cal-dots { display:flex; gap:2px; height:5px; align-items:center; }
         .cal-dots i { width:5px; height:5px; border-radius:50%; display:block; }
 
         .cal-legend { display:flex; flex-wrap:wrap; gap:4px 12px; margin:12px 0 4px; }
-        .cal-lg { display:flex; align-items:center; gap:5px; font-family:var(--mono); font-size:10.5px; color:var(--ink3); letter-spacing:.3px; }
+        .cal-lg { display:flex; align-items:center; gap:5px; font-family:var(--mono); font-size:0.65625rem; color:var(--ink3); letter-spacing:.3px; }
         .cal-lg i { width:6px; height:6px; border-radius:50%; display:block; }
 
         .cal-sec { display:flex; align-items:center; gap:10px; margin:18px 0 10px; }
-        .cal-sec-t { flex:1; font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--ink2); }
-        .cal-add { flex-shrink:0; background:var(--acc); color: var(--on-acc); border:none; font-family:var(--sans); font-size:12px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; padding:9px 13px; }
+        .cal-sec-t { flex:1; font-family:var(--mono); font-size:0.6875rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--ink2); }
+        .cal-add { flex-shrink:0; background:var(--acc); color: var(--on-acc); border:none; font-family:var(--sans); font-size:0.75rem; font-weight:800; letter-spacing:.5px; text-transform:uppercase; padding:9px 13px; }
         .cal-add:active { background:var(--acc-d); }
 
-        .cal-empty { padding:20px; text-align:center; font-family:var(--mono); font-size:11.5px; color:var(--ink3); border:1px dashed var(--line); }
+        .cal-empty { padding:20px; text-align:center; font-family:var(--mono); font-size:0.71875rem; color:var(--ink3); border:1px dashed var(--line); }
         .cal-row { display:flex; align-items:flex-start; gap:11px; padding:11px 12px; border:1px solid var(--line); margin-bottom:6px; }
-        .cal-row-ico { flex-shrink:0; width:30px; height:30px; display:flex; align-items:center; justify-content:center; font-size:14px; border:1px solid; }
+        .cal-row-ico { flex-shrink:0; width:30px; height:30px; display:flex; align-items:center; justify-content:center; font-size:0.875rem; border:1px solid; }
         .cal-row-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
-        .cal-row-t { font-family:var(--sans); font-size:13.5px; font-weight:800; letter-spacing:.3px; color:var(--ink1); }
-        .cal-row-s { font-family:var(--mono); font-size:10.5px; color:var(--ink3); line-height:1.45; }
-        .cal-caret { font-style:normal; color:var(--ink3); font-size:11px; margin-left:6px; }
+        .cal-row-t { font-family:var(--sans); font-size:0.84375rem; font-weight:800; letter-spacing:.3px; color:var(--ink1); }
+        .cal-row-s { font-family:var(--mono); font-size:0.65625rem; color:var(--ink3); line-height:1.45; }
+        .cal-caret { font-style:normal; color:var(--ink3); font-size:0.6875rem; margin-left:6px; }
         .cal-row.open { border-color:var(--acc); }
-        .cal-row-d { font-family:var(--mono); font-size:11px; color:var(--ink2); line-height:1.6; margin-top:6px; padding-top:6px; border-top:1px solid var(--line); }
-        .cal-del { flex-shrink:0; background:none; border:none; color:var(--ink3); font-size:13px; padding:2px 4px; }
+        .cal-row-d { font-family:var(--mono); font-size:0.6875rem; color:var(--ink2); line-height:1.6; margin-top:6px; padding-top:6px; border-top:1px solid var(--line); }
+        .cal-del { flex-shrink:0; background:none; border:none; color:var(--ink3); font-size:0.8125rem; padding:2px 4px; }
 
-        .cal-toast { position:fixed; left:50%; bottom:96px; transform:translateX(-50%); background:var(--panel2); border:1px solid var(--line); color:var(--ink1); font-family:var(--mono); font-size:12px; padding:11px 16px; z-index:1400; }
+        .cal-toast { position:fixed; left:50%; bottom:96px; transform:translateX(-50%); background:var(--panel2); border:1px solid var(--line); color:var(--ink1); font-family:var(--mono); font-size:0.75rem; padding:11px 16px; z-index:1400; }
       `}</style>
     </Page>
   )
@@ -428,16 +428,16 @@ function AddEntrySheet({ user, bikes, date, onClose, onSaved }) {
       </BtnGreen>
 
       <style>{`
-        .ae-lbl { font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink3); margin-bottom:8px; }
+        .ae-lbl { font-family:var(--mono); font-size:0.65625rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink3); margin-bottom:8px; }
         .ae-kinds { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px; }
-        .ae-kind { background:var(--panel2); border:1px solid var(--line); color:var(--ink2); font-family:var(--sans); font-size:12.5px; font-weight:700; padding:10px 12px; }
+        .ae-kind { background:var(--panel2); border:1px solid var(--line); color:var(--ink2); font-family:var(--sans); font-size:0.78125rem; font-weight:700; padding:10px 12px; }
         .ae-kind.on { background:color-mix(in srgb, var(--acc) 12%, transparent); border-color:var(--acc); color:var(--acc); }
         .ae-bikes { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px; }
-        .ae-bike { background:var(--panel2); border:1px solid var(--line); color:var(--ink2); font-family:var(--mono); font-size:11.5px; font-weight:700; padding:9px 11px; }
+        .ae-bike { background:var(--panel2); border:1px solid var(--line); color:var(--ink2); font-family:var(--mono); font-size:0.71875rem; font-weight:700; padding:9px 11px; }
         .ae-bike.on { background:color-mix(in srgb, var(--acc) 12%, transparent); border-color:var(--acc); color:var(--acc); }
-        .ae-note { width:100%; background:var(--panel2); border:1px solid var(--line); color:var(--ink1); font-family:var(--mono); font-size:12.5px; padding:11px; margin-bottom:16px; resize:vertical; }
+        .ae-note { width:100%; background:var(--panel2); border:1px solid var(--line); color:var(--ink1); font-family:var(--mono); font-size:0.78125rem; padding:11px; margin-bottom:16px; resize:vertical; }
         .ae-note:focus { outline:none; border-color:var(--acc); }
-        .ae-err { border:1px solid color-mix(in srgb, var(--crit) 45%, transparent); background:color-mix(in srgb, var(--crit) 8%, transparent); color:var(--ink2); font-family:var(--mono); font-size:11.5px; line-height:1.55; padding:10px 12px; margin-bottom:12px; }
+        .ae-err { border:1px solid color-mix(in srgb, var(--crit) 45%, transparent); background:color-mix(in srgb, var(--crit) 8%, transparent); color:var(--ink2); font-family:var(--mono); font-size:0.71875rem; line-height:1.55; padding:10px 12px; margin-bottom:12px; }
       `}</style>
     </Sheet>
   )

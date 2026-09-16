@@ -562,11 +562,11 @@ export default function Dashboard() {
           <button className="dup-yes" onClick={() => doAddTracker(dupSvc, true)}>＋ Zweiten anlegen</button>
           <button className="dup-no" onClick={() => setDupSvc(null)}>Abbrechen</button>
           <style>{`
-            .dup-msg { font-family:var(--mono); font-size:13px; color:var(--ink2); line-height:1.6; margin-bottom:16px; padding:0 2px; }
+            .dup-msg { font-family:var(--mono); font-size:0.8125rem; color:var(--ink2); line-height:1.6; margin-bottom:16px; padding:0 2px; }
             .dup-msg b { color:var(--ink1); }
-            .dup-yes { width:100%; font-family:var(--sans); font-weight:800; font-size:14px; letter-spacing:.5px; text-transform:uppercase; color: var(--on-acc); background:var(--acc); border:none; padding:14px; margin-bottom:10px; }
+            .dup-yes { width:100%; font-family:var(--sans); font-weight:800; font-size:0.875rem; letter-spacing:.5px; text-transform:uppercase; color: var(--on-acc); background:var(--acc); border:none; padding:14px; margin-bottom:10px; }
             .dup-yes:active { background:var(--acc-d); }
-            .dup-no { width:100%; font-family:var(--mono); font-weight:700; font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--ink2); background:var(--panel2); border:1px solid var(--line); padding:13px; }
+            .dup-no { width:100%; font-family:var(--mono); font-weight:700; font-size:0.75rem; letter-spacing:1px; text-transform:uppercase; color:var(--ink2); background:var(--panel2); border:1px solid var(--line); padding:13px; }
           `}</style>
         </Sheet>
       )}
@@ -612,17 +612,17 @@ export default function Dashboard() {
             <span className="due-txt"><b>Später</b><small>Nichts ändern</small></span>
           </button>
           <style>{`
-            .due-msg { font-family:var(--mono); font-size:13px; color:var(--ink2); line-height:1.6; margin-bottom:16px; padding:0 2px; }
-            .due-fazit { font-family:var(--mono); font-size:11.5px; color:var(--ink2); line-height:1.6; background:var(--panel2); border:1px solid var(--line); padding:11px 13px; margin:-6px 0 16px; }
+            .due-msg { font-family:var(--mono); font-size:0.8125rem; color:var(--ink2); line-height:1.6; margin-bottom:16px; padding:0 2px; }
+            .due-fazit { font-family:var(--mono); font-size:0.71875rem; color:var(--ink2); line-height:1.6; background:var(--panel2); border:1px solid var(--line); padding:11px 13px; margin:-6px 0 16px; }
             .due-opt { display:flex; align-items:center; gap:13px; width:100%; background:var(--panel2); border:1px solid var(--line); padding:14px; margin-bottom:8px; text-align:left; transition:border-color .12s; }
             .due-opt:active { border-color:var(--acc); }
-            .due-ico { width:34px; height:34px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:16px; border:1px solid var(--line); }
+            .due-ico { width:34px; height:34px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:1rem; border:1px solid var(--line); }
             .due-done .due-ico { color:var(--ok); border-color:color-mix(in srgb, var(--ok) 40%, transparent); }
             .due-extend .due-ico { color:var(--acc); border-color:color-mix(in srgb, var(--acc) 40%, transparent); }
             .due-later .due-ico { color:var(--ink3); }
             .due-txt { display:flex; flex-direction:column; gap:2px; }
-            .due-txt b { font-family:var(--sans); font-size:14px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--ink1); }
-            .due-txt small { font-family:var(--mono); font-size:11px; color:var(--ink3); letter-spacing:.3px; }
+            .due-txt b { font-family:var(--sans); font-size:0.875rem; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--ink1); }
+            .due-txt small { font-family:var(--mono); font-size:0.6875rem; color:var(--ink3); letter-spacing:.3px; }
           `}</style>
         </Sheet>
       )}
@@ -651,11 +651,11 @@ export default function Dashboard() {
               <button className="rp-discard" onClick={async () => { setRaceCands(cs => cs.filter(x => x.id !== cand.id)); try { await dismissRaceCandidate(cand.id) } catch {} }}>Verwerfen</button>
             </div>
             <style>{`
-              .rp-name { font-family:var(--sans); font-size:16px; font-weight:800; color:var(--ink1); letter-spacing:.3px; margin-bottom:6px; }
-              .rp-meta { display:flex; gap:12px; font-family:var(--mono); font-size:12px; color:var(--ink3); margin-bottom:16px; }
+              .rp-name { font-family:var(--sans); font-size:1rem; font-weight:800; color:var(--ink1); letter-spacing:.3px; margin-bottom:6px; }
+              .rp-meta { display:flex; gap:12px; font-family:var(--mono); font-size:0.75rem; color:var(--ink3); margin-bottom:16px; }
               .rp-row { display:flex; gap:8px; }
-              .rp-later { flex:1; padding:12px; background:var(--panel2); border:1px solid var(--line); color:var(--ink2); font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; }
-              .rp-discard { flex:1; padding:12px; background:none; border:1px solid var(--line); color:var(--ink3); font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; }
+              .rp-later { flex:1; padding:12px; background:var(--panel2); border:1px solid var(--line); color:var(--ink2); font-family:var(--mono); font-size:0.75rem; font-weight:700; letter-spacing:.5px; text-transform:uppercase; }
+              .rp-discard { flex:1; padding:12px; background:none; border:1px solid var(--line); color:var(--ink3); font-family:var(--mono); font-size:0.75rem; font-weight:700; letter-spacing:.5px; text-transform:uppercase; }
             `}</style>
           </Sheet>
         )
@@ -769,18 +769,18 @@ function LogSheet({ bike, customTypes = [], onAdd, onCreateCustom, onDeleteCusto
         </div>
       ))}
       <style>{`
-        .svc-del { flex-shrink: 0; background: none; border: none; color: var(--ink3); font-size: 14px; padding: 4px 6px; }
+        .svc-del { flex-shrink: 0; background: none; border: none; color: var(--ink3); font-size: 0.875rem; padding: 4px 6px; }
         .svc-row-wrap { margin-bottom: 6px; }
         .svc-row-wrap .svc-row { margin-bottom: 0; }
-        .svc-chip { display: block; width: 100%; text-align: left; padding: 8px 13px; background: color-mix(in srgb, var(--acc) 8%, transparent); border: 1px solid color-mix(in srgb, var(--acc) 30%, transparent); border-top: none; color: var(--acc); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .2px; }
-        .svc-create { width: 100%; padding: 12px; background: var(--panel); border: 1px dashed var(--line); color: var(--acc); font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; margin-top: 2px; }
+        .svc-chip { display: block; width: 100%; text-align: left; padding: 8px 13px; background: color-mix(in srgb, var(--acc) 8%, transparent); border: 1px solid color-mix(in srgb, var(--acc) 30%, transparent); border-top: none; color: var(--acc); font-family: var(--mono); font-size: 0.6875rem; font-weight: 700; letter-spacing: .2px; }
+        .svc-create { width: 100%; padding: 12px; background: var(--panel); border: 1px dashed var(--line); color: var(--acc); font-family: var(--mono); font-size: 0.75rem; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; margin-top: 2px; }
         .svc-sec { margin-bottom: 12px; }
-        .svc-sec-lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; padding: 0 2px; }
+        .svc-sec-lbl { font-family: var(--mono); font-size: 0.65625rem; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; padding: 0 2px; }
         .svc-row { display: flex; align-items: center; gap: 11px; padding: 12px 13px; background: var(--panel2); border: 1px solid var(--line); margin-bottom: 6px; width: 100%; cursor: pointer; transition: border-color .12s; }
         .svc-row:active { border-color: var(--acc); }
-        .svc-ico { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; background: var(--panel); border: 1px solid var(--line); flex-shrink: 0; }
-        .svc-nm { font-family: var(--sans); font-size: 14px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--ink1); }
-        .svc-int { font-family: var(--mono); font-size: 11px; color: var(--ink3); letter-spacing: .5px; text-transform: uppercase; margin-top: 2px; }
+        .svc-ico { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 1.125rem; background: var(--panel); border: 1px solid var(--line); flex-shrink: 0; }
+        .svc-nm { font-family: var(--sans); font-size: 0.875rem; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--ink1); }
+        .svc-int { font-family: var(--mono); font-size: 0.6875rem; color: var(--ink3); letter-spacing: .5px; text-transform: uppercase; margin-top: 2px; }
       `}</style>
     </Sheet>
   )
@@ -820,10 +820,10 @@ function CustomTypeSheet({ onSave, onClose }) {
       <BtnGreen onClick={save}>{saving ? 'Speichert…' : 'Tracker speichern'}</BtnGreen>
       <style>{`
         .ct-icons { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-bottom: 16px; }
-        .ct-emoji { aspect-ratio: 1; font-size: 20px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        .ct-emoji { aspect-ratio: 1; font-size: 1.25rem; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
         .ct-emoji.on { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 12%, transparent); }
         .ct-type { display: flex; gap: 6px; margin-bottom: 14px; }
-        .ct-type-opt { flex: 1; padding: 11px 6px; background: var(--panel2); border: 1px solid var(--line); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--ink2); }
+        .ct-type-opt { flex: 1; padding: 11px 6px; background: var(--panel2); border: 1px solid var(--line); font-family: var(--mono); font-size: 0.6875rem; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--ink2); }
         .ct-type-opt.on { background: var(--acc); border-color: var(--acc); color: var(--on-acc); }
       `}</style>
     </Sheet>
@@ -913,15 +913,15 @@ function RideConditionSheet({ entry, onSave, onSkip }) {
       <button className="rc-skip" onClick={() => finish(null)}>Überspringen</button>
       <style>{`
         .rc-auto { display: flex; align-items: center; gap: 10px; border: 1px solid; padding: 11px 12px; margin-bottom: 14px; }
-        .rc-auto-ico { font-size: 17px; flex-shrink: 0; }
-        .rc-auto-tx { font-family: var(--mono); font-size: 10.5px; color: var(--ink2); line-height: 1.5; }
-        .rc-auto-tx b { display: block; font-family: var(--sans); font-size: 13px; font-weight: 800; color: var(--ink1); letter-spacing: .3px; }
+        .rc-auto-ico { font-size: 1.0625rem; flex-shrink: 0; }
+        .rc-auto-tx { font-family: var(--mono); font-size: 0.65625rem; color: var(--ink2); line-height: 1.5; }
+        .rc-auto-tx b { display: block; font-family: var(--sans); font-size: 0.8125rem; font-weight: 800; color: var(--ink1); letter-spacing: .3px; }
         .rc-group { margin-bottom: 16px; }
-        .rc-lbl { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink3); margin-bottom: 8px; }
+        .rc-lbl { font-family: var(--mono); font-size: 0.65625rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink3); margin-bottom: 8px; }
         .rc-opts { display: flex; gap: 6px; }
-        .rc-opt { flex: 1; padding: 12px 6px; background: var(--panel2); border: 1px solid var(--line); font-family: var(--sans); font-size: 12.5px; font-weight: 700; color: var(--ink2); }
+        .rc-opt { flex: 1; padding: 12px 6px; background: var(--panel2); border: 1px solid var(--line); font-family: var(--sans); font-size: 0.78125rem; font-weight: 700; color: var(--ink2); }
         .rc-opt.on { background: color-mix(in srgb, var(--acc) 12%, transparent); border-color: var(--acc); color: var(--acc); }
-        .rc-skip { width: 100%; padding: 12px; background: none; border: none; color: var(--ink3); font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
+        .rc-skip { width: 100%; padding: 12px; background: none; border: none; color: var(--ink3); font-family: var(--mono); font-size: 0.75rem; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
       `}</style>
     </Sheet>
   )
@@ -960,9 +960,9 @@ function AddBikeSheet({ user, onClose, onSaved }) {
       <Field label="Aktueller km-Stand" type="number" value={f.km} onChange={set('km')} placeholder="0" />
       <BtnGreen onClick={save}>Fahrrad anlegen</BtnGreen>
       <style>{`
-        .lblx { display:block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px; }
+        .lblx { display:block;font-family:var(--mono);font-size:0.6875rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px; }
         .type-grid { display:flex;gap:6px;flex-wrap:wrap; }
-        .type-opt { padding:9px 14px;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.5px;background:var(--panel2);border:1px solid var(--line);color:var(--ink2); }
+        .type-opt { padding:9px 14px;font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.5px;background:var(--panel2);border:1px solid var(--line);color:var(--ink2); }
         .type-opt.on { background:var(--acc);border-color:var(--acc);color: var(--on-acc); }
         .g2 { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
       `}</style>
@@ -1061,22 +1061,22 @@ function EditTrackerSheet({ tracker, bikeKm, bikeHours, onDone, onSave, onDelete
       <BtnDelete armed={armed} onClick={() => armed ? onDelete() : (setArmed(true), setTimeout(() => setArmed(false), 3000))} />
       <style>{`
         .ib { margin-bottom: 11px; background: var(--panel2); border: 1px solid var(--line); padding: 15px; }
-        .et-done { display:flex; flex-direction:column; align-items:flex-start; gap:3px; width:100%; text-align:left; background:color-mix(in srgb, var(--ok) 8%, transparent); border:1px solid color-mix(in srgb, var(--ok) 40%, transparent); color:var(--ok); padding:13px 14px; margin-bottom:16px; font-family:var(--sans); font-size:14px; font-weight:800; letter-spacing:.5px; }
-        .et-done small { font-family:var(--mono); font-size:10.5px; font-weight:400; color:var(--ink3); letter-spacing:.3px; }
-        .ib-lbl { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 9px; }
+        .et-done { display:flex; flex-direction:column; align-items:flex-start; gap:3px; width:100%; text-align:left; background:color-mix(in srgb, var(--ok) 8%, transparent); border:1px solid color-mix(in srgb, var(--ok) 40%, transparent); color:var(--ok); padding:13px 14px; margin-bottom:16px; font-family:var(--sans); font-size:0.875rem; font-weight:800; letter-spacing:.5px; }
+        .et-done small { font-family:var(--mono); font-size:0.65625rem; font-weight:400; color:var(--ink3); letter-spacing:.3px; }
+        .ib-lbl { font-family: var(--mono); font-size: 0.6875rem; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 9px; }
         .mode-row { display: flex; gap: 6px; }
-        .mode-btn { flex: 1; padding: 9px; font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: var(--panel); border: 1px solid var(--line); color: var(--ink2); }
+        .mode-btn { flex: 1; padding: 9px; font-family: var(--mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: var(--panel); border: 1px solid var(--line); color: var(--ink2); }
         .mode-btn.on { background: var(--acc); border-color: var(--acc); color: var(--on-acc); }
         .ib-edit { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-top: 10px; }
-        .ib-num { background: none; border: none; outline: none; font-family: var(--sans); font-size: 34px; font-weight: 900; letter-spacing: -1px; color: var(--ink1); width: 100%; padding: 0; }
+        .ib-num { background: none; border: none; outline: none; font-family: var(--sans); font-size: 2.125rem; font-weight: 900; letter-spacing: -1px; color: var(--ink1); width: 100%; padding: 0; }
         .ib-num::-webkit-outer-spin-button, .ib-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .ib-unit { font-family: var(--mono); font-size: 13px; color: var(--ink2); font-weight: 700; text-transform: uppercase; flex-shrink: 0; }
+        .ib-unit { font-family: var(--mono); font-size: 0.8125rem; color: var(--ink2); font-weight: 700; text-transform: uppercase; flex-shrink: 0; }
         input[type=range] { -webkit-appearance: none; width: 100%; height: 6px; background: var(--line); outline: none; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 0; background: var(--acc); border: 2px solid var(--ink1); }
         .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 11px; }
-        .preset { padding: 7px 12px; font-family: var(--mono); font-size: 12px; font-weight: 700; background: var(--panel); border: 1px solid var(--line); color: var(--ink2); }
+        .preset { padding: 7px 12px; font-family: var(--mono); font-size: 0.75rem; font-weight: 700; background: var(--panel); border: 1px solid var(--line); color: var(--ink2); }
         .preset:active { border-color: var(--acc); color: var(--acc); }
-        .ib-note { width: 100%; background: none; border: none; outline: none; font-size: 14px; font-family: var(--mono); color: var(--ink1); resize: none; line-height: 1.6; min-height: 56px; }
+        .ib-note { width: 100%; background: none; border: none; outline: none; font-size: 0.875rem; font-family: var(--mono); color: var(--ink1); resize: none; line-height: 1.6; min-height: 56px; }
         .ib-note::placeholder { color: var(--ink3); }
       `}</style>
     </Sheet>
@@ -1096,11 +1096,11 @@ function DashStyles() {
     .logo-icon svg { width:100%;height:100%;display:block; }
     .logo-text { color:var(--brand);display:flex;align-items:center; }
     .hdr-right { display:flex;align-items:center;gap:12px; }
-    .streak { font-family:var(--mono);font-weight:700;font-size:14px;color:var(--warn); }
+    .streak { font-family:var(--mono);font-weight:700;font-size:0.875rem;color:var(--warn); }
     .bell-btn { position:relative;background:var(--panel2);border:1px solid var(--line);color:var(--ink2);padding:8px;display:flex; }
     .bell-btn svg { width:18px;height:18px; }
-    .bell-badge { position:absolute;top:-6px;right:-6px;min-width:16px;height:16px;padding:0 4px;background:var(--crit);color:#fff;border-radius:9px;font-family:var(--sans);font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center; }
-    .strava-btn { display:flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid #5a3320;padding:8px 14px;font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#ff8a5c; }
+    .bell-badge { position:absolute;top:-6px;right:-6px;min-width:1em;min-height:1em;padding:2px 4px;background:var(--crit);color:#fff;border-radius:9px;font-family:var(--sans);font-size:0.625rem;font-weight:800;display:flex;align-items:center;justify-content:center; }
+    .strava-btn { display:flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid #5a3320;padding:8px 14px;font-family:var(--mono);font-weight:700;font-size:0.75rem;letter-spacing:1px;text-transform:uppercase;color:#ff8a5c; }
     .sdot { width:6px;height:6px;background:var(--strava); }
     .sdot.spin { animation:pulse 1s infinite; }
     @keyframes pulse { 50% { opacity:.3; } }
@@ -1113,30 +1113,30 @@ function DashStyles() {
       .tc-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:0 12px; align-items:start; }
     }
     .status-banner { display:flex;gap:8px;margin-bottom:14px; }
-    .sb-item { flex:1;padding:12px;font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;gap:7px;justify-content:center;border:1px solid;cursor:pointer; }
+    .sb-item { flex:1;padding:12px;font-family:var(--mono);font-weight:700;font-size:0.75rem;letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;gap:7px;justify-content:center;border:1px solid;cursor:pointer; }
     button.sb-item { font-family:var(--mono); }
     .sb-item.crit { background:color-mix(in srgb, var(--crit) 8%, transparent);color:var(--crit);border-color:color-mix(in srgb, var(--crit) 35%, transparent); }
     .sb-item.warn { background:color-mix(in srgb, var(--warn) 8%, transparent);color:var(--warn);border-color:color-mix(in srgb, var(--warn) 35%, transparent); }
-    .sb-num { font-family:var(--sans);font-size:18px;font-weight:900; }
+    .sb-num { font-family:var(--sans);font-size:1.125rem;font-weight:900; }
     .bike-chips { display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px; }
-    .bchip { flex-shrink:0;padding:9px 15px;background:var(--panel);border:1px solid var(--line);font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.5px;color:var(--ink2);white-space:nowrap; }
+    .bchip { flex-shrink:0;padding:9px 15px;background:var(--panel);border:1px solid var(--line);font-family:var(--mono);font-size:0.8125rem;font-weight:700;letter-spacing:.5px;color:var(--ink2);white-space:nowrap; }
     .bchip.on { background:var(--acc);border-color:var(--acc);color: var(--on-acc); }
-    .bchip.add { font-size:16px;padding:9px 16px;color:var(--ink3); }
+    .bchip.add { font-size:1rem;padding:9px 16px;color:var(--ink3); }
     .bike-hero { position:relative;background:linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.02));border:1px solid var(--line);padding:20px;margin-bottom:16px;cursor:pointer;overflow:hidden;clip-path:polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%); }
     .bike-hero::before { content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:22px 22px; }
     .bike-hero:active { background:rgba(255,255,255,.02); }
     .bh-top { display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;position:relative; }
-    .bh-type { background:color-mix(in srgb, var(--acc) 10%, transparent);color:var(--acc);font-family:var(--mono);font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;padding:3px 10px;border:1px solid color-mix(in srgb, var(--acc) 35%, transparent); }
-    .bh-detail { font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--acc-soft); }
-    .bh-name { font-family:var(--sans);font-size:24px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;color:var(--ink1);position:relative; }
+    .bh-type { background:color-mix(in srgb, var(--acc) 10%, transparent);color:var(--acc);font-family:var(--mono);font-weight:700;font-size:0.6875rem;letter-spacing:1.5px;text-transform:uppercase;padding:3px 10px;border:1px solid color-mix(in srgb, var(--acc) 35%, transparent); }
+    .bh-detail { font-family:var(--mono);font-size:0.6875rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--acc-soft); }
+    .bh-name { font-family:var(--sans);font-size:1.5rem;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;color:var(--ink1);position:relative; }
     .bh-km-row { display:flex;align-items:flex-end;gap:7px;position:relative; }
-    .bh-km { font-family:var(--sans);font-size:50px;font-weight:900;letter-spacing:-1px;line-height:.9;color:var(--ink1); }
-    .bh-km-u { font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink2);padding-bottom:7px; }
-    .bh-strava { font-family:var(--mono);font-size:11px;color:var(--strava);font-weight:700;letter-spacing:.5px;margin-top:10px;position:relative; }
+    .bh-km { font-family:var(--sans);font-size:3.125rem;font-weight:900;letter-spacing:-1px;line-height:.9;color:var(--ink1); }
+    .bh-km-u { font-family:var(--mono);font-size:0.875rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink2);padding-bottom:7px; }
+    .bh-strava { font-family:var(--mono);font-size:0.6875rem;color:var(--strava);font-weight:700;letter-spacing:.5px;margin-top:10px;position:relative; }
     .bh-health { margin-top:16px;position:relative; }
     .bh-health-meta { display:flex;justify-content:space-between;align-items:center;margin-bottom:5px; }
-    .bh-health-lbl { font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3); }
-    .bh-health-val { font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase; }
+    .bh-health-lbl { font-family:var(--mono);font-size:0.625rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3); }
+    .bh-health-val { font-family:var(--mono);font-size:0.625rem;font-weight:700;letter-spacing:1px;text-transform:uppercase; }
     .bh-hv-ok { color:var(--ok); }
     .bh-hv-warn { color:var(--warn); }
     .bh-hv-crit { color:var(--crit); }
@@ -1146,19 +1146,19 @@ function DashStyles() {
     .bh-seg-warn { background:var(--warn); }
     .bh-seg-crit { background:var(--crit); }
     .sec-hdr { display:flex;align-items:center;gap:10px;margin-bottom:12px; }
-    .sec-icon { width:28px;height:28px;background:color-mix(in srgb, var(--ok) 10%, transparent);border:1px solid color-mix(in srgb, var(--ok) 30%, transparent);display:flex;align-items:center;justify-content:center;font-size:14px; }
-    .sec-title { font-family:var(--sans);font-size:15px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--ink1); }
+    .sec-icon { width:28px;height:28px;background:color-mix(in srgb, var(--ok) 10%, transparent);border:1px solid color-mix(in srgb, var(--ok) 30%, transparent);display:flex;align-items:center;justify-content:center;font-size:0.875rem; }
+    .sec-title { font-family:var(--sans);font-size:0.9375rem;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--ink1); }
     .sec-spacer { flex:1; }
-    .sec-count { font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3); }
-    .sec-action { display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--acc);background:color-mix(in srgb, var(--acc) 10%, transparent);border:1px solid color-mix(in srgb, var(--acc) 35%, transparent);padding:7px 12px;cursor:pointer; }
+    .sec-count { font-family:var(--mono);font-size:0.625rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3); }
+    .sec-action { display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:0.6875rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--acc);background:color-mix(in srgb, var(--acc) 10%, transparent);border:1px solid color-mix(in srgb, var(--acc) 35%, transparent);padding:7px 12px;cursor:pointer; }
     .sec-action svg { width:14px;height:14px; }
     .sec-action:active { background:color-mix(in srgb, var(--acc) 20%, transparent); }
     .empty-actions { display:flex;flex-direction:column;gap:8px;margin-top:16px; }
-    .ea-green { background:var(--acc);color: var(--on-acc);border:none;padding:14px;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase; }
-    .ea-strava { background:var(--strava);color:white;border:none;padding:14px;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase; }
-    .toast { position:fixed;bottom:140px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--acc);color:var(--ink1);padding:11px 22px;font-family:var(--mono);font-weight:500;font-size:13px;letter-spacing:.5px;z-index:1000; }
+    .ea-green { background:var(--acc);color: var(--on-acc);border:none;padding:14px;font-family:var(--sans);font-size:0.8125rem;font-weight:800;letter-spacing:1px;text-transform:uppercase; }
+    .ea-strava { background:var(--strava);color:white;border:none;padding:14px;font-family:var(--sans);font-size:0.8125rem;font-weight:800;letter-spacing:1px;text-transform:uppercase; }
+    .toast { position:fixed;bottom:140px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--acc);color:var(--ink1);padding:11px 22px;font-family:var(--mono);font-weight:500;font-size:0.8125rem;letter-spacing:.5px;z-index:1000; }
     .toast-undo { display:flex;align-items:center;gap:16px;padding:11px 14px 11px 18px; }
-    .undo-btn { background:var(--acc);border:none;color: var(--on-acc);font-family:var(--sans);font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:7px 12px;cursor:pointer; }
+    .undo-btn { background:var(--acc);border:none;color: var(--on-acc);font-family:var(--sans);font-size:0.75rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:7px 12px;cursor:pointer; }
     .undo-btn:active { background:var(--acc-d); }
   `}</style>
 }

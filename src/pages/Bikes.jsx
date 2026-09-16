@@ -92,20 +92,20 @@ export default function Bikes() {
         .bike-row { display:flex; align-items:center; gap:14px; width:100%; background:linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.015)); border:1px solid var(--line); padding:15px; margin-bottom:10px; cursor:pointer; transition:background .12s; }
         .bike-row:active { background:rgba(255,255,255,.02); }
         .bike-row.archived { opacity:.55; }
-        .br-icon { width:46px; height:46px; background:var(--panel2); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+        .br-icon { width:46px; height:46px; background:var(--panel2); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:1.5rem; flex-shrink:0; }
         .br-body { flex:1; min-width:0; text-align:left; }
-        .br-name { font-family:var(--sans); font-size:16px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--ink1); }
-        .br-meta { display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; color:var(--ink3); letter-spacing:.5px; text-transform:uppercase; margin-top:3px; flex-wrap:wrap; }
+        .br-name { font-family:var(--sans); font-size:1rem; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--ink1); }
+        .br-meta { display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:0.6875rem; color:var(--ink3); letter-spacing:.5px; text-transform:uppercase; margin-top:3px; flex-wrap:wrap; }
         .br-dot { color:var(--line); }
-        .br-arc { background:rgba(255,255,255,.06); border:1px solid var(--line); padding:1px 6px; font-size:9px; letter-spacing:1px; }
+        .br-arc { background:rgba(255,255,255,.06); border:1px solid var(--line); padding:1px 6px; font-size:0.5625rem; letter-spacing:1px; }
         .br-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
-        .br-badge { min-width:24px; height:24px; padding:0 7px; display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-weight:700; font-size:12px; border:1px solid transparent; }
+        .br-badge { min-width:24px; height:24px; padding:0 7px; display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-weight:700; font-size:0.75rem; border:1px solid transparent; }
         .br-badge.crit { background:color-mix(in srgb, var(--crit) 10%, transparent); color:var(--crit); border-color:color-mix(in srgb, var(--crit) 35%, transparent); }
         .br-badge.warn { background:color-mix(in srgb, var(--warn) 10%, transparent); color:var(--warn); border-color:color-mix(in srgb, var(--warn) 35%, transparent); }
         .br-badge.ok { background:color-mix(in srgb, var(--ok) 10%, transparent); color:var(--ok); border-color:color-mix(in srgb, var(--ok) 35%, transparent); }
         .arc-section { margin-top:8px; }
         .arc-toggle { display:flex; align-items:center; justify-content:space-between; width:100%; padding:12px 14px; background:var(--panel2); border:1px solid var(--line); margin-bottom:8px; }
-        .arc-toggle-lbl { font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--ink3); }
+        .arc-toggle-lbl { font-family:var(--mono); font-size:0.6875rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--ink3); }
         .arc-toggle:active { background:var(--panel); }
       `}</style>
     </Page>

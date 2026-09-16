@@ -74,7 +74,7 @@ export default function NavBar() {
           transition: color 0.12s; cursor: pointer;
         }
         .nav-icon { display: flex; align-items: center; justify-content: center; color: var(--ink3); transition: color 0.15s; }
-        .nav-label { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink3); transition: color 0.15s; }
+        .nav-label { font-family: var(--mono); font-size: 0.625rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink3); transition: color 0.15s; }
         .nav-tab.on { border-top-color: var(--acc); }
         .nav-tab.on .nav-icon { color: var(--acc); }
         .nav-tab.on .nav-label { color: var(--acc); }

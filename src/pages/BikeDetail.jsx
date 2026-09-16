@@ -364,30 +364,30 @@ export default function BikeDetail() {
       <style>{`
         .id-card { display:flex; align-items:center; justify-content:space-between; border:1px solid var(--line); padding:16px; margin-bottom:14px; }
         .id-left { flex:1; }
-        .id-km { font-family:var(--sans); font-size:38px; font-weight:900; color:var(--ink1); letter-spacing:-1px; line-height:1; }
-        .id-km-u { font-family:var(--mono); font-size:13px; color:var(--ink3); font-weight:700; }
-        .id-weight { font-family:var(--mono); font-size:12px; color:var(--ink2); font-weight:700; margin-top:6px; }
+        .id-km { font-family:var(--sans); font-size:2.375rem; font-weight:900; color:var(--ink1); letter-spacing:-1px; line-height:1; }
+        .id-km-u { font-family:var(--mono); font-size:0.8125rem; color:var(--ink3); font-weight:700; }
+        .id-weight { font-family:var(--mono); font-size:0.75rem; color:var(--ink2); font-weight:700; margin-top:6px; }
         .id-right { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
-        .id-right span { font-family:var(--mono); font-size:11px; color:var(--ink3); }
-        .id-type-btn { display:flex; align-items:center; gap:5px; background:color-mix(in srgb, var(--acc) 8%, transparent); border:1px solid color-mix(in srgb, var(--acc) 30%, transparent); padding:5px 9px; font-family:var(--mono); font-size:11px; font-weight:700; color:var(--acc); letter-spacing:.5px; }
+        .id-right span { font-family:var(--mono); font-size:0.6875rem; color:var(--ink3); }
+        .id-type-btn { display:flex; align-items:center; gap:5px; background:color-mix(in srgb, var(--acc) 8%, transparent); border:1px solid color-mix(in srgb, var(--acc) 30%, transparent); padding:5px 9px; font-family:var(--mono); font-size:0.6875rem; font-weight:700; color:var(--acc); letter-spacing:.5px; }
         .id-type-btn:active { background:color-mix(in srgb, var(--acc) 18%, transparent); }
-        .id-archive-btn { display:flex; align-items:center; gap:4px; background:rgba(255,255,255,.04); border:1px solid var(--line); padding:4px 8px; font-family:var(--mono); font-size:10px; font-weight:700; color:var(--ink3); letter-spacing:.5px; text-transform:uppercase; margin-top:2px; }
+        .id-archive-btn { display:flex; align-items:center; gap:4px; background:rgba(255,255,255,.04); border:1px solid var(--line); padding:4px 8px; font-family:var(--mono); font-size:0.625rem; font-weight:700; color:var(--ink3); letter-spacing:.5px; text-transform:uppercase; margin-top:2px; }
         .id-archive-btn:active { background:rgba(255,255,255,.08); }
         .id-archive-btn.on { background:color-mix(in srgb, var(--ok) 8%, transparent); border-color:color-mix(in srgb, var(--ok) 35%, transparent); color:var(--ok); }
 
         .bd-tabs { display:flex; border-bottom:1px solid var(--line); margin-bottom:16px; }
-        .bd-tab { flex:1; padding:11px 6px; font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--ink3); background:none; border:none; border-bottom:2px solid transparent; transition:color .15s,border-color .15s; }
+        .bd-tab { flex:1; padding:11px 6px; font-family:var(--mono); font-size:0.65625rem; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--ink3); background:none; border:none; border-bottom:2px solid transparent; transition:color .15s,border-color .15s; }
         .bd-tab.on { color:var(--acc); border-bottom-color:var(--acc); }
 
         .tab-body { padding-bottom: 8px; }
 
         .cat-sec { margin-bottom:18px; }
         .cat-hdr { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-        .cat-ico { font-size:15px; width:20px; text-align:center; }
-        .cat-lbl { flex:1; font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink2); }
-        .cat-add { width:26px; height:26px; background:color-mix(in srgb, var(--acc) 10%, transparent); border:1px solid color-mix(in srgb, var(--acc) 30%, transparent); color:var(--acc); font-size:17px; font-weight:400; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .cat-ico { font-size:0.9375rem; width:20px; text-align:center; }
+        .cat-lbl { flex:1; font-family:var(--mono); font-size:0.65625rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink2); }
+        .cat-add { width:1.5em; height:1.5em; background:color-mix(in srgb, var(--acc) 10%, transparent); border:1px solid color-mix(in srgb, var(--acc) 30%, transparent); color:var(--acc); font-size:1.0625rem; font-weight:400; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
         .cat-add:active { background:color-mix(in srgb, var(--acc) 20%, transparent); }
-        .cat-empty { padding:11px 12px; font-family:var(--mono); font-size:11px; color:var(--ink3); border:1px dashed var(--line); text-align:center; cursor:pointer; }
+        .cat-empty { padding:11px 12px; font-family:var(--mono); font-size:0.6875rem; color:var(--ink3); border:1px dashed var(--line); text-align:center; cursor:pointer; }
         .cat-empty:active { background:var(--panel2); }
 
         .parts-list { border:1px solid var(--line); overflow:hidden; }
@@ -395,16 +395,16 @@ export default function BikeDetail() {
         .part-row:last-child { border-bottom:none; }
         .part-row:active { background:var(--panel2); }
         .part-body { flex:1; min-width:0; }
-        .part-name { font-family:var(--sans); font-size:14px; font-weight:700; color:var(--ink1); }
-        .part-sub { font-family:var(--mono); font-size:11px; color:var(--ink3); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .part-name { font-family:var(--sans); font-size:0.875rem; font-weight:700; color:var(--ink1); }
+        .part-sub { font-family:var(--mono); font-size:0.6875rem; color:var(--ink3); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .part-right { display:flex; flex-direction:column; align-items:flex-end; gap:2px; flex-shrink:0; }
-        .part-g { font-family:var(--mono); font-size:11px; color:var(--ink2); font-weight:700; }
-        .part-eur { font-family:var(--mono); font-size:11px; color:var(--warn); font-weight:700; }
+        .part-g { font-family:var(--mono); font-size:0.6875rem; color:var(--ink2); font-weight:700; }
+        .part-eur { font-family:var(--mono); font-size:0.6875rem; color:var(--warn); font-weight:700; }
 
-        .notes-area { width:100%; min-height:220px; background:var(--panel); border:1px solid var(--line); padding:14px; font-family:var(--mono); font-size:14px; color:var(--ink1); resize:none; outline:none; line-height:1.7; }
+        .notes-area { width:100%; min-height:220px; background:var(--panel); border:1px solid var(--line); padding:14px; font-family:var(--mono); font-size:0.875rem; color:var(--ink1); resize:none; outline:none; line-height:1.7; }
         .notes-area:focus { border-color:var(--acc); }
         .notes-area::placeholder { color:var(--ink3); }
-        .notes-hint { padding:16px; font-family:var(--mono); font-size:12px; color:var(--ink3); text-align:center; }
+        .notes-hint { padding:16px; font-family:var(--mono); font-size:0.75rem; color:var(--ink3); text-align:center; }
 
         .upgr-list { border:1px solid var(--line); overflow:hidden; margin-bottom:10px; }
         .upgr-row { display:flex; align-items:center; gap:10px; padding:12px 12px; border-bottom:1px solid var(--line); transition:opacity .15s; }
@@ -414,43 +414,43 @@ export default function BikeDetail() {
         .upgr-cb.checked { background:var(--ok); border-color:var(--ok); color:white; }
         .upgr-cb svg { width:13px; height:13px; }
         .upgr-body { flex:1; min-width:0; text-align:left; background:none; border:none; padding:0; cursor:pointer; }
-        .upgr-name { font-family:var(--sans); font-size:14px; font-weight:700; color:var(--ink1); }
-        .upgr-note { font-family:var(--mono); font-size:11px; color:var(--ink3); margin-top:2px; }
-        .upgr-price { font-family:var(--mono); font-size:12px; color:var(--warn); font-weight:700; flex-shrink:0; }
+        .upgr-name { font-family:var(--sans); font-size:0.875rem; font-weight:700; color:var(--ink1); }
+        .upgr-note { font-family:var(--mono); font-size:0.6875rem; color:var(--ink3); margin-top:2px; }
+        .upgr-price { font-family:var(--mono); font-size:0.75rem; color:var(--warn); font-weight:700; flex-shrink:0; }
         .upgr-edit { background:none; border:none; padding:4px; flex-shrink:0; }
-        .upgr-empty { padding:20px; font-family:var(--mono); font-size:12px; color:var(--ink3); text-align:center; border:1px dashed var(--line); margin-bottom:10px; }
-        .upgr-add { width:100%; padding:13px; background:color-mix(in srgb, var(--acc) 8%, transparent); border:1px solid color-mix(in srgb, var(--acc) 25%, transparent); color:var(--acc); font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }
+        .upgr-empty { padding:20px; font-family:var(--mono); font-size:0.75rem; color:var(--ink3); text-align:center; border:1px dashed var(--line); margin-bottom:10px; }
+        .upgr-add { width:100%; padding:13px; background:color-mix(in srgb, var(--acc) 8%, transparent); border:1px solid color-mix(in srgb, var(--acc) 25%, transparent); color:var(--acc); font-family:var(--mono); font-size:0.6875rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }
         .upgr-add:active { background:color-mix(in srgb, var(--acc) 15%, transparent); }
 
         .geo-bar { display:flex; justify-content:flex-end; margin-bottom:12px; }
-        .geo-edit-btn { padding:9px 16px; background:color-mix(in srgb, var(--acc) 8%, transparent); border:1px solid color-mix(in srgb, var(--acc) 25%, transparent); color:var(--acc); font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
+        .geo-edit-btn { padding:9px 16px; background:color-mix(in srgb, var(--acc) 8%, transparent); border:1px solid color-mix(in srgb, var(--acc) 25%, transparent); color:var(--acc); font-family:var(--mono); font-size:0.6875rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
         .geo-edit-btn:active { background:color-mix(in srgb, var(--acc) 18%, transparent); }
         .geo-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; }
         .geo-cell { background:var(--panel); border:1px solid var(--line); padding:10px 8px; text-align:center; }
-        .geo-num { font-family:var(--sans); font-size:17px; font-weight:900; color:var(--ink1); }
-        .geo-lbl { font-family:var(--mono); font-size:8.5px; color:var(--ink3); text-transform:uppercase; letter-spacing:.5px; margin-top:3px; }
-        .geo-empty { padding:24px; text-align:center; font-family:var(--mono); font-size:12px; color:var(--ink3); border:1px dashed var(--line); }
+        .geo-num { font-family:var(--sans); font-size:1.0625rem; font-weight:900; color:var(--ink1); }
+        .geo-lbl { font-family:var(--mono); font-size:0.53125rem; color:var(--ink3); text-transform:uppercase; letter-spacing:.5px; margin-top:3px; }
+        .geo-empty { padding:24px; text-align:center; font-family:var(--mono); font-size:0.75rem; color:var(--ink3); border:1px dashed var(--line); }
 
         .agg { margin-bottom:18px; }
-        .agg-hdr { font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink3); margin-bottom:8px; }
+        .agg-hdr { font-family:var(--mono); font-size:0.65625rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink3); margin-bottom:8px; }
         .agg-card { border:1px solid var(--line); background:var(--panel2); padding:11px 13px 5px; margin-bottom:8px; }
         .agg-top { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-        .agg-ico { font-size:15px; }
-        .agg-title { flex:1; font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--ink1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .agg-meta { font-family:var(--mono); font-size:11px; font-weight:700; color:var(--acc); white-space:nowrap; }
+        .agg-ico { font-size:0.9375rem; }
+        .agg-title { flex:1; font-family:var(--mono); font-size:0.75rem; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--ink1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .agg-meta { font-family:var(--mono); font-size:0.6875rem; font-weight:700; color:var(--acc); white-space:nowrap; }
 
-        .hist-empty { padding:24px; text-align:center; font-family:var(--mono); font-size:12px; color:var(--ink3); border:1px dashed var(--line); }
+        .hist-empty { padding:24px; text-align:center; font-family:var(--mono); font-size:0.75rem; color:var(--ink3); border:1px dashed var(--line); }
         .hist-list { display:flex; flex-direction:column; gap:2px; }
         .hist-row { display:flex; align-items:flex-start; gap:12px; padding:12px 4px; border-bottom:1px solid var(--line); }
         .hist-row:last-child { border-bottom:none; }
-        .hist-ico { width:34px; height:34px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:16px; background:var(--panel2); border:1px solid var(--line); }
+        .hist-ico { width:34px; height:34px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:1rem; background:var(--panel2); border:1px solid var(--line); }
         .hist-ico.fit { background:color-mix(in srgb, var(--acc) 10%, transparent); border-color:color-mix(in srgb, var(--acc) 30%, transparent); }
         .hist-body { flex:1; min-width:0; }
-        .hist-title { font-family:var(--sans); font-size:14px; font-weight:800; color:var(--ink1); letter-spacing:.3px; }
-        .hist-sub { font-family:var(--mono); font-size:11px; color:var(--ink2); margin-top:3px; line-height:1.5; }
-        .hist-date { font-family:var(--mono); font-size:10.5px; color:var(--ink3); margin-top:4px; letter-spacing:.3px; }
+        .hist-title { font-family:var(--sans); font-size:0.875rem; font-weight:800; color:var(--ink1); letter-spacing:.3px; }
+        .hist-sub { font-family:var(--mono); font-size:0.6875rem; color:var(--ink2); margin-top:3px; line-height:1.5; }
+        .hist-date { font-family:var(--mono); font-size:0.65625rem; color:var(--ink3); margin-top:4px; letter-spacing:.3px; }
 
-        .bd-toast { position:fixed; bottom:110px; left:50%; transform:translateX(-50%); background:var(--panel); border:1px solid var(--acc); color:var(--ink1); padding:10px 20px; font-family:var(--mono); font-size:13px; font-weight:700; z-index:1000; white-space:nowrap; }
+        .bd-toast { position:fixed; bottom:110px; left:50%; transform:translateX(-50%); background:var(--panel); border:1px solid var(--acc); color:var(--ink1); padding:10px 20px; font-family:var(--mono); font-size:0.8125rem; font-weight:700; z-index:1000; white-space:nowrap; }
       `}</style>
     </Page>
   )
@@ -590,7 +590,7 @@ function UpgradeSheet({ user, bikeId, upgrade, onClose, onSaved }) {
         <BtnDelete armed={armed} onClick={() => armed ? remove() : (setArmed(true), setTimeout(() => setArmed(false), 3000))} />
       )}
       <style>{`
-        .upgr-done-toggle{display:flex;align-items:center;gap:10px;width:100%;background:var(--panel2);border:1px solid var(--line);padding:13px;margin-bottom:12px;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--ink1);}
+        .upgr-done-toggle{display:flex;align-items:center;gap:10px;width:100%;background:var(--panel2);border:1px solid var(--line);padding:13px;margin-bottom:12px;font-family:var(--mono);font-size:0.8125rem;font-weight:700;color:var(--ink1);}
         .udt-cb{width:22px;height:22px;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
         .udt-cb.on{background:var(--ok);border-color:var(--ok);}
         .udt-cb svg{width:13px;height:13px;}
@@ -621,10 +621,10 @@ function BikeTypeSheet({ bike, onClose, onSaved }) {
       <BtnGreen onClick={save}>Speichern</BtnGreen>
       <style>{`
         .type-grid { display:flex; flex-direction:column; gap:7px; margin-bottom:14px; }
-        .type-opt { display:flex; align-items:center; gap:11px; padding:13px 14px; font-family:var(--mono); font-size:13px; font-weight:700; letter-spacing:.5px; background:var(--panel2); border:1px solid var(--line); color:var(--ink2); text-align:left; }
+        .type-opt { display:flex; align-items:center; gap:11px; padding:13px 14px; font-family:var(--mono); font-size:0.8125rem; font-weight:700; letter-spacing:.5px; background:var(--panel2); border:1px solid var(--line); color:var(--ink2); text-align:left; }
         .type-opt.on { background:color-mix(in srgb, var(--acc) 10%, transparent); border-color:color-mix(in srgb, var(--acc) 50%, transparent); color:var(--acc); }
         .type-opt:active { border-color:var(--acc); }
-        .type-ico { font-size:18px; width:24px; text-align:center; flex-shrink:0; }
+        .type-ico { font-size:1.125rem; width:24px; text-align:center; flex-shrink:0; }
       `}</style>
     </Sheet>
   )

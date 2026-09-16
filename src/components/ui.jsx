@@ -35,8 +35,8 @@ export function Page({ title, subtitle, action, children, back }) {
         }
         .page-back:active { background: var(--panel); }
         .page-titles { flex: 1; min-width: 0; }
-        .page-title { font-family: var(--sans); font-size: 19px; font-weight: 900; color: var(--ink1); letter-spacing: 2px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .page-sub { font-family: var(--mono); font-size: 11px; color: var(--ink3); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+        .page-title { font-family: var(--sans); font-size: 1.1875rem; font-weight: 900; color: var(--ink1); letter-spacing: 2px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .page-sub { font-family: var(--mono); font-size: 0.6875rem; color: var(--ink3); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
         .page-body { padding: 16px; }
       `}</style>
     </div>
@@ -54,7 +54,7 @@ export function AddButton({ onClick, label = 'Neu' }) {
           background: var(--acc); color: var(--on-acc); border: none;
           padding: 10px 15px; flex-shrink: 0;
           display: flex; align-items: center; gap: 6px;
-          font-family: var(--sans); font-size: 12px; font-weight: 800;
+          font-family: var(--sans); font-size: 0.75rem; font-weight: 800;
           letter-spacing: 1px; text-transform: uppercase; transition: background 0.12s;
         }
         .add-btn:active { background: var(--acc-d); }
@@ -109,8 +109,8 @@ export function Sheet({ title, sub, onClose, children }) {
         }
         .sheet-grab { touch-action: none; cursor: grab; }
         .sheet-hdl { width: 40px; height: 4px; border-radius: 3px; background: var(--ink3); margin: 12px auto 0; }
-        .sheet-ttl { font-family: var(--sans); font-size: 17px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; padding: 14px 18px 4px; color: var(--ink1); }
-        .sheet-sub { font-family: var(--mono); font-size: 11px; color: var(--ink3); letter-spacing: 1px; text-transform: uppercase; padding: 0 18px 14px; }
+        .sheet-ttl { font-family: var(--sans); font-size: 1.0625rem; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; padding: 14px 18px 4px; color: var(--ink1); }
+        .sheet-sub { font-family: var(--mono); font-size: 0.6875rem; color: var(--ink3); letter-spacing: 1px; text-transform: uppercase; padding: 0 18px 14px; }
         .sheet-content { padding: 0 16px; }
       `}</style>
     </>
@@ -128,10 +128,10 @@ export function Field({ label, value, onChange, placeholder, type = 'text', inpu
       />
       <style>{`
         .field { margin-bottom: 12px; }
-        .field-lbl { display: block; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink3); margin-bottom: 6px; }
+        .field-lbl { display: block; font-family: var(--mono); font-size: 0.6875rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink3); margin-bottom: 6px; }
         .field-input {
           width: 100%; background: var(--panel2); border: 1px solid var(--line);
-          padding: 12px 14px; font-size: 15px; color: var(--ink1);
+          padding: 12px 14px; font-size: 0.9375rem; color: var(--ink1);
           font-family: var(--mono); outline: none; transition: border-color 0.15s;
         }
         .field-input:focus { border-color: var(--acc); }
@@ -145,7 +145,7 @@ export function Field({ label, value, onChange, placeholder, type = 'text', inpu
 export function BtnGreen({ onClick, children, disabled }) {
   return (
     <button className="bg-btn" onClick={onClick} disabled={disabled}>{children}
-      <style>{`.bg-btn{display:block;width:100%;margin:8px 0;background:var(--acc);color: var(--on-acc);border:none;padding:15px;font-family:var(--sans);font-size:14px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;transition:background .12s;}.bg-btn:active{background:var(--acc-d);}.bg-btn:disabled{opacity:.4;}`}</style>
+      <style>{`.bg-btn{display:block;width:100%;margin:8px 0;background:var(--acc);color: var(--on-acc);border:none;padding:15px;font-family:var(--sans);font-size:0.875rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;transition:background .12s;}.bg-btn:active{background:var(--acc-d);}.bg-btn:disabled{opacity:.4;}`}</style>
     </button>
   )
 }
@@ -154,7 +154,7 @@ export function BtnDelete({ onClick, armed }) {
   return (
     <button className={`del-btn ${armed ? 'armed' : ''}`} onClick={onClick}>
       {armed ? 'Wirklich löschen?' : 'Löschen'}
-      <style>{`.del-btn{display:block;width:100%;margin:0 0 8px;background:color-mix(in srgb, var(--crit) 8%, transparent);color:var(--crit);border:1px solid color-mix(in srgb, var(--crit) 40%, transparent);padding:13px;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;transition:all .12s;}.del-btn.armed{background:var(--crit);color:white;border-color:var(--crit);}`}</style>
+      <style>{`.del-btn{display:block;width:100%;margin:0 0 8px;background:color-mix(in srgb, var(--crit) 8%, transparent);color:var(--crit);border:1px solid color-mix(in srgb, var(--crit) 40%, transparent);padding:13px;font-family:var(--sans);font-size:0.8125rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;transition:all .12s;}.del-btn.armed{background:var(--crit);color:white;border-color:var(--crit);}`}</style>
     </button>
   )
 }
@@ -169,9 +169,9 @@ export function Empty({ emoji, title, sub, action }) {
       {action}
       <style>{`
         .empty { background: linear-gradient(160deg, rgba(255,255,255,.04), rgba(255,255,255,.01)); border: 1px solid var(--line); padding: 38px 22px; text-align: center; }
-        .empty-emoji { font-size: 44px; margin-bottom: 12px; opacity: .85; }
-        .empty-title { font-family: var(--sans); font-size: 16px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; color: var(--ink1); }
-        .empty-sub { font-family: var(--mono); font-size: 12px; color: var(--ink3); line-height: 1.6; }
+        .empty-emoji { font-size: 2.75rem; margin-bottom: 12px; opacity: .85; }
+        .empty-title { font-family: var(--sans); font-size: 1rem; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; color: var(--ink1); }
+        .empty-sub { font-family: var(--mono); font-size: 0.75rem; color: var(--ink3); line-height: 1.6; }
       `}</style>
     </div>
   )

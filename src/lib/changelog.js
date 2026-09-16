@@ -8,6 +8,7 @@ export const CHANGELOG = [
     v: 22,
     date: '16.09.2026',
     items: [
+      ['fix', 'Tablet: Die gesamte Oberfläche war unscharf. Sie wurde bisher als Ganzes hochskaliert – auf iPad-Safari wird dabei das fertige Bild vergrößert statt neu gezeichnet, und über Kopfzeile und Navigationsleiste verwischt alles. Die Schrift wächst jetzt echt mit, statt vergrößert zu werden: gleiche Größe wie vorher, aber gestochen scharf'],
       ['new', 'Der Kalender zeigt jetzt jede einzelne Fahrt: Tag antippen und du siehst „+12,0 km · Madone SL6" – noch einmal antippen und die Fahrt klappt auf mit Wetter, Intensität, Ø-Watt, Fahrzeit, Schnitt und Höhenmetern'],
       ['fix', 'Oberer Bildschirmrand war seit dem iOS-Update unscharf: Die App legte sich unter Uhr und Akku, und ihr fehlte eine feste Hintergrundfarbe – daraufhin legte iOS eine eigene Weichzeichnung über den Bereich. Die Statusleiste gehört jetzt dem System, die App beginnt sauber darunter und hat eine echte Grundfarbe'],
       ['fix', 'Die Farbe der Statusleiste folgt jetzt der gewählten Darstellung statt immer dunkelblau zu bleiben'],

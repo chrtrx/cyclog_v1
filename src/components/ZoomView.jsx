@@ -73,10 +73,10 @@ export default function ZoomView({ onClose, children }) {
         .zv-inner .bd-draw { margin: 0; }
         .zv-bar { position: fixed; bottom: calc(env(safe-area-inset-bottom) + 18px); left: 50%; transform: translateX(-50%);
           display: flex; gap: 2px; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-        .zv-bar button { background: none; border: none; color: var(--ink1); font-family: var(--mono); font-size: 15px; font-weight: 700; padding: 11px 18px; min-width: 56px; }
+        .zv-bar button { background: none; border: none; color: var(--ink1); font-family: var(--mono); font-size: 0.9375rem; font-weight: 700; padding: 11px 18px; min-width: 56px; }
         .zv-bar button:active { background: var(--panel); }
         .zv-close { position: fixed; top: calc(env(safe-area-inset-top) + 12px); right: 14px; width: 42px; height: 42px;
-          background: var(--panel2); border: 1px solid var(--line); border-radius: 50%; color: var(--ink1); font-size: 16px; }
+          background: var(--panel2); border: 1px solid var(--line); border-radius: 50%; color: var(--ink1); font-size: 1rem; }
       `}</style>
     </div>
   )

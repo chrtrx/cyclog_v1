@@ -153,21 +153,21 @@ export default function More() {
       </button>
 
       <style>{`
-        .more-group { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--ink3); margin:18px 2px 9px; }
+        .more-group { font-family:var(--mono); font-size:0.625rem; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--ink3); margin:18px 2px 9px; }
         .more-group:first-of-type { margin-top:2px; }
         .more-row { display:flex; align-items:center; gap:14px; width:100%; background:linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.015)); border:1px solid var(--line); padding:15px; margin-bottom:10px; cursor:pointer; transition:background .12s; }
         .more-row:active { background:rgba(255,255,255,.02); }
-        .mr-icon { width:44px; height:44px; background:var(--panel2); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:21px; flex-shrink:0; }
+        .mr-icon { width:44px; height:44px; background:var(--panel2); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:1.3125rem; flex-shrink:0; }
         .mr-body { flex:1; min-width:0; text-align:left; }
-        .mr-label { font-family:var(--sans); font-size:15px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--ink1); }
-        .mr-sub { font-family:var(--mono); font-size:10.5px; color:var(--ink3); letter-spacing:.5px; margin-top:3px; }
+        .mr-label { font-family:var(--sans); font-size:0.9375rem; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--ink1); }
+        .mr-sub { font-family:var(--mono); font-size:0.65625rem; color:var(--ink3); letter-spacing:.5px; margin-top:3px; }
         .more-row.logout { margin-top:20px; }
         .more-row.logout .mr-label { color:var(--crit); }
         .theme-row { cursor:default; }
         .th-opts { display:flex; gap:6px; margin-top:8px; }
-        .th-opt { flex:1; background:var(--panel2); border:1px solid var(--line); color:var(--ink2); font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.3px; padding:9px 6px; }
+        .th-opt { flex:1; background:var(--panel2); border:1px solid var(--line); color:var(--ink2); font-family:var(--mono); font-size:0.6875rem; font-weight:700; letter-spacing:.3px; padding:9px 6px; }
         .th-opt.on { background:color-mix(in srgb, var(--acc) 12%, transparent); border-color:var(--acc); color:var(--acc); }
-        .push-pill { font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;padding:4px 9px;border:1px solid var(--line);color:var(--ink3);flex-shrink:0; }
+        .push-pill { font-family:var(--mono);font-size:0.625rem;font-weight:700;letter-spacing:1.5px;padding:4px 9px;border:1px solid var(--line);color:var(--ink3);flex-shrink:0; }
         .push-pill.on { border-color:color-mix(in srgb, var(--ok) 40%, transparent);color:var(--ok); }
         .push-pill.denied, .push-pill.unsupported { border-color:color-mix(in srgb, var(--crit) 30%, transparent);color:var(--crit); }
       `}</style>

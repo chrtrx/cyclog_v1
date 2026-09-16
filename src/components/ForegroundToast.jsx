@@ -45,11 +45,11 @@ export default function ForegroundToast() {
           animation: fgDrop .28s cubic-bezier(0.32,0.72,0,1);
         }
         @keyframes fgDrop { from { transform: translate(-50%, -120%); } to { transform: translate(-50%, 0); } }
-        .fg-icon { font-size: 18px; flex-shrink: 0; }
+        .fg-icon { font-size: 1.125rem; flex-shrink: 0; }
         .fg-body { flex: 1; min-width: 0; }
-        .fg-title { font-family: var(--sans); font-size: 14px; font-weight: 800; letter-spacing: .3px; color: var(--ink1); }
-        .fg-text { font-family: var(--mono); font-size: 11px; color: var(--ink2); margin-top: 3px; line-height: 1.4; }
-        .fg-close { flex-shrink: 0; background: none; border: none; color: var(--ink3); font-size: 13px; padding: 2px 4px; }
+        .fg-title { font-family: var(--sans); font-size: 0.875rem; font-weight: 800; letter-spacing: .3px; color: var(--ink1); }
+        .fg-text { font-family: var(--mono); font-size: 0.6875rem; color: var(--ink2); margin-top: 3px; line-height: 1.4; }
+        .fg-close { flex-shrink: 0; background: none; border: none; color: var(--ink3); font-size: 0.8125rem; padding: 2px 4px; }
       `}</style>
     </div>
   )

@@ -65,19 +65,19 @@ export default function WhatsNew() {
         }
         @keyframes wnPop { from { transform: translateY(16px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
         .wn-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-        .wn-spark { font-size: 26px; }
-        .wn-title { font-family: var(--sans); font-size: 19px; font-weight: 900; letter-spacing: -.3px; color: var(--ink1); }
-        .wn-sub { font-family: var(--mono); font-size: 11px; color: var(--ink3); margin-top: 2px; }
+        .wn-spark { font-size: 1.625rem; }
+        .wn-title { font-family: var(--sans); font-size: 1.1875rem; font-weight: 900; letter-spacing: -.3px; color: var(--ink1); }
+        .wn-sub { font-family: var(--mono); font-size: 0.6875rem; color: var(--ink3); margin-top: 2px; }
         .wn-list { overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px; }
         .wn-item { display: flex; align-items: flex-start; gap: 10px; }
         .wn-tag {
-          flex-shrink: 0; font-family: var(--mono); font-size: 9px; font-weight: 800; letter-spacing: .5px;
+          flex-shrink: 0; font-family: var(--mono); font-size: 0.5625rem; font-weight: 800; letter-spacing: .5px;
           text-transform: uppercase; padding: 3px 7px; border: 1px solid; border-radius: 6px; margin-top: 1px;
         }
-        .wn-text { font-family: var(--sans); font-size: 14px; line-height: 1.45; color: var(--ink1); }
+        .wn-text { font-family: var(--sans); font-size: 0.875rem; line-height: 1.45; color: var(--ink1); }
         .wn-btn {
           margin-top: 18px; width: 100%; background: var(--acc); color: var(--on-acc); border: none; border-radius: 10px;
-          padding: 14px; font-family: var(--sans); font-size: 14px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+          padding: 14px; font-family: var(--sans); font-size: 0.875rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
         }
       `}</style>
     </div>

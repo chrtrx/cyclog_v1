@@ -75,14 +75,14 @@ export default function InstallHint() {
           border-radius: 12px; padding: 12px 14px;
           box-shadow: 0 12px 34px rgba(0,0,0,.45);
         }
-        .ih-icon { font-size: 22px; flex-shrink: 0; }
+        .ih-icon { font-size: 1.375rem; flex-shrink: 0; }
         .ih-body { flex: 1; min-width: 0; }
-        .ih-title { font-family: var(--sans); font-size: 13px; font-weight: 800; letter-spacing: .3px; color: var(--ink1); }
-        .ih-sub { font-family: var(--mono); font-size: 10.5px; color: var(--ink3); margin-top: 2px; line-height: 1.35; }
-        .ih-btn { flex-shrink: 0; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+        .ih-title { font-family: var(--sans); font-size: 0.8125rem; font-weight: 800; letter-spacing: .3px; color: var(--ink1); }
+        .ih-sub { font-family: var(--mono); font-size: 0.65625rem; color: var(--ink3); margin-top: 2px; line-height: 1.35; }
+        .ih-btn { flex-shrink: 0; font-family: var(--mono); font-size: 0.6875rem; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
           color: var(--on-acc); background: var(--acc); border: none; padding: 9px 13px; border-radius: 8px; cursor: pointer; }
         .ih-btn:active { background: var(--acc-d); }
-        .ih-close { flex-shrink: 0; background: none; border: none; color: var(--ink3); font-size: 13px; padding: 4px 6px; cursor: pointer; }
+        .ih-close { flex-shrink: 0; background: none; border: none; color: var(--ink3); font-size: 0.8125rem; padding: 4px 6px; cursor: pointer; }
       `}</style>
     </div>
   )

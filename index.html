@@ -35,6 +35,13 @@
       overscroll-behavior-x: none;
       height: 100%;
     }
+    /* Der Seitenhintergrund wurde bisher ausschliesslich von body::before
+       gemalt - html und body selbst blieben durchsichtig. Safari 26 tastet
+       fuer seine "Liquid Glass"-Behandlung am oberen Rand aber genau diese
+       Wurzelfarbe ab; findet es nichts, legt es ersatzweise einen eigenen
+       Weichzeichner ueber den Bereich unter Uhr und Akku. Die feste Farbe
+       liegt unter dem Verlauf und aendert optisch nichts. */
+    html, body { background-color: var(--bg0); }
     :root {
       /* ── NEUE Datenblatt-Palette (dunkelblau) ── */
       --bg0:#070d1a; --bg2:#0a1426; --panel:#0c1730; --panel2:#0e1b38;

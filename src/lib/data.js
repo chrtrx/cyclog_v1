@@ -86,6 +86,35 @@ export async function deleteBike(bikeId) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// RÜCKMELDUNGEN (Beta)
+// ═══════════════════════════════════════════════════════════
+export const FEEDBACK_KINDS = [
+  { id: 'bug',   icon: '🐞', label: 'Fehler' },
+  { id: 'idea',  icon: '💡', label: 'Idee' },
+  { id: 'like',  icon: '👍', label: 'Gefällt mir' },
+  { id: 'other', icon: '💬', label: 'Sonstiges' },
+]
+
+export const FEEDBACK_AREAS = [
+  'Start & Tracker', 'Räder & Teile', 'Kalender', 'Rolle',
+  'Setups', 'Rennen', 'Benachrichtigungen', 'Strava-Sync', 'Sonstiges',
+]
+
+export async function addFeedback(userId, entry) {
+  const { data, error } = await supabase.from('feedback')
+    .insert({ ...entry, user_id: userId }).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function getMyFeedback(userId) {
+  const { data, error } = await supabase.from('feedback')
+    .select('*').eq('user_id', userId).order('created_at', { ascending: false })
+  if (error) return []
+  return data || []
+}
+
+// ═══════════════════════════════════════════════════════════
 // ROLLE (Indoor-Trainer)
 //
 // Die Rolle ist ein normales Rad mit is_trainer = true. Sie hat eine eigene

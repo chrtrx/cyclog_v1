@@ -5,6 +5,14 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 25,
+    date: '30.10.2026',
+    items: [
+      ['new', 'Feedback (Mehr → Feedback): Fehler, Ideen und Lob direkt aus der App heraus melden. Gerät und App-Version gehen automatisch mit, damit sich ein Fehler auch nachstellen lässt'],
+      ['new', 'Einstiegsseite unter /start: erklärt, was Cyclog ist, und zeigt je nach Gerät, wie man die App auf den Home-Bildschirm legt – der Link für neue Tester'],
+    ],
+  },
+  {
     v: 24,
     date: '30.10.2026',
     items: [

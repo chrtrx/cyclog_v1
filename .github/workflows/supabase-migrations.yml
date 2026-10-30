@@ -1,14 +1,19 @@
 name: Supabase Migrations
 
-# Wendet alle SQL-Migrationen automatisch auf das Supabase-Projekt an,
-# sobald sie nach main gemerged werden. Nutzt die Supabase Management API
-# (POST .../database/query) — dadurch wird KEIN Datenbank-Passwort benötigt,
-# nur ein Access-Token. Läuft nur, wenn sich Migrationen geändert haben,
-# und kann zusätzlich manuell über "Run workflow" im Actions-Tab gestartet
-# werden.
+# Wendet alle SQL-Migrationen auf das Supabase-Projekt an, sobald sie nach
+# main gemerged werden. Kann zusätzlich manuell über "Run workflow" im
+# Actions-Tab gestartet werden.
 #
-# Alle Migrationen sind idempotent (IF NOT EXISTS), daher ist es unbedenklich,
-# dass bei jedem Lauf sämtliche Dateien (001..) erneut ausgeführt werden.
+# Verbindet sich direkt per psql mit der Datenbank. Die Vorgängerfassung
+# nutzte die Management-API mit einem persönlichen Access-Token – das kam
+# ohne Datenbank-Passwort aus, lief dafür aber alle paar Wochen ab und hat
+# den Workflow zweimal ohne Vorwarnung lahmgelegt. Ein Datenbank-Passwort
+# läuft nicht ab.
+#
+# Alle Migrationen sind idempotent (IF NOT EXISTS), daher ist es
+# unbedenklich, dass bei jedem Lauf sämtliche Dateien (001..) erneut
+# ausgeführt werden. Jede Datei läuft in EINER Transaktion: Scheitert eine
+# Anweisung, wird die ganze Datei zurückgerollt statt halb angewendet.
 
 on:
   push:
@@ -26,75 +31,84 @@ jobs:
   migrate:
     runs-on: ubuntu-latest
     env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      DB_URL: ${{ secrets.SUPABASE_DB_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Migrationen anwenden (Management API)
+      - name: psql bereitstellen
+        run: |
+          psql --version >/dev/null 2>&1 || {
+            sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+          }
+          psql --version
+
+      - name: Verbindung prüfen
         run: |
           set -uo pipefail
+          url="$(printf '%s' "${DB_URL:-}" | tr -d '[:space:]')"
 
-          # Secrets von versehentlichen Leerzeichen/Zeilenumbrüchen befreien
-          # (häufig beim Kopieren auf dem Handy).
-          ref="$(printf '%s' "${SUPABASE_PROJECT_REF:-}" | tr -d '[:space:]')"
-          token="$(printf '%s' "${SUPABASE_ACCESS_TOKEN:-}" | tr -d '[:space:]')"
-
-          if [ -z "$ref" ] || [ -z "$token" ]; then
-            echo "::error::Fehlende Secrets. Bitte SUPABASE_ACCESS_TOKEN und SUPABASE_PROJECT_REF anlegen."
+          if [ -z "$url" ]; then
+            echo "::error::Secret SUPABASE_DB_URL fehlt."
+            echo "::error::So anlegen: Supabase-Dashboard → Project Settings → Database → Connection string → Session pooler. Zeichenfolge kopieren, [YOUR-PASSWORD] durch das Datenbank-Passwort ersetzen, dann in GitHub unter Settings → Secrets and variables → Actions als SUPABASE_DB_URL speichern."
             exit 1
           fi
 
-          # Diagnose: Der Projekt-Ref muss exakt 20 Kleinbuchstaben (a-z) sein.
-          echo "PROJECT_REF Länge: ${#ref} (erwartet: 20)"
-          if printf '%s' "$ref" | grep -qE '^[a-z]{20}$'; then
-            echo "PROJECT_REF Format: OK"
-          else
-            echo "::error::SUPABASE_PROJECT_REF passt nicht zum erwarteten Format (genau 20 Kleinbuchstaben a-z). Bitte im Dashboard unter Settings → General die 'Reference ID' prüfen und das Secret korrigieren."
-            exit 1
-          fi
-
-          # Zugang EINMAL vorab prüfen. Ohne diesen Schritt scheitert jede
-          # einzelne Migration mit demselben 401 und die eigentliche Ursache
-          # geht in einer Wand aus Folgefehlern unter.
-          probe=$(curl -sS -o probe.json -w "%{http_code}" \
-            -H "Authorization: Bearer ${token}" \
-            "https://api.supabase.com/v1/projects/${ref}")
-          case "$probe" in
-            401|403)
-              echo "::error::Supabase lehnt den Zugriff ab (HTTP $probe) – der SUPABASE_ACCESS_TOKEN ist ungültig, abgelaufen oder widerrufen. Die Migrationen selbst wurden gar nicht erst ausgeführt."
-              echo "::error::So beheben: 1) Neuen Token erzeugen unter https://supabase.com/dashboard/account/tokens  2) In GitHub unter Settings → Secrets and variables → Actions das Secret SUPABASE_ACCESS_TOKEN ersetzen  3) Diesen Workflow im Actions-Tab über 'Run workflow' erneut starten."
-              exit 1 ;;
-            404)
-              echo "::error::Projekt '$ref' nicht gefunden oder für diesen Token nicht freigegeben (HTTP 404). Reference ID im Supabase-Dashboard unter Settings → General prüfen. Pausierte Projekte (Free-Tier) müssen dort zuerst reaktiviert werden."
-              exit 1 ;;
-            2*)
-              echo "✓ Zugang geprüft – Projekt erreichbar." ;;
-            *)
-              echo "::error::Supabase-API antwortet unerwartet (HTTP $probe): $(cat probe.json)"
-              exit 1 ;;
+          case "$url" in
+            postgresql://*|postgres://*) : ;;
+            *) echo "::error::SUPABASE_DB_URL sieht nicht wie eine Verbindungszeichenfolge aus (erwartet wird etwas, das mit postgresql:// beginnt)."
+               exit 1 ;;
           esac
 
-          api="https://api.supabase.com/v1/projects/${ref}/database/query"
+          if printf '%s' "$url" | grep -q 'YOUR-PASSWORD\|\[YOUR'; then
+            echo "::error::In SUPABASE_DB_URL steht noch der Platzhalter [YOUR-PASSWORD]. Bitte durch das echte Datenbank-Passwort ersetzen (Dashboard → Project Settings → Database → Reset database password, falls unbekannt)."
+            exit 1
+          fi
+
+          # GitHub-Runner sprechen nur IPv4. Die direkte Verbindung
+          # (db.<ref>.supabase.co) ist aber nur über IPv6 erreichbar, solange
+          # kein IPv4-Add-on gebucht ist. Ohne diesen Hinweis endet das in
+          # einem nichtssagenden "Network is unreachable".
+          if printf '%s' "$url" | grep -q '@db\.[a-z]*\.supabase\.co'; then
+            echo "::error::Das ist die DIREKTE Verbindung – die ist nur über IPv6 erreichbar, GitHub-Runner haben aber nur IPv4."
+            echo "::error::Bitte stattdessen die Zeichenfolge unter 'Session pooler' verwenden (Host endet auf .pooler.supabase.com, Benutzer lautet postgres.<project-ref>)."
+            exit 1
+          fi
+
+          # Zugang EINMAL vorab prüfen. Sonst scheitert jede einzelne
+          # Migration an derselben Ursache und die geht in Folgefehlern unter.
+          if psql "$url" -At -c 'select 1' >/dev/null 2>probe.err; then
+            echo "✓ Verbindung steht."
+          else
+            msg="$(cat probe.err)"
+            echo "$msg"
+            case "$msg" in
+              *"password authentication failed"*)
+                echo "::error::Passwort abgelehnt. Datenbank-Passwort im Dashboard unter Project Settings → Database zurücksetzen und SUPABASE_DB_URL neu setzen." ;;
+              *"Network is unreachable"*|*"could not translate host name"*)
+                echo "::error::Host nicht erreichbar. Fast immer die falsche Zeichenfolge – es muss die unter 'Session pooler' sein." ;;
+              *"Tenant or user not found"*)
+                echo "::error::Benutzer passt nicht zum Pooler. Beim Session pooler lautet er postgres.<project-ref>, nicht bloß postgres." ;;
+              *)
+                echo "::error::Verbindung fehlgeschlagen (siehe Meldung oben). Pausierte Projekte im Free-Tier müssen im Dashboard zuerst reaktiviert werden." ;;
+            esac
+            exit 1
+          fi
+
+      - name: Migrationen anwenden
+        run: |
+          set -uo pipefail
+          url="$(printf '%s' "${DB_URL}" | tr -d '[:space:]')"
           fail=0
           for f in $(ls supabase/migrations/*.sql | sort); do
             echo "── Wende an: $f"
-            jq -Rs '{query: .}' "$f" > payload.json
-            code=$(curl -sS -o resp.json -w "%{http_code}" \
-              -X POST "$api" \
-              -H "Authorization: Bearer ${token}" \
-              -H "Content-Type: application/json" \
-              --data-binary @payload.json)
-            echo "   HTTP $code"
-            echo "   Antwort: $(cat resp.json)"
-            # Auth-Fehler werden mit der nächsten Datei nicht besser → Abbruch.
-            if [ "$code" = "401" ] || [ "$code" = "403" ]; then
-              echo "::error::Zugriff verweigert (HTTP $code) – Abbruch. Bitte SUPABASE_ACCESS_TOKEN erneuern (siehe Hinweis oben)."
-              exit 1
-            fi
-            if [ "$code" -ge 300 ]; then
-              echo "::error::$f fehlgeschlagen (HTTP $code)"
+            # --single-transaction: ganze Datei oder gar nichts.
+            # ON_ERROR_STOP: psql bricht bei der ersten Fehlermeldung ab,
+            # statt weiterzulaufen und am Ende trotzdem 0 zurückzugeben.
+            if psql "$url" --single-transaction -v ON_ERROR_STOP=1 -q -f "$f"; then
+              echo "   ✓ ok"
+            else
+              echo "::error::$f fehlgeschlagen – die Datei wurde komplett zurückgerollt."
               fail=1
             fi
           done

@@ -76,6 +76,7 @@ export default function More() {
     { path:'/trainer',  icon:'🏠', label:'Rolle',         sub:'Welches Rad steht drauf – Kilometer für die Kette' },
     { path:'/races',    icon:'🏁', label:'Rennen',        sub:'Setup & Ergebnis dokumentieren' },
     { path:'/usage',    icon:'📊', label:'Nutzung',       sub:'Welche Funktionen du am meisten brauchst' },
+    { path:'/feedback', icon:'💬', label:'Feedback',      sub:'Was fehlt, was nervt, was gefällt – direkt an mich' },
   ]
 
   return (

@@ -11,6 +11,7 @@ import {
 import { Page, Sheet, Field, BtnGreen, BtnDelete } from '../components/ui'
 import { BIKE_ICONS } from '../lib/helpers'
 import { CondStats } from '../components/TrackerCard'
+import IndoorTab from '../components/IndoorTab'
 
 const GEO_FIELDS = [
   { k: 'geo_stack',       l: 'Stack' },
@@ -149,6 +150,7 @@ export default function BikeDetail() {
     { id: 'notes',    label: 'Notizen' },
     { id: 'upgrades', label: 'Upgrades' },
     { id: 'geo',      label: 'Geometrie' },
+    { id: 'indoor',   label: 'Indoor' },
     { id: 'history',  label: 'Historie' },
   ]
 
@@ -185,6 +187,11 @@ export default function BikeDetail() {
           </button>
         ))}
       </div>
+
+      {/* ── INDOOR ── */}
+      {tab === 'indoor' && (
+        <IndoorTab bike={bike} user={user} onChanged={load} />
+      )}
 
       {/* ── TEILE ── */}
       {tab === 'parts' && (

@@ -5,6 +5,17 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 24,
+    date: '30.10.2026',
+    items: [
+      ['new', 'Rolle (Mehr → Rolle): Ordne deine Zwift Hub einmal zu und lege fest, welches Rad daraufsteht. Die Kilometer vom Indoor-Training zählen dann auf dessen Kette mit'],
+      ['new', 'Wechselverlauf der Rolle: Steckst du ein anderes Rad auf, bleibt nachvollziehbar, welches Rad von wann bis wann draufstand – und wie viele Rollen-Kilometer dabei zusammenkamen'],
+      ['new', 'Je Tracker einstellbar, ob die Rolle mitzählt. Voreingestellt ist der Antrieb (Kette, Kassette); Bremsen, Reifen und Fahrwerk verschleißen drinnen nicht und bleiben außen vor'],
+      ['new', 'Neues Rad anlegen: Ist Strava verbunden, stehen deine Räder dort direkt zur Auswahl. Einmal antippen setzt Name, km-Stand und die Verknüpfung – ab dann werden Fahrten dieses Rads automatisch gutgeschrieben'],
+      ['fix', 'Einen gelöschten Tracker wiederherzustellen hat bisher sein Stunden-Intervall und den Stundenstand verloren – beides kommt jetzt mit zurück'],
+    ],
+  },
+  {
     v: 23,
     date: '16.09.2026',
     items: [

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
-import { getBikes, getTrackers } from '../lib/data'
+import { getBikes, getTrackers, getIndoorKmByBike } from '../lib/data'
 import { BIKE_ICONS, pct, statusOf } from '../lib/helpers'
 import { Page, Empty } from '../components/ui'
 
@@ -10,6 +10,7 @@ export default function Bikes() {
   const nav = useNavigate()
   const [bikes, setBikes] = useState([])
   const [trackers, setTrackers] = useState([])
+  const [indoorMap, setIndoorMap] = useState({})
   const [showArchived, setShowArchived] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -17,8 +18,11 @@ export default function Bikes() {
   async function load() {
     setLoading(true)
     try {
-      const [b, t] = await Promise.all([getBikes(user.id), getTrackers(user.id)])
-      setBikes(b); setTrackers(t)
+      const [b, t, ind] = await Promise.all([
+        getBikes(user.id), getTrackers(user.id),
+        getIndoorKmByBike(user.id).catch(() => ({})),
+      ])
+      setBikes(b); setTrackers(t); setIndoorMap(ind)
     } catch (e) {
       console.error('Räder laden fehlgeschlagen', e)
     } finally {
@@ -30,7 +34,7 @@ export default function Bikes() {
     const ts = trackers.filter(t => t.bike_id === bikeId)
     let crit = 0, warn = 0
     ts.forEach(t => {
-      const s = statusOf(pct(t, bikeKm))
+      const s = statusOf(pct(t, bikeKm, 0, indoorMap[bikeId] || 0))
       if (s === 'crit') crit++
       else if (s === 'warn') warn++
     })

@@ -73,6 +73,7 @@ export default function More() {
     { path:'/calendar', icon:'📅', label:'Kalender',      sub:'Wartungen, Rennen, Defekte & fällige Tracker' },
     { path:'/fit',      icon:'📐', label:'Bike-Fit',      sub:'Geometrie, Sitzposition & Rad-Vergleich' },
     { path:'/setups',   icon:'🔧', label:'Setups',        sub:'Verbaute Teile & was sich geändert hat' },
+    { path:'/trainer',  icon:'🏠', label:'Rolle',         sub:'Welches Rad steht drauf – Kilometer für die Kette' },
     { path:'/races',    icon:'🏁', label:'Rennen',        sub:'Setup & Ergebnis dokumentieren' },
     { path:'/usage',    icon:'📊', label:'Nutzung',       sub:'Welche Funktionen du am meisten brauchst' },
   ]

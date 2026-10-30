@@ -4,10 +4,22 @@
 // ═══════════════════════════════════════════════════════════
 
 // Wie viele km seit dem Service gefahren wurden.
-export function kmSince(tracker, bikeKm) {
+//
+// Rollen-Kilometer sind eine zweite, getrennte Zahl: bikes.km wird bei jedem
+// Sync aus dem Strava-Odometer ueberschrieben, und dort laufen Rollenfahrten
+// auf die Rolle statt auf das aufgesteckte Rad. Tracker, die drinnen
+// verschleissen (Antrieb), rechnen sie deshalb obendrauf; Bremsen, Reifen und
+// Fahrwerk lassen sie weg.
+export function kmSince(tracker, bikeKm, indoorKm = 0) {
   const km = Number(bikeKm) || 0
   const start = Number(tracker?.km_at_start) || 0
-  return Math.max(0, km - start)
+  let done = Math.max(0, km - start)
+  if (tracker?.counts_indoor) {
+    const ind = Number(indoorKm) || 0
+    const indStart = Number(tracker?.indoor_km_at_start) || 0
+    done += Math.max(0, ind - indStart)
+  }
+  return done
 }
 
 // Wie viele Stunden seit dem Service gefahren wurden.
@@ -43,7 +55,7 @@ export function daysUntilDue(tracker) {
 }
 
 // Fortschritt 0..1. Unterstützt km-, Stunden- und Datums-Intervalle.
-export function pct(tracker, bikeKm, bikeHours = 0) {
+export function pct(tracker, bikeKm, bikeHours = 0, indoorKm = 0) {
   if (tracker?.interval_type === 'date') {
     const months = Number(tracker?.interval_km)
     if (!months || months <= 0) return 0
@@ -62,7 +74,7 @@ export function pct(tracker, bikeKm, bikeHours = 0) {
   }
   const interval = Number(tracker?.interval_km)
   if (!interval || interval <= 0) return 0
-  const done = kmSince(tracker, bikeKm)
+  const done = kmSince(tracker, bikeKm, indoorKm)
   const p = done / interval
   if (!isFinite(p) || p < 0) return 0
   return Math.min(p, 1)
@@ -98,7 +110,7 @@ export function fmtDate(iso) {
 }
 
 // Vorhersage: wann wird der Tracker fällig? Unterstützt km und Stunden.
-export function predictDue(tracker, bikeKm, bikeHours = 0) {
+export function predictDue(tracker, bikeKm, bikeHours = 0, indoorKm = 0) {
   if (tracker?.interval_type === 'h') {
     const done = hoursSince(tracker, bikeHours)
     if (done < 2) return null
@@ -119,7 +131,7 @@ export function predictDue(tracker, bikeKm, bikeHours = 0) {
     return { dueDateStr, weeks, timePct }
   }
 
-  const done = kmSince(tracker, bikeKm)
+  const done = kmSince(tracker, bikeKm, indoorKm)
   if (done < 20) return null
   const startDate = new Date(tracker.start_date)
   const now = new Date()

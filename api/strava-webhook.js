@@ -3,7 +3,7 @@
 
 import {
   getAdmin, configureWebPush, pct, sendToSubscriptions,
-  evaluateBucket, buildKmChanges, composePush, hoursByBike, syncStravaUser, updateNotifiedKm, logNotification,
+  evaluateBucket, buildKmChanges, composePush, hoursByBike, indoorKmByBike, syncStravaUser, updateNotifiedKm, logNotification,
 } from './_due.js'
 import { fetchActivityDetail, isRaceActivity, isRideType } from './_strava.js'
 
@@ -131,12 +131,19 @@ export default async function handler(req, res) {
       await logNotification(admin, userId, racePayload)
     }
 
-    const hours = await hoursByBike(admin, userId)
+    const [hours, indoor] = await Promise.all([
+      hoursByBike(admin, userId),
+      indoorKmByBike(admin, userId),
+    ])
     const bikeById = {}
     for (const b0 of bikes || []) bikeById[b0.id] = b0
     const items = (trackers || [])
       .filter((t) => bikeById[t.bike_id] && !bikeById[t.bike_id].archived)
-      .map((t) => ({ t, bike: bikeById[t.bike_id], p: pct(t, bikeById[t.bike_id].km, hours[t.bike_id] || 0) }))
+      .map((t) => ({
+        t,
+        bike: bikeById[t.bike_id],
+        p: pct(t, bikeById[t.bike_id].km, hours[t.bike_id] || 0, indoor[t.bike_id] || 0),
+      }))
 
     const b = evaluateBucket(items, Date.now())
     const kmChanges = buildKmChanges(bikes)

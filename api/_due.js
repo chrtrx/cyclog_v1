@@ -21,7 +21,10 @@ export function configureWebPush() {
 }
 
 // Fortschritt 0..1 – Spiegel von src/lib/helpers.js (km / Stunden / Monate).
-export function pct(t, bikeKm, bikeHours = 0) {
+// indoorKm sind die Rollen-Kilometer des Rads; sie zaehlen nur fuer Tracker
+// mit counts_indoor. Muss mit helpers.js uebereinstimmen, sonst melden
+// Benachrichtigung und App unterschiedliche Staende.
+export function pct(t, bikeKm, bikeHours = 0, indoorKm = 0) {
   if (t?.interval_type === 'date') {
     const months = Number(t?.interval_km)
     if (!months || months <= 0) return 0
@@ -40,7 +43,10 @@ export function pct(t, bikeKm, bikeHours = 0) {
   }
   const interval = Number(t?.interval_km)
   if (!interval || interval <= 0) return 0
-  const done = Math.max(0, (Number(bikeKm) || 0) - (Number(t?.km_at_start) || 0))
+  let done = Math.max(0, (Number(bikeKm) || 0) - (Number(t?.km_at_start) || 0))
+  if (t?.counts_indoor) {
+    done += Math.max(0, (Number(indoorKm) || 0) - (Number(t?.indoor_km_at_start) || 0))
+  }
   const p = done / interval
   return isFinite(p) && p > 0 ? Math.min(p, 1) : 0
 }
@@ -134,6 +140,17 @@ export async function hoursByBike(admin, userId) {
   try {
     const { data } = await admin.rpc('bike_hours', { p_user_id: userId })
     for (const r of data || []) map[r.bike_id] = Number(r.hours) || 0
+  } catch (e) { /* ignorieren */ }
+  return map
+}
+
+// Rollen-Kilometer je aufgestecktem Rad (Migration 025). Fehlt die Funktion
+// noch, bleibt die Karte leer und alles rechnet wie bisher ohne Rolle.
+export async function indoorKmByBike(admin, userId) {
+  const map = {}
+  try {
+    const { data } = await admin.rpc('indoor_km_by_bike', { p_user_id: userId })
+    for (const r of data || []) map[r.bike_id] = Number(r.km) || 0
   } catch (e) { /* ignorieren */ }
   return map
 }

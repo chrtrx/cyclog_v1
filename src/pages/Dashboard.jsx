@@ -5,7 +5,7 @@ import { useAuth } from '../lib/auth'
 import {
   getBikes, addBike, updateBike, getTrackers, addTracker, updateTracker, deleteTracker,
   getServiceLogs, addServiceLog, syncStrava, getStravaStatus, getProfile,
-  getHoursByBike, getUnreadCount, SERVICE_TYPES, BIKE_TYPES,
+  getHoursByBike, getIndoorKmByBike, defaultCountsIndoor, getUnreadCount, SERVICE_TYPES, BIKE_TYPES,
   getCustomServiceTypes, addCustomServiceType, deleteCustomServiceType,
   getRideConditions, addRideCondition, updateRideCondition,
   getRideMetrics, markRideMetricsConsumed, backfillRideMetrics,
@@ -41,6 +41,7 @@ function computeIntervalSuggestions(logs) {
 }
 import { track } from '../lib/track'
 import { BIKE_ICONS, fmtKm, fmtH, kmSince, hoursSince, pct, statusOf, summarizeConditions, suggestIntensity } from '../lib/helpers'
+import { fetchStravaGear } from '../lib/stravaGear'
 import { Sheet, Field, BtnGreen, BtnDelete, Empty } from '../components/ui'
 import TrackerCard from '../components/TrackerCard'
 
@@ -82,6 +83,9 @@ export default function Dashboard() {
   // einer Abfrage je Rad. Nur so kennen auch die Fällig-Zähler über alle
   // Räder die Stunden; vorher galten Stunden-Tracker dort immer als 0 %.
   const [hoursMap, setHoursMap] = useState(cached?.hoursMap || {})
+  // Rollen-Kilometer je Rad. Gleiche Mechanik wie hoursMap: in der Datenbank
+  // aggregiert, hier nur noch nachgeschlagen.
+  const [indoorMap, setIndoorMap] = useState(cached?.indoorMap || {})
   const [loading, setLoading] = useState(!cached)
   const [syncing, setSyncing] = useState(false)
   const [sheet, setSheet] = useState(null) // 'log' | 'addBike' | null
@@ -152,14 +156,15 @@ export default function Dashboard() {
     setLoading(true)
     let changeMsg = ''
     try {
-      const [b, t, s, p, u, h] = await Promise.all([
+      const [b, t, s, p, u, h, ind] = await Promise.all([
         getBikes(user.id), getTrackers(user.id), getStravaStatus(user.id), getProfile(user.id),
         getUnreadCount(user.id).catch(() => 0),
         getHoursByBike(user.id).catch(() => ({})),
+        getIndoorKmByBike(user.id).catch(() => ({})),
       ])
       const activeB = b.filter(x => !x.archived)
       changeMsg = kmChangeToast(dashCache?.bikes, activeB)
-      setBikes(activeB); setTrackers(t); setStravaStatus(s); setProfile(p); setUnread(u); setHoursMap(h)
+      setBikes(activeB); setTrackers(t); setStravaStatus(s); setProfile(p); setUnread(u); setHoursMap(h); setIndoorMap(ind)
       // aktives Rad bestimmen bzw. validieren (falls das gemerkte weg ist)
       const la = (bikeId) => {
         const ts = t.filter(x => x.bike_id === bikeId)
@@ -170,7 +175,7 @@ export default function Dashboard() {
         nextActive = activeB.length ? [...activeB].sort((x, y) => la(y.id) - la(x.id))[0].id : null
       }
       if (nextActive !== activeBikeId) setActiveBikeId(nextActive)
-      dashCache = { userId: user.id, bikes: activeB, trackers: t, stravaStatus: s, profile: p, unread: u, activeBikeId: nextActive, hoursMap: h }
+      dashCache = { userId: user.id, bikes: activeB, trackers: t, stravaStatus: s, profile: p, unread: u, activeBikeId: nextActive, hoursMap: h, indoorMap: ind }
       await detectRideChanges(activeB)
       getRaceCandidates(user.id).then(setRaceCands).catch(() => {})
     } catch (e) { showToast('Fehler beim Laden') }
@@ -254,10 +259,12 @@ export default function Dashboard() {
 
   const activeBike = bikes.find(b => b.id === activeBikeId)
   const activeBikeHours = hoursMap[activeBikeId] || 0
+  const activeBikeIndoor = indoorMap[activeBikeId] || 0
   const bikeTrackers = trackers.filter(t => t.bike_id === activeBikeId)
   const sortedBikeTrackers = [...bikeTrackers].sort((a, b) => {
     if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
-    return pct(b, activeBike?.km, activeBikeHours) - pct(a, activeBike?.km, activeBikeHours)
+    return pct(b, activeBike?.km, activeBikeHours, activeBikeIndoor)
+         - pct(a, activeBike?.km, activeBikeHours, activeBikeIndoor)
   })
 
   // Verschleiß-Auswertung je Tracker einmal je Datenänderung berechnen –
@@ -293,12 +300,12 @@ export default function Dashboard() {
     for (const t of trackers) {
       const bike = bikeById[t.bike_id]
       if (!bike) continue
-      const st = statusOf(pct(t, bike.km, hoursMap[bike.id] || 0))
+      const st = statusOf(pct(t, bike.km, hoursMap[bike.id] || 0, indoorMap[bike.id] || 0))
       if (st === 'crit') { due++; if (!first) first = { tracker: t, bike } }
       else if (st === 'warn') soon++
     }
     return { dueCount: due, soonCount: soon, firstDue: first }
-  }, [trackers, bikes, hoursMap])
+  }, [trackers, bikes, hoursMap, indoorMap])
 
   async function handleSync() {
     track('sync_manual')
@@ -341,6 +348,10 @@ export default function Dashboard() {
         interval_hours: isH ? svc.interval : null,
         km_at_start: activeBike.km,
         hours_at_start: isH ? hoursNow : 0,
+        // Antriebsteile verschleissen auf der Rolle, Bremsen/Reifen/Fahrwerk
+        // nicht. Nur eine Voreinstellung – umschaltbar am Tracker selbst.
+        counts_indoor: !isH && !isDate && defaultCountsIndoor(svc.cat),
+        indoor_km_at_start: activeBikeIndoor,
         note: '', start_date: new Date().toISOString(),
       }, { replace: !allowDuplicate })
       await addServiceLog(user.id, {
@@ -377,6 +388,8 @@ export default function Dashboard() {
     await addTracker(user.id, {
       bike_id: r.bike_id, type_id: r.type_id, title: r.title, icon: r.icon,
       interval_type: r.interval_type || 'km', interval_km: r.interval_km,
+      interval_hours: r.interval_hours ?? null, hours_at_start: r.hours_at_start ?? 0,
+      counts_indoor: !!r.counts_indoor, indoor_km_at_start: r.indoor_km_at_start ?? 0,
       km_at_start: r.km_at_start, note: r.note || '', start_date: r.start_date,
     })
     setLastDeleted(null); setToast(''); await load()
@@ -391,13 +404,16 @@ export default function Dashboard() {
       await addServiceLog(user.id, {
         bike_id: activeBike.id, service_type: t.type_id, title: t.title, icon: t.icon,
         km_at_service: activeBike.km, service_date: new Date().toISOString(),
-        km_ridden: Math.max(0, kmSince(t, activeBike.km)),
+        km_ridden: Math.max(0, kmSince(t, activeBike.km, activeBikeIndoor)),
         conditions: summarizeConditions(conditionRows, t.start_date),
       })
     } catch (e) { /* Statistik optional – Reset trotzdem durchführen */ }
     // Zähler neu starten + Benachrichtigungs-Marker leeren (neuer Zyklus)
     const updates = {
       km_at_start: activeBike.km, start_date: new Date().toISOString(),
+      // Auch wenn der Tracker die Rolle gerade nicht mitzaehlt: Der Stand wird
+      // mitgezogen, damit ein spaeteres Einschalten nicht rueckwirkend zaehlt.
+      indoor_km_at_start: activeBikeIndoor,
       last_notified_at: null, warn_notified_at: null,
     }
     if (t.interval_type === 'h') {
@@ -502,8 +518,8 @@ export default function Dashboard() {
                   <div className="bh-km-u">km</div>
                 </div>
                 {bikeTrackers.length > 0 && (() => {
-                  const okN   = bikeTrackers.filter(t => statusOf(pct(t, activeBike.km, activeBikeHours)) === 'ok').length
-                  const critN = bikeTrackers.filter(t => statusOf(pct(t, activeBike.km, activeBikeHours)) === 'crit').length
+                  const okN   = bikeTrackers.filter(t => statusOf(pct(t, activeBike.km, activeBikeHours, activeBikeIndoor)) === 'ok').length
+                  const critN = bikeTrackers.filter(t => statusOf(pct(t, activeBike.km, activeBikeHours, activeBikeIndoor)) === 'crit').length
                   const valCls = critN > 0 ? 'crit' : okN < bikeTrackers.length ? 'warn' : 'ok'
                   return (
                     <div className="bh-health">
@@ -513,7 +529,7 @@ export default function Dashboard() {
                       </div>
                       <div className="bh-segs">
                         {sortedBikeTrackers.map(t => (
-                          <div key={t.id} className={`bh-seg bh-seg-${statusOf(pct(t, activeBike.km, activeBikeHours))}`} />
+                          <div key={t.id} className={`bh-seg bh-seg-${statusOf(pct(t, activeBike.km, activeBikeHours, activeBikeIndoor))}`} />
                         ))}
                       </div>
                     </div>
@@ -542,9 +558,9 @@ export default function Dashboard() {
             ) : (
               <div className="tc-grid">
                 {sortedBikeTrackers.map(t => (
-                  <TrackerCard key={t.id} tracker={t} bikeKm={activeBike.km} bikeHours={activeBikeHours}
+                  <TrackerCard key={t.id} tracker={t} bikeKm={activeBike.km} bikeHours={activeBikeHours} indoorKm={activeBikeIndoor}
                     conditions={trackerConditions[t.id]}
-                    onClick={() => pct(t, activeBike.km, activeBikeHours) >= 1 ? setDueTracker(t) : setEditTracker(t)}
+                    onClick={() => pct(t, activeBike.km, activeBikeHours, activeBikeIndoor) >= 1 ? setDueTracker(t) : setEditTracker(t)}
                     onPin={() => togglePin(t)}
                   />
                 ))}
@@ -661,7 +677,7 @@ export default function Dashboard() {
         )
       })()}
       {editTracker && (
-        <EditTrackerSheet tracker={editTracker} bikeKm={activeBike.km} bikeHours={activeBikeHours}
+        <EditTrackerSheet tracker={editTracker} bikeKm={activeBike.km} bikeHours={activeBikeHours} indoorKm={activeBikeIndoor}
           onDone={() => handleServiceDone(editTracker)}
           onSave={async (u) => { await updateTracker(editTracker.id, { ...u, last_notified_at: null, warn_notified_at: null }); setEditTracker(null); await load() }}
           onDelete={async () => {
@@ -930,18 +946,58 @@ function RideConditionSheet({ entry, onSave, onSkip }) {
 // ─── ADD BIKE SHEET ────────────────────────────────────────
 function AddBikeSheet({ user, onClose, onSaved }) {
   const [f, setF] = useState({ name:'', type:'Rennrad', manufacturer:'', model:'', model_year:'', frame_size:'', km:'' })
+  // Ausruestung aus Strava: einmal verbunden, soll man nur noch auswaehlen
+  // statt Name und km-Stand abzutippen. Die Verknuepfung ueber gearId ist
+  // ausserdem das, was spaeter Fahrten dem Rad zuordnet - von Hand war sie
+  // bisher gar nicht zu setzen.
+  const [gear, setGear]     = useState([])
+  const [gearId, setGearId] = useState(null)
   const set = (k) => (v) => setF(p => ({ ...p, [k]: v }))
+
+  useEffect(() => {
+    let alive = true
+    fetchStravaGear()
+      .then(g => { if (alive) setGear(g.filter(x => !x.takenBy)) })
+      .catch(() => {})   // ohne Strava bleibt das Formular wie bisher
+    return () => { alive = false }
+  }, [])
+
+  function pick(g) {
+    if (gearId === g.id) { setGearId(null); return }   // Auswahl zuruecknehmen
+    setGearId(g.id)
+    setF(p => ({ ...p, name: p.name || g.name, km: String(g.km) }))
+  }
+
   async function save() {
     if (!f.name) return
     const bike = await addBike(user.id, {
       name: f.name, type: f.type, manufacturer: f.manufacturer || null, model: f.model || null,
       model_year: f.model_year ? Number(f.model_year) : null, frame_size: f.frame_size || null,
       km: f.km ? Number(f.km) : 0,
+      strava_gear_id: gearId || null,
     })
     onSaved(bike.id)
   }
   return (
     <Sheet title="Neues Fahrrad" sub="Stammdaten anlegen." onClose={onClose}>
+      {gear.length > 0 && (
+        <div className="field">
+          <label className="lblx">Aus Strava übernehmen</label>
+          <div className="gear-list">
+            {gear.map(g => (
+              <button key={g.id} className={`gear-opt ${gearId === g.id ? 'on' : ''}`} onClick={() => pick(g)}>
+                <span className="gear-n">{g.name}</span>
+                <span className="gear-k">{g.km.toLocaleString('de')} km</span>
+              </button>
+            ))}
+          </div>
+          <p className="gear-hint">
+            {gearId
+              ? 'Fahrten dieser Ausrüstung werden künftig diesem Rad gutgeschrieben.'
+              : 'Auswählen füllt Name und km-Stand – oder einfach unten selbst eintragen.'}
+          </p>
+        </div>
+      )}
       <Field label="Name" value={f.name} onChange={set('name')} placeholder="z.B. Madone SL6" />
       <div className="field">
         <label className="lblx">Typ</label>
@@ -957,7 +1013,9 @@ function AddBikeSheet({ user, onClose, onSaved }) {
         <Field label="Modelljahr" type="number" value={f.model_year} onChange={set('model_year')} placeholder="2024" />
         <Field label="Rahmengröße" value={f.frame_size} onChange={set('frame_size')} placeholder="56" />
       </div>
-      <Field label="Aktueller km-Stand" type="number" value={f.km} onChange={set('km')} placeholder="0" />
+      <Field label="Aktueller km-Stand" type="number" value={f.km} onChange={set('km')}
+        placeholder="0" disabled={!!gearId}
+        hint={gearId ? 'Kommt aus Strava und wird bei jedem Sync von dort aktualisiert.' : undefined} />
       <BtnGreen onClick={save}>Fahrrad anlegen</BtnGreen>
       <style>{`
         .lblx { display:block;font-family:var(--mono);font-size:0.6875rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px; }
@@ -965,31 +1023,46 @@ function AddBikeSheet({ user, onClose, onSaved }) {
         .type-opt { padding:9px 14px;font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.5px;background:var(--panel2);border:1px solid var(--line);color:var(--ink2); }
         .type-opt.on { background:var(--acc);border-color:var(--acc);color: var(--on-acc); }
         .g2 { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+        .gear-list { display:flex;flex-direction:column;gap:5px; }
+        .gear-opt { display:flex;align-items:center;gap:10px;text-align:left;padding:10px 12px;background:var(--panel2);border:1px solid var(--line); }
+        .gear-opt.on { background:color-mix(in srgb, var(--acc) 12%, transparent);border-color:var(--acc); }
+        .gear-n { flex:1;min-width:0;font-family:var(--sans);font-size:0.8125rem;font-weight:800;color:var(--ink1);letter-spacing:.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+        .gear-opt.on .gear-n { color:var(--acc); }
+        .gear-k { flex-shrink:0;font-family:var(--mono);font-size:0.6875rem;font-weight:700;color:var(--ink3); }
+        .gear-hint { margin:8px 2px 0;font-family:var(--mono);font-size:0.625rem;color:var(--ink3);line-height:1.6; }
       `}</style>
     </Sheet>
   )
 }
 
 // ─── EDIT TRACKER SHEET ────────────────────────────────────
-function EditTrackerSheet({ tracker, bikeKm, bikeHours, onDone, onSave, onDelete, onClose }) {
+function EditTrackerSheet({ tracker, bikeKm, bikeHours, indoorKm = 0, onDone, onSave, onDelete, onClose }) {
   const initMode = tracker.interval_type === 'h' ? 'h' : tracker.interval_type === 'date' ? 'date' : 'km'
   const [mode, setMode]         = useState(initMode)
   const [intervalKm, setIKm]    = useState(tracker.interval_type === 'date' ? (tracker.interval_km || 3) : (tracker.interval_km || 2000))
   const [intervalH, setIH]      = useState(tracker.interval_hours || 100)
   const [intervalM, setIM]      = useState(tracker.interval_type === 'date' ? (tracker.interval_km || 3) : 3)
   const [note, setNote]         = useState(tracker.note || '')
+  const [indoor, setIndoor]     = useState(!!tracker.counts_indoor)
   const [armed, setArmed]       = useState(false)
 
   function save() {
+    // Beim EINSCHALTEN den aktuellen Rollenstand als Basis setzen, sonst
+    // zaehlten alle bisherigen Rollen-Kilometer rueckwirkend mit und der
+    // Tracker spraenge schlagartig weiter. Beim Ausschalten bleibt der Wert
+    // stehen – er wird dann ohnehin nicht gelesen.
+    const ind = (!tracker.counts_indoor && indoor)
+      ? { counts_indoor: true, indoor_km_at_start: indoorKm }
+      : { counts_indoor: indoor }
     if (mode === 'h') {
       // Basis nur beim Umstellen AUF Stunden neu setzen – beim bloßen
       // Bearbeiten eines h-Trackers bleibt der Zähler erhalten.
       onSave({ interval_type: 'h', interval_hours: intervalH, interval_km: null,
-        hours_at_start: tracker.interval_type === 'h' ? (tracker.hours_at_start ?? 0) : bikeHours, note })
+        hours_at_start: tracker.interval_type === 'h' ? (tracker.hours_at_start ?? 0) : bikeHours, note, ...ind })
     } else if (mode === 'date') {
-      onSave({ interval_type: 'date', interval_km: intervalM, interval_hours: null, note })
+      onSave({ interval_type: 'date', interval_km: intervalM, interval_hours: null, note, ...ind })
     } else {
-      onSave({ interval_type: 'km', interval_km: intervalKm, interval_hours: null, note })
+      onSave({ interval_type: 'km', interval_km: intervalKm, interval_hours: null, note, ...ind })
     }
   }
 
@@ -1052,6 +1125,16 @@ function EditTrackerSheet({ tracker, bikeKm, bikeHours, onDone, onSave, onDelete
             </div>
           </>
         )}
+        {mode === 'km' && (
+          <label className="ib-indoor">
+            <input type="checkbox" checked={indoor} onChange={e => setIndoor(e.target.checked)} />
+            <span>
+              Rolle mitzählen
+              <em>Kilometer vom Indoor-Training zählen auf diesen Tracker.
+              Sinnvoll beim Antrieb, nicht bei Bremsen, Reifen oder Fahrwerk.</em>
+            </span>
+          </label>
+        )}
       </div>
       <div className="ib">
         <div className="ib-lbl">Notiz</div>
@@ -1075,6 +1158,10 @@ function EditTrackerSheet({ tracker, bikeKm, bikeHours, onDone, onSave, onDelete
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 0; background: var(--acc); border: 2px solid var(--ink1); }
         .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 11px; }
         .preset { padding: 7px 12px; font-family: var(--mono); font-size: 0.75rem; font-weight: 700; background: var(--panel); border: 1px solid var(--line); color: var(--ink2); }
+        .ib-indoor { display:flex; align-items:flex-start; gap:10px; margin-top:16px; padding:12px; border:1px solid var(--line); background:var(--panel); cursor:pointer; }
+        .ib-indoor input { width:18px; height:18px; flex-shrink:0; margin:1px 0 0; accent-color:var(--acc); }
+        .ib-indoor span { font-family:var(--sans); font-size:0.8125rem; font-weight:800; color:var(--ink1); letter-spacing:.2px; display:flex; flex-direction:column; gap:4px; }
+        .ib-indoor em { font-family:var(--mono); font-size:0.65625rem; font-weight:400; font-style:normal; color:var(--ink3); line-height:1.6; }
         .preset:active { border-color: var(--acc); color: var(--acc); }
         .ib-note { width: 100%; background: none; border: none; outline: none; font-size: 0.875rem; font-family: var(--mono); color: var(--ink1); resize: none; line-height: 1.6; min-height: 56px; }
         .ib-note::placeholder { color: var(--ink3); }

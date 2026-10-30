@@ -9,6 +9,7 @@ export const CHANGELOG = [
     date: '30.10.2026',
     items: [
       ['new', 'Feedback (Mehr → Feedback): Fehler, Ideen und Lob direkt aus der App heraus melden. Gerät und App-Version gehen automatisch mit, damit sich ein Fehler auch nachstellen lässt'],
+      ['new', 'Indoor-Modus direkt am Rad (Räder → Rad → Indoor): Einschalten, wenn das Rad auf der Rolle steht, und per Haken festlegen, welche Tracker dabei mitzählen sollen – Kette ja, Bremsbeläge nein'],
       ['new', 'Einstiegsseite unter /start: erklärt, was Cyclog ist, und zeigt je nach Gerät, wie man die App auf den Home-Bildschirm legt – der Link für neue Tester'],
     ],
   },

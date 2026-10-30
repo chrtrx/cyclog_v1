@@ -16,6 +16,7 @@ const Bikes           = lazy(() => import('./pages/Bikes'))
 const BikeDetail      = lazy(() => import('./pages/BikeDetail'))
 const More            = lazy(() => import('./pages/More'))
 const Setups          = lazy(() => import('./pages/Setups'))
+const Trainer         = lazy(() => import('./pages/Trainer'))
 const BikeFitArchive  = lazy(() => import('./pages/BikeFitArchive'))
 const RaceArchive     = lazy(() => import('./pages/RaceArchive'))
 const Calendar        = lazy(() => import('./pages/Calendar'))
@@ -76,6 +77,7 @@ function Gate() {
           <Route path="/bike/:bikeId" element={<BikeDetail />} />
           <Route path="/more" element={<More />} />
           <Route path="/setups" element={<Setups />} />
+          <Route path="/trainer" element={<Trainer />} />
           <Route path="/fit" element={<BikeFitArchive />} />
           <Route path="/races" element={<RaceArchive />} />
           <Route path="/calendar" element={<Calendar />} />

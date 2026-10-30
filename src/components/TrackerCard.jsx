@@ -115,10 +115,10 @@ export function LoadBar({ conditions, progress }) {
   )
 }
 
-export default function TrackerCard({ tracker, bikeKm, bikeHours = 0, conditions, onClick, onPin }) {
+export default function TrackerCard({ tracker, bikeKm, bikeHours = 0, indoorKm = 0, conditions, onClick, onPin }) {
   const isH    = tracker.interval_type === 'h'
   const isDate = tracker.interval_type === 'date'
-  const p      = pct(tracker, bikeKm, bikeHours)
+  const p      = pct(tracker, bikeKm, bikeHours, indoorKm)
   const st     = statusOf(p)
   const w      = Math.round(p * 100)
 
@@ -181,10 +181,10 @@ export default function TrackerCard({ tracker, bikeKm, bikeHours = 0, conditions
           )
         }
 
-        const pred = predictDue(tracker, bikeKm, bikeHours)
+        const pred = predictDue(tracker, bikeKm, bikeHours, indoorKm)
         const fmt  = isH ? fmtH : fmtKm
         const unit = isH ? 'h' : 'km'
-        const done = isH ? hoursSince(tracker, bikeHours) : kmSince(tracker, bikeKm)
+        const done = isH ? hoursSince(tracker, bikeHours) : kmSince(tracker, bikeKm, indoorKm)
         const interval = isH ? (tracker.interval_hours || 0) : (tracker.interval_km || 0)
         const rem  = Math.max(0, interval - done)
 

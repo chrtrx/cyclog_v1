@@ -6,7 +6,7 @@
 
 import {
   getAdmin, configureWebPush, pct, sendToSubscriptions,
-  evaluateBucket, buildKmChanges, composePush, hoursByBike, syncStravaUser, updateNotifiedKm, logNotification,
+  evaluateBucket, buildKmChanges, composePush, hoursByBike, indoorKmByBike, syncStravaUser, updateNotifiedKm, logNotification,
 } from './_due.js'
 
 export default async function handler(req, res) {
@@ -51,7 +51,12 @@ export default async function handler(req, res) {
     for (const [uid, list] of Object.entries(trackersByUser)) {
       const needsHours = list.some(({ t }) => t.interval_type === 'h')
       const hours = needsHours ? await hoursByBike(admin, uid) : {}
-      itemsByUser[uid] = list.map(({ t, bike }) => ({ t, bike, p: pct(t, bike.km, hours[bike.id] || 0) }))
+      // Dito fuer die Rolle: nur abfragen, wenn ueberhaupt ein Tracker sie mitzaehlt.
+      const needsIndoor = list.some(({ t }) => t.counts_indoor)
+      const indoor = needsIndoor ? await indoorKmByBike(admin, uid) : {}
+      itemsByUser[uid] = list.map(({ t, bike }) => ({
+        t, bike, p: pct(t, bike.km, hours[bike.id] || 0, indoor[bike.id] || 0),
+      }))
     }
 
     const now = Date.now()

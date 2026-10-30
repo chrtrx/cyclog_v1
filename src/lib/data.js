@@ -86,6 +86,82 @@ export async function deleteBike(bikeId) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// ROLLE (Indoor-Trainer)
+//
+// Die Rolle ist ein normales Rad mit is_trainer = true. Sie hat eine eigene
+// Strava-Ausruestung und bekommt darueber ihre km – Rollenfahrten laufen bei
+// Strava naemlich auf die Rolle, nicht auf das aufgesteckte Rad. Welches Rad
+// wann daraufstand, steht in trainer_mounts; daraus errechnet die Datenbank
+// die Rollen-Kilometer je Rad (siehe Migration 025).
+// ═══════════════════════════════════════════════════════════
+
+// Antriebsteile verschleissen auf der Rolle, Bremsen/Reifen/Fahrwerk nicht.
+// Das ist nur die Voreinstellung beim Anlegen – umschaltbar bleibt jeder.
+export function defaultCountsIndoor(cat) {
+  return cat === 'Antrieb'
+}
+
+export async function getTrainer(userId) {
+  const { data, error } = await supabase
+    .from('bikes').select('*').eq('user_id', userId).eq('is_trainer', true).maybeSingle()
+  if (error) return null
+  return data || null
+}
+
+export async function setTrainerFlag(bikeId, on) {
+  const { error } = await supabase.from('bikes').update({ is_trainer: !!on }).eq('id', bikeId)
+  if (error) throw error
+}
+
+// Rollen-Kilometer je aufgestecktem Rad: { bikeId: km }.
+// Aggregiert in der Datenbank – nicht im Client summieren, sonst schneidet
+// PostgREST bei 1000 Zeilen ab und der Stand waere zu niedrig.
+export async function getIndoorKmByBike(userId) {
+  try {
+    const { data, error } = await supabase.rpc('indoor_km_by_bike', { p_user_id: userId })
+    if (error) return {}
+    const map = {}
+    for (const r of data || []) map[r.bike_id] = Number(r.km) || 0
+    return map
+  } catch { return {} }
+}
+
+export async function getTrainerMounts(userId, trainerId) {
+  let q = supabase.from('trainer_mounts').select('*')
+    .eq('user_id', userId).order('from_date', { ascending: false })
+  if (trainerId) q = q.eq('trainer_id', trainerId)
+  const { data, error } = await q
+  if (error) return []
+  return data || []
+}
+
+// Rad auf die Rolle stecken. Der laufende Zeitraum wird auf denselben
+// Zeitpunkt geschlossen, zu dem der neue beginnt – so entsteht weder eine
+// Luecke noch eine Ueberschneidung, und keine Fahrt zaehlt doppelt.
+export async function mountBikeOnTrainer(userId, trainerId, bikeId) {
+  const now = new Date().toISOString()
+  const { data: open } = await supabase.from('trainer_mounts')
+    .select('id,bike_id').eq('user_id', userId).eq('trainer_id', trainerId).is('to_date', null)
+  for (const row of open || []) {
+    if (row.bike_id === bikeId) return row          // steht schon drauf
+    await supabase.from('trainer_mounts').update({ to_date: now }).eq('id', row.id)
+  }
+  const { data, error } = await supabase.from('trainer_mounts')
+    .insert({ user_id: userId, trainer_id: trainerId, bike_id: bikeId, from_date: now })
+    .select().single()
+  if (error) throw error
+  return data
+}
+
+// Rad runternehmen, ohne ein neues aufzustecken.
+export async function unmountTrainer(userId, trainerId) {
+  const { error } = await supabase.from('trainer_mounts')
+    .update({ to_date: new Date().toISOString() })
+    .eq('user_id', userId).eq('trainer_id', trainerId).is('to_date', null)
+  if (error) throw error
+}
+
+// ═══════════════════════════════════════════════════════════
 // KOMPONENTEN
 // ═══════════════════════════════════════════════════════════
 export async function getComponents(bikeId) {

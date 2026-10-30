@@ -956,13 +956,21 @@ function AddBikeSheet({ user, onClose, onSaved }) {
 
   useEffect(() => {
     let alive = true
+    // Bewusst die VOLLSTAENDIGE Liste, auch schon vergebene Ausruestung.
+    // Wird sie herausgefiltert, bleibt bei jemandem mit gepflegten Raedern
+    // ein einziger Eintrag stehen - und das sieht nicht nach "der Rest ist
+    // schon zugeordnet" aus, sondern nach einem Fehler. Vergebenes steht
+    // deshalb da, nur nicht waehlbar und mit dem Rad, an dem es haengt.
     fetchStravaGear()
-      .then(g => { if (alive) setGear(g.filter(x => !x.takenBy)) })
+      .then(g => { if (alive) setGear(g) })
       .catch(() => {})   // ohne Strava bleibt das Formular wie bisher
     return () => { alive = false }
   }, [])
 
+  const free = gear.filter(g => !g.takenBy).length
+
   function pick(g) {
+    if (g.takenBy) return                              // haengt schon an einem Rad
     if (gearId === g.id) { setGearId(null); return }   // Auswahl zuruecknehmen
     setGearId(g.id)
     setF(p => ({ ...p, name: p.name || g.name, km: String(g.km) }))
@@ -985,8 +993,21 @@ function AddBikeSheet({ user, onClose, onSaved }) {
           <label className="lblx">Aus Strava übernehmen</label>
           <div className="gear-list">
             {gear.map(g => (
-              <button key={g.id} className={`gear-opt ${gearId === g.id ? 'on' : ''}`} onClick={() => pick(g)}>
-                <span className="gear-n">{g.name}</span>
+              <button key={g.id} disabled={!!g.takenBy}
+                className={`gear-opt ${gearId === g.id ? 'on' : ''} ${g.takenBy ? 'taken' : ''}`}
+                onClick={() => pick(g)}>
+                <span className="gear-n">
+                  <span className="gear-nm">{g.name}</span>
+                  {g.takenBy && (
+                    <em className="gear-t">
+                      {/* Heisst das Rad in Cyclog genauso, stuende der Name
+                          sonst zweimal untereinander. */}
+                      {g.takenBy.trim() === g.name.trim()
+                        ? 'schon zugeordnet'
+                        : `schon zugeordnet: „${g.takenBy}"`}
+                    </em>
+                  )}
+                </span>
                 <span className="gear-k">{g.km.toLocaleString('de')} km</span>
               </button>
             ))}
@@ -994,7 +1015,9 @@ function AddBikeSheet({ user, onClose, onSaved }) {
           <p className="gear-hint">
             {gearId
               ? 'Fahrten dieser Ausrüstung werden künftig diesem Rad gutgeschrieben.'
-              : 'Auswählen füllt Name und km-Stand – oder einfach unten selbst eintragen.'}
+              : free === 0
+                ? 'Alle deine Strava-Räder hängen schon an einem Rad in Cyclog. Für ein Rad ohne Strava einfach unten die Felder ausfüllen.'
+                : 'Auswählen füllt Name und km-Stand – oder einfach unten selbst eintragen.'}
           </p>
         </div>
       )}
@@ -1026,7 +1049,10 @@ function AddBikeSheet({ user, onClose, onSaved }) {
         .gear-list { display:flex;flex-direction:column;gap:5px; }
         .gear-opt { display:flex;align-items:center;gap:10px;text-align:left;padding:10px 12px;background:var(--panel2);border:1px solid var(--line); }
         .gear-opt.on { background:color-mix(in srgb, var(--acc) 12%, transparent);border-color:var(--acc); }
-        .gear-n { flex:1;min-width:0;font-family:var(--sans);font-size:0.8125rem;font-weight:800;color:var(--ink1);letter-spacing:.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+        .gear-opt.taken { opacity:.55; }
+        .gear-t { font-family:var(--mono);font-size:0.625rem;font-weight:400;font-style:normal;color:var(--ink3); }
+        .gear-n { flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;font-family:var(--sans);font-size:0.8125rem;font-weight:800;color:var(--ink1);letter-spacing:.2px; }
+        .gear-nm { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
         .gear-opt.on .gear-n { color:var(--acc); }
         .gear-k { flex-shrink:0;font-family:var(--mono);font-size:0.6875rem;font-weight:700;color:var(--ink3); }
         .gear-hint { margin:8px 2px 0;font-family:var(--mono);font-size:0.625rem;color:var(--ink3);line-height:1.6; }

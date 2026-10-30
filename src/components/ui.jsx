@@ -118,16 +118,20 @@ export function Sheet({ title, sub, onClose, children }) {
 }
 
 // ─── Eingabefeld ───────────────────────────────────────────
-export function Field({ label, value, onChange, placeholder, type = 'text', inputMode }) {
+export function Field({ label, value, onChange, placeholder, type = 'text', inputMode, disabled = false, hint }) {
   return (
     <div className="field">
       <label className="field-lbl">{label}</label>
       <input
         className="field-input" type={type} inputMode={inputMode} value={value ?? ''}
         onChange={(e) => onChange(e.target.value)} placeholder={placeholder || '—'}
+        disabled={disabled}
       />
+      {hint && <p className="field-hint">{hint}</p>}
       <style>{`
         .field { margin-bottom: 12px; }
+        .field-input:disabled { opacity: .6; }
+        .field-hint { margin: 6px 2px 0; font-family: var(--mono); font-size: 0.625rem; color: var(--ink3); line-height: 1.6; }
         .field-lbl { display: block; font-family: var(--mono); font-size: 0.6875rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink3); margin-bottom: 6px; }
         .field-input {
           width: 100%; background: var(--panel2); border: 1px solid var(--line);

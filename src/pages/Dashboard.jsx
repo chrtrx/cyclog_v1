@@ -41,6 +41,7 @@ function computeIntervalSuggestions(logs) {
 }
 import { track } from '../lib/track'
 import { BIKE_ICONS, fmtKm, fmtH, kmSince, hoursSince, pct, statusOf, summarizeConditions, suggestIntensity } from '../lib/helpers'
+import { fetchStravaGear } from '../lib/stravaGear'
 import { Sheet, Field, BtnGreen, BtnDelete, Empty } from '../components/ui'
 import TrackerCard from '../components/TrackerCard'
 
@@ -945,18 +946,58 @@ function RideConditionSheet({ entry, onSave, onSkip }) {
 // ─── ADD BIKE SHEET ────────────────────────────────────────
 function AddBikeSheet({ user, onClose, onSaved }) {
   const [f, setF] = useState({ name:'', type:'Rennrad', manufacturer:'', model:'', model_year:'', frame_size:'', km:'' })
+  // Ausruestung aus Strava: einmal verbunden, soll man nur noch auswaehlen
+  // statt Name und km-Stand abzutippen. Die Verknuepfung ueber gearId ist
+  // ausserdem das, was spaeter Fahrten dem Rad zuordnet - von Hand war sie
+  // bisher gar nicht zu setzen.
+  const [gear, setGear]     = useState([])
+  const [gearId, setGearId] = useState(null)
   const set = (k) => (v) => setF(p => ({ ...p, [k]: v }))
+
+  useEffect(() => {
+    let alive = true
+    fetchStravaGear()
+      .then(g => { if (alive) setGear(g.filter(x => !x.takenBy)) })
+      .catch(() => {})   // ohne Strava bleibt das Formular wie bisher
+    return () => { alive = false }
+  }, [])
+
+  function pick(g) {
+    if (gearId === g.id) { setGearId(null); return }   // Auswahl zuruecknehmen
+    setGearId(g.id)
+    setF(p => ({ ...p, name: p.name || g.name, km: String(g.km) }))
+  }
+
   async function save() {
     if (!f.name) return
     const bike = await addBike(user.id, {
       name: f.name, type: f.type, manufacturer: f.manufacturer || null, model: f.model || null,
       model_year: f.model_year ? Number(f.model_year) : null, frame_size: f.frame_size || null,
       km: f.km ? Number(f.km) : 0,
+      strava_gear_id: gearId || null,
     })
     onSaved(bike.id)
   }
   return (
     <Sheet title="Neues Fahrrad" sub="Stammdaten anlegen." onClose={onClose}>
+      {gear.length > 0 && (
+        <div className="field">
+          <label className="lblx">Aus Strava übernehmen</label>
+          <div className="gear-list">
+            {gear.map(g => (
+              <button key={g.id} className={`gear-opt ${gearId === g.id ? 'on' : ''}`} onClick={() => pick(g)}>
+                <span className="gear-n">{g.name}</span>
+                <span className="gear-k">{g.km.toLocaleString('de')} km</span>
+              </button>
+            ))}
+          </div>
+          <p className="gear-hint">
+            {gearId
+              ? 'Fahrten dieser Ausrüstung werden künftig diesem Rad gutgeschrieben.'
+              : 'Auswählen füllt Name und km-Stand – oder einfach unten selbst eintragen.'}
+          </p>
+        </div>
+      )}
       <Field label="Name" value={f.name} onChange={set('name')} placeholder="z.B. Madone SL6" />
       <div className="field">
         <label className="lblx">Typ</label>
@@ -972,7 +1013,9 @@ function AddBikeSheet({ user, onClose, onSaved }) {
         <Field label="Modelljahr" type="number" value={f.model_year} onChange={set('model_year')} placeholder="2024" />
         <Field label="Rahmengröße" value={f.frame_size} onChange={set('frame_size')} placeholder="56" />
       </div>
-      <Field label="Aktueller km-Stand" type="number" value={f.km} onChange={set('km')} placeholder="0" />
+      <Field label="Aktueller km-Stand" type="number" value={f.km} onChange={set('km')}
+        placeholder="0" disabled={!!gearId}
+        hint={gearId ? 'Kommt aus Strava und wird bei jedem Sync von dort aktualisiert.' : undefined} />
       <BtnGreen onClick={save}>Fahrrad anlegen</BtnGreen>
       <style>{`
         .lblx { display:block;font-family:var(--mono);font-size:0.6875rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:6px; }
@@ -980,6 +1023,13 @@ function AddBikeSheet({ user, onClose, onSaved }) {
         .type-opt { padding:9px 14px;font-family:var(--mono);font-size:0.75rem;font-weight:700;letter-spacing:.5px;background:var(--panel2);border:1px solid var(--line);color:var(--ink2); }
         .type-opt.on { background:var(--acc);border-color:var(--acc);color: var(--on-acc); }
         .g2 { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+        .gear-list { display:flex;flex-direction:column;gap:5px; }
+        .gear-opt { display:flex;align-items:center;gap:10px;text-align:left;padding:10px 12px;background:var(--panel2);border:1px solid var(--line); }
+        .gear-opt.on { background:color-mix(in srgb, var(--acc) 12%, transparent);border-color:var(--acc); }
+        .gear-n { flex:1;min-width:0;font-family:var(--sans);font-size:0.8125rem;font-weight:800;color:var(--ink1);letter-spacing:.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+        .gear-opt.on .gear-n { color:var(--acc); }
+        .gear-k { flex-shrink:0;font-family:var(--mono);font-size:0.6875rem;font-weight:700;color:var(--ink3); }
+        .gear-hint { margin:8px 2px 0;font-family:var(--mono);font-size:0.625rem;color:var(--ink3);line-height:1.6; }
       `}</style>
     </Sheet>
   )

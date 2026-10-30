@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
-import { supabase } from '../lib/supabase'
+import { fetchStravaGear } from '../lib/stravaGear'
 import {
   getBikes, addBike, updateBike, getTrainer, setTrainerFlag,
   getTrainerMounts, mountBikeOnTrainer, unmountTrainer, getIndoorKmByBike,
@@ -54,13 +54,7 @@ export default function Trainer() {
   async function loadGear() {
     setBusy(true); setErr('')
     try {
-      const { data: s } = await supabase.auth.getSession()
-      const res = await fetch('/api/strava-gear', {
-        headers: { Authorization: `Bearer ${s?.session?.access_token || ''}` },
-      })
-      const json = await res.json()
-      if (!json.ok) throw new Error(json.error || 'Strava antwortet nicht')
-      setGear(json.gear || [])
+      setGear(await fetchStravaGear())
     } catch (e) {
       setErr(e?.message || 'Ausrüstung konnte nicht geladen werden')
       setGear([])

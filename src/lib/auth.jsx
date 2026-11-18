@@ -9,16 +9,36 @@ export function AuthProvider({ children }) {
   const [recovery, setRecovery] = useState(false)   // Passwort-Reset im Gange?
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setLoading(false)
-    })
+    let settled = false
+
+    // getSession() kann scheitern: abgelaufenes Refresh-Token, beschädigter
+    // Eintrag im Speicher, kein Netz. Ohne catch/finally bliebe loading auf
+    // true stehen – die App hinge dann für immer im Ladebildschirm, ohne
+    // jede Meldung und ohne Weg zurück zur Anmeldung.
+    supabase.auth.getSession()
+      .then(({ data, error }) => {
+        if (error) throw error
+        setSession(data?.session ?? null)
+      })
+      .catch((e) => {
+        console.error('Sitzung konnte nicht gelesen werden:', e?.message || e)
+        setSession(null)   // zur Anmeldung, statt hängen zu bleiben
+      })
+      .finally(() => { settled = true; setLoading(false) })
+
+    // Notbremse für den Fall, dass die Antwort gar nicht kommt (Funkloch,
+    // pausiertes Projekt): dann weder then noch catch. Lieber die Anmeldung
+    // zeigen als einen Ladebalken, der nie endet. Trifft die echte Sitzung
+    // später doch ein, setzt der then-Zweig sie nach und der Nutzer ist drin.
+    const timer = setTimeout(() => { if (!settled) setLoading(false) }, 8000)
+
     const { data: sub } = supabase.auth.onAuthStateChange((event, sess) => {
       // Wenn der Nutzer über einen Reset-Link kommt, sendet Supabase dieses Event.
       if (event === 'PASSWORD_RECOVERY') setRecovery(true)
       setSession(sess)
+      setLoading(false)
     })
-    return () => sub.subscription.unsubscribe()
+    return () => { clearTimeout(timer); sub.subscription.unsubscribe() }
   }, [])
 
   const value = {

@@ -5,6 +5,13 @@
 // item = ['new' | 'fix' | 'change', 'Text']
 export const CHANGELOG = [
   {
+    v: 26,
+    date: '18.11.2026',
+    items: [
+      ['fix', 'App blieb manchmal ewig im Ladebildschirm hängen: Konnte die gespeicherte Anmeldung nicht gelesen werden – etwa weil sie nach längerer Pause abgelaufen war –, kam die App nie darüber hinaus. Jetzt landest du in dem Fall auf der Anmeldung, statt zu warten'],
+    ],
+  },
+  {
     v: 25,
     date: '30.10.2026',
     items: [
